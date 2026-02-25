@@ -1,0 +1,105 @@
+[
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$dummy$dummyhash",
+      "email": "admin@example.com",
+      "role": "admin",
+      "is_superuser": true,
+      "is_staff": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$dummy$dummyhash",
+      "email": "client1@example.com",
+      "role": "client",
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "accounts.clientprofile",
+    "pk": 1,
+    "fields": {
+      "user": 2,
+      "bio": "Regular client user.",
+      "profile_pic": "",
+      "social_links": {}
+    }
+  },
+  {
+    "model": "services.service",
+    "pk": 1,
+    "fields": {
+      "name": "House Shifting",
+      "description": "Professional house shifting service.",
+      "price": "5000.00",
+      "avg_rating": 4.5
+    }
+  },
+  {
+    "model": "services.service",
+    "pk": 2,
+    "fields": {
+      "name": "Home Cleaning",
+      "description": "Deep cleaning for your home.",
+      "price": "2000.00",
+      "avg_rating": 4.0
+    }
+  },
+  {
+    "model": "services.review",
+    "pk": 1,
+    "fields": {
+      "service": 1,
+      "client": 2,
+      "rating": 5,
+      "comment": "Excellent service!",
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cart",
+    "pk": 1,
+    "fields": {
+      "client": 2,
+      "created_at": "2026-02-23T09:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cartitem",
+    "pk": 1,
+    "fields": {
+      "cart": 1,
+      "service": 2,
+      "quantity": 1
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 1,
+    "fields": {
+      "client": 2,
+      "status": "completed",
+      "created_at": "2026-02-22T15:00:00Z"
+    }
+  },
+
+  {
+    "model": "orders.orderitem",
+    "pk": 1,
+    "fields": {
+      "order": 1,
+      "service": 1,
+      "quantity": 1,
+      "price": "5000.00"
+    }
+  }
+]

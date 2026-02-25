@@ -1,0 +1,23 @@
+{
+    "builds": [{
+      "src": "house_hold_service/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "50mb" }
+    }],
+    "routes": [
+      {
+        "src": "/static/(.*)",
+        "dest": "/staticfiles/$1"
+      },
+      {
+        "src": "/media/(.*)",
+        "dest": "/media/$1"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "house_hold_service/wsgi.py"
+      }
+    ]
+  
+  
+}
