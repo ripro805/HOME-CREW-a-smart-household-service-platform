@@ -2,6 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdminOrSelfOrReadOnly
 from django.db.models import Avg
+import logging
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 from rest_framework.response import Response
@@ -29,7 +33,14 @@ class ServiceViewSet(viewsets.ModelViewSet):
     4. Returns service details including category, price, and avg_rating.
     """)
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        logger.info("ServiceViewSet.list called: user=%s", request.user)
+        try:
+            response = super().list(request, *args, **kwargs)
+            logger.info("ServiceViewSet.list succeeded")
+            return response
+        except Exception as e:
+            logger.error("ServiceViewSet.list error: %s", str(e), exc_info=True)
+            raise
 
     @swagger_auto_schema(operation_description="""
     Retrieve a single service by ID.
@@ -38,7 +49,14 @@ class ServiceViewSet(viewsets.ModelViewSet):
     2. Includes category, price, avg_rating, and description.
     """)
     def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+        logger.info("ServiceViewSet.retrieve called: user=%s, args=%s, kwargs=%s", request.user, args, kwargs)
+        try:
+            response = super().retrieve(request, *args, **kwargs)
+            logger.info("ServiceViewSet.retrieve succeeded")
+            return response
+        except Exception as e:
+            logger.error("ServiceViewSet.retrieve error: %s", str(e), exc_info=True)
+            raise
 
     @swagger_auto_schema(operation_description="""
     Create a new service (admin only).
@@ -47,7 +65,14 @@ class ServiceViewSet(viewsets.ModelViewSet):
     2. Returns created service object.
     """)
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        logger.info("ServiceViewSet.create called: user=%s, data=%s", request.user, request.data)
+        try:
+            response = super().create(request, *args, **kwargs)
+            logger.info("ServiceViewSet.create succeeded")
+            return response
+        except Exception as e:
+            logger.error("ServiceViewSet.create error: %s", str(e), exc_info=True)
+            raise
 
     @swagger_auto_schema(operation_description="""
     Update an existing service (admin only).
@@ -56,7 +81,14 @@ class ServiceViewSet(viewsets.ModelViewSet):
     2. Returns updated service object.
     """)
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        logger.info("ServiceViewSet.update called: user=%s, data=%s", request.user, request.data)
+        try:
+            response = super().update(request, *args, **kwargs)
+            logger.info("ServiceViewSet.update succeeded")
+            return response
+        except Exception as e:
+            logger.error("ServiceViewSet.update error: %s", str(e), exc_info=True)
+            raise
 
     @swagger_auto_schema(operation_description="""
     Delete a service (admin only).
@@ -65,7 +97,14 @@ class ServiceViewSet(viewsets.ModelViewSet):
     2. Returns status 204 on success.
     """)
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+        logger.info("ServiceViewSet.destroy called: user=%s, args=%s, kwargs=%s", request.user, args, kwargs)
+        try:
+            response = super().destroy(request, *args, **kwargs)
+            logger.info("ServiceViewSet.destroy succeeded")
+            return response
+        except Exception as e:
+            logger.error("ServiceViewSet.destroy error: %s", str(e), exc_info=True)
+            raise
 
     queryset = Service.objects.select_related('category').all()
     serializer_class = ServiceSerializer
@@ -124,19 +163,23 @@ class AddReviewView(APIView):
     permission_classes = [IsAdminOrSelfOrReadOnly]
 
     def post(self, request, service_id):
+        logger.info("AddReviewView.post called: user=%s, service_id=%s, data=%s", request.user, service_id, request.data)
         rating = int(request.data.get('rating', 0))
         comment = request.data.get('comment', '')
         if not (1 <= rating <= 5):
+            logger.warning("Invalid rating: %s", rating)
             return Response({'error': 'Rating must be between 1 and 5'}, status=400)
         try:
             service = Service.objects.get(pk=service_id)
         except Service.DoesNotExist:
+            logger.error("Service not found: service_id=%s", service_id)
             return Response({'error': 'Service not found'}, status=404)
         Review.objects.create(service=service, client=request.user, rating=rating, comment=comment)
         # Update average rating
         avg = Review.objects.filter(service=service).aggregate(Avg('rating'))['rating__avg']
         service.avg_rating = avg
         service.save()
+        logger.info("Review added: service_id=%s, avg_rating=%s", service_id, avg)
         return Response({'message': 'Review added'}, status=201)
 
 # ServicesSortedByRatingView: List services sorted by average rating
