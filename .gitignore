@@ -11,6 +11,8 @@ __pycache__/
 *.sqlite3
 
 *.db
+*.db.sqlite3/
+
 
 # VS Code
 .vscode/
