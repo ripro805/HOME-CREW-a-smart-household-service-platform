@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import dj_database_url
+import os # Import the os module as well
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -92,11 +95,19 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
+# Use the Render PostgreSQL external link for production
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    'default': dj_database_url.parse(
+        'postgresql://homecrew_user:wtxA7uqjZp5ATD85gKwukcYK687uiZof@dpg-d6gpp6pdrdic738k2jng-a.oregon-postgres.render.com/homecrew',
+        conn_max_age=600
+    )
 }
 
 # DATABASES = {
