@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import './Navbar.css';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
 
@@ -27,11 +27,20 @@ const Navbar = () => {
           
           {isAuthenticated ? (
             <>
-              <Link to="/cart" className="nav-link cart-link">
-                Cart
-                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-              </Link>
-              <Link to="/orders" className="nav-link">Orders</Link>
+              {isAdmin ? (
+                <>
+                  <Link to="/admin-dashboard" className="nav-link admin-link">Admin Panel</Link>
+                  <span className="admin-badge">Admin</span>
+                </>
+              ) : (
+                <>
+                  <Link to="/cart" className="nav-link cart-link">
+                    Cart
+                    {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                  </Link>
+                  <Link to="/orders" className="nav-link">Orders</Link>
+                </>
+              )}
               <Link to="/profile" className="nav-link">Profile</Link>
               <button onClick={handleLogout} className="nav-button logout-btn">
                 Logout

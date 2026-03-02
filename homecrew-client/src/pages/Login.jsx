@@ -11,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,9 +29,24 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/');
+      if (result.isAdmin) {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/');
+      }
     } else {
-      setError(result.error.detail || 'Login failed. Please check your credentials.');
+      const err = result.error;
+      if (typeof err === 'string') {
+        setError(err);
+      } else if (err?.detail) {
+        setError(err.detail);
+      } else if (err?.non_field_errors) {
+        setError(err.non_field_errors[0]);
+      } else if (err?.no_active_account) {
+        setError('No active account found. Please check your credentials.');
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
     }
     
     setLoading(false);

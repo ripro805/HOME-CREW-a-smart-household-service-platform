@@ -12,6 +12,7 @@ import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
 import './App.css';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/:id" element={<OrderDetail />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
               </Routes>
             </main>
           </div>

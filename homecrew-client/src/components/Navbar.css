@@ -160,3 +160,23 @@
     justify-content: center;
   }
 }
+
+.admin-badge {
+  background: #6c63ff;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-link {
+  color: #6c63ff !important;
+  font-weight: 600;
+}
+
+.admin-link:hover {
+  color: #5a52d5 !important;
+}

@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'django_filters',
     'cloudinary',
     'cloudinary_storage',
-    'corsheaders',
 ]
 
 # Custom user model

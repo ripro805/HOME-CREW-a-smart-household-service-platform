@@ -42,9 +42,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
       
-      await checkAuth();
-      return { success: true };
+      const meRes = await api.get('/auth/users/me/', {
+        headers: { Authorization: `Bearer ${access}` }
+      });
+      setUser(meRes.data);
+      return { success: true, isAdmin: meRes.data.role === 'admin' };
     } catch (error) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       return { 
         success: false, 
         error: error.response?.data || 'Login failed' 
@@ -71,6 +76,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const isAdmin = user?.role === 'admin';
+
   const value = {
     user,
     loading,
@@ -78,6 +85,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!user,
+    isAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
