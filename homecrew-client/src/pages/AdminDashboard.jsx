@@ -1084,13 +1084,6 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) 
         <span className="brand-icon">🏠</span>
         <span className="brand-text">HomeCrew <sup>Admin</sup></span>
       </div>
-      <button
-        className="nav-pill nav-home-btn"
-        title="View public home page"
-        onClick={() => window.open('/preview-home', '_blank')}
-      >
-        🌐 <span>Home Page</span>
-      </button>
 
       <div className="nav-search" ref={searchRef}>
         <span className="search-icon-nav">🔍</span>
@@ -1113,6 +1106,14 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) 
       </div>
 
       <div className="nav-actions">
+        <button
+          className="nav-pill nav-home-btn"
+          title="View public home page"
+          onClick={() => navigate('/preview-home')}
+        >
+          🏠 <span>Home</span>
+        </button>
+
         <div className="nav-pill-wrap" ref={notifRef}>
           <button className="nav-pill" onClick={() => { setShowNotifs(p=>!p); setShowProfile(false); }}>
             🔔{notifs.length > 0 && <span className="notif-dot">{notifs.length}</span>}
