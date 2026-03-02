@@ -6,10 +6,11 @@ class ServiceFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr='lte')
     min_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr='gte')
     max_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr='lte')
+    category = django_filters.NumberFilter(field_name="category__id")
 
     class Meta:
         model = Service
-        fields = ['min_price', 'max_price', 'min_rating', 'max_rating', 'name']
+        fields = ['category', 'min_price', 'max_price', 'min_rating', 'max_rating', 'name']
 
 class ReviewFilter(django_filters.FilterSet):
     min_rating = django_filters.NumberFilter(field_name="rating", lookup_expr='gte')

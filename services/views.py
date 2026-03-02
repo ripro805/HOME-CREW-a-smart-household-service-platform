@@ -1,5 +1,5 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from api.permissions import IsAdminOrSelfOrReadOnly
 from django.db.models import Avg
 import logging
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics, filters
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from api.permissions import IsAdminOrSelfOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, Review, ServiceCategory, ServiceImage
@@ -115,6 +115,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
     pagination_class = ServiceResultsSetPagination
     permission_classes = [IsAdminOrSelfOrReadOnly]
 
+    def get_permissions(self):
+        """Allow anyone to view services, but require auth for modifications"""
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
 class ServiceCategoryViewSet(viewsets.ModelViewSet):
     """
     Service Category Management Endpoint
@@ -129,8 +135,14 @@ class ServiceCategoryViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name']
-    pagination_class = ServiceResultsSetPagination
+    pagination_class = None  # Disable pagination for categories
     permission_classes = [IsAdminOrSelfOrReadOnly]
+
+    def get_permissions(self):
+        """Allow anyone to view categories, but require auth for modifications"""
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
 class ServiceImageViewSet(viewsets.ModelViewSet):
     """

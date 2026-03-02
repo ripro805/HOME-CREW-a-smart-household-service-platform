@@ -24,7 +24,7 @@ class Service(models.Model):
 		return self.name
 class  ServiceImage(models.Model):
 	service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="images")
-	image = CloudinaryField('image')
+	image = models.URLField(max_length=500, blank=True, null=True)
 class Review(models.Model):
 	service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="reviews")
 	client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
