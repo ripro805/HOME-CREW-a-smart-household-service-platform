@@ -23,31 +23,32 @@ const Navbar = () => {
 
         <div className="navbar-menu">
           <Link to="/" className="nav-link">Home</Link>
-          <Link to="/services" className="nav-link">Services</Link>
-          
+
           {isAuthenticated ? (
             <>
               {isAdmin ? (
                 <>
                   <Link to="/admin-dashboard" className="nav-link admin-link">Admin Panel</Link>
-                  <span className="admin-badge">Admin</span>
+                  <Link to="/profile" className="nav-link">Profile</Link>
                 </>
               ) : (
                 <>
+                  <Link to="/services" className="nav-link">Services</Link>
                   <Link to="/cart" className="nav-link cart-link">
                     Cart
                     {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                   </Link>
                   <Link to="/orders" className="nav-link">Orders</Link>
+                  <Link to="/profile" className="nav-link">Profile</Link>
+                  <button onClick={handleLogout} className="nav-button logout-btn">
+                    Logout
+                  </button>
                 </>
               )}
-              <Link to="/profile" className="nav-link">Profile</Link>
-              <button onClick={handleLogout} className="nav-button logout-btn">
-                Logout
-              </button>
             </>
           ) : (
             <>
+              <Link to="/services" className="nav-link">Services</Link>
               <Link to="/login" className="nav-button login-btn">Login</Link>
               <Link to="/register" className="nav-button register-btn">Register</Link>
             </>
