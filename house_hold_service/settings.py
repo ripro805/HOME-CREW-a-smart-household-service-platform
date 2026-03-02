@@ -53,9 +53,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "djoser",
-        'django_filters',
-        'cloudinary',
-        'cloudinary_storage',
+    'django_filters',
+    'cloudinary',
+    'cloudinary_storage',
+    'corsheaders',
 ]
 
 # Custom user model
@@ -64,6 +65,7 @@ AUTH_USER_MODEL = "accounts.User"
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
@@ -190,7 +192,7 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('JWT',),
+    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
 }
 
@@ -224,5 +226,16 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='rifatrizviofficial001@gmail.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='qtxc ldgw amna sbwu')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5175",
+]
+CORS_ALLOW_CREDENTIALS = True
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='rifatrizviofficial001@gmail.com')
