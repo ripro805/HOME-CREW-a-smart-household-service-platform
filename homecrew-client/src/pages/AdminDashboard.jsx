@@ -381,22 +381,34 @@ const AdminDashboard = () => {
     fetchAll();
   }, [isAdmin]);
 
+  // Fetch all pages of a paginated endpoint
+  const fetchAllPages = async (url) => {
+    let results = [];
+    let next = url;
+    while (next) {
+      // For relative URLs keep as-is; axios baseURL handles it
+      const res = await api.get(next.includes('://') ? next : next.replace(/.*\/api\/v1/, ''));
+      const data = res.data;
+      if (Array.isArray(data)) {
+        results = results.concat(data);
+        break;
+      }
+      results = results.concat(data.results || []);
+      next = data.next || null;
+    }
+    return results;
+  };
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordersRes, servicesRes, usersRes, catsRes] = await Promise.all([
-        api.get('/orders/'),
-        api.get('/services/'),
-        api.get('/accounts/'),
-        api.get('/categories/'),
+      const [orders, services, users, categories] = await Promise.all([
+        fetchAllPages('/orders/'),
+        fetchAllPages('/services/?page_size=100'),
+        fetchAllPages('/accounts/'),
+        fetchAllPages('/categories/'),
       ]);
-      const toArr = r => Array.isArray(r.data) ? r.data : (r.data?.results || []);
-      setData({
-        orders: toArr(ordersRes),
-        services: toArr(servicesRes),
-        users: toArr(usersRes),
-        categories: toArr(catsRes),
-      });
+      setData({ orders, services, users, categories });
     } catch (e) {
       console.error('Dashboard fetch error:', e);
     } finally {
