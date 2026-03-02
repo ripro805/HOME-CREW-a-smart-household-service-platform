@@ -107,7 +107,7 @@ const OrdersTab = ({ orders, onStatusChange }) => {
 
 // ─── SERVICES TAB ──────────────────────────────────────────────────────────
 const ServicesTab = ({ services, categories, onRefresh }) => {
-  const empty = { name: '', description: '', price: '', category: '' };
+  const empty = { name: '', description: '', price: '', category: '', image_url: '' };
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -116,8 +116,18 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { name: form.name, description: form.description, price: parseFloat(form.price), category: form.category || null };
-      editId ? await api.patch(`/services/${editId}/`, payload) : await api.post('/services/', payload);
+      const payload = { name: form.name, description: form.description, price: parseFloat(form.price), category_id: form.category || null };
+      let res;
+      if (editId) {
+        res = await api.patch(`/services/${editId}/`, payload);
+      } else {
+        res = await api.post('/services/', payload);
+      }
+      // Handle image URL — POST to nested images endpoint
+      if (form.image_url.trim()) {
+        const serviceId = editId || res.data.id;
+        await api.post(`/services/${serviceId}/images/`, { image: form.image_url.trim() });
+      }
       setMsg({ text: editId ? 'Service updated!' : 'Service created!', ok: true });
       setForm(empty); setEditId(null); onRefresh();
     } catch (err) {
@@ -127,7 +137,13 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
 
   const handleEdit = (svc) => {
     setEditId(svc.id);
-    setForm({ name: svc.name, description: svc.description, price: svc.price, category: svc.category?.id || svc.category || '' });
+    setForm({
+      name: svc.name,
+      description: svc.description,
+      price: svc.price,
+      category: svc.category?.id || svc.category || '',
+      image_url: svc.images?.[0]?.image || '',
+    });
     window.scrollTo(0, 0);
   };
 
@@ -157,6 +173,18 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
             </select>
           </div>
           <div className="form-group"><label>Description *</label><textarea rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} required /></div>
+          <div className="form-group">
+            <label>Image URL</label>
+            <input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={form.image_url}
+              onChange={e => setForm({...form, image_url: e.target.value})}
+            />
+            {form.image_url && (
+              <img src={form.image_url} alt="preview" style={{ marginTop: 6, maxHeight: 80, borderRadius: 6, objectFit: 'cover' }} />
+            )}
+          </div>
           <div className="form-actions">
             <button type="submit" className="btn-primary">{editId ? 'Update Service' : 'Create Service'}</button>
             {editId && <button type="button" className="btn-secondary" onClick={() => { setEditId(null); setForm(empty); }}>Cancel</button>}
@@ -166,10 +194,15 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
       <div className="section-card">
         <h3>All Services ({services.length})</h3>
         <table className="admin-table">
-          <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Rating</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Rating</th><th>Actions</th></tr></thead>
           <tbody>
             {services.map(s => (
               <tr key={s.id}>
+                <td>
+                  {s.images?.[0]?.image
+                    ? <img src={s.images[0].image} alt={s.name} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6 }} />
+                    : <span style={{ color: '#ccc', fontSize: '1.4rem' }}>🖼️</span>}
+                </td>
                 <td>{s.name}</td>
                 <td>{s.category?.name || '—'}</td>
                 <td>৳{s.price}</td>
@@ -180,7 +213,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </td>
               </tr>
             ))}
-            {services.length === 0 && <tr><td colSpan={5} className="empty-row">No services yet.</td></tr>}
+            {services.length === 0 && <tr><td colSpan={6} className="empty-row">No services yet.</td></tr>}
           </tbody>
         </table>
       </div>
