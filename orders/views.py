@@ -56,7 +56,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
     4. Enforces cart ownership and permissions.
     """
     http_method_names = ["get", "post", "patch", "delete"]
-    permission_classes = [IsAdminOrSelfOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -77,27 +77,10 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return UpdateCartItemSerializer
         return CartItemSerializer
 
-        CreateOrderSerializer,
     def get_serializer_context(self):
         if getattr(self, 'swagger_fake_view', False):
             return {}
         return {"cart_id": self.kwargs["cart_pk"]}
-
-
-# =========================
-# DELETE CART
-# =========================
-        http_method_names = ['get', 'post', 'delete', 'patch', 'head', 'options']
-        permission_classes = [IsAdminOrSelfOrReadOnly]
-    permission_classes = [IsAdminOrSelfOrReadOnly]
-
-    def delete(self, request, *args, **kwargs):
-        cart = get_object_or_404(Cart, client=request.user)
-        cart.delete()
-        return Response(
-            {"message": "Cart deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT,
-        )
 
 
 # =========================

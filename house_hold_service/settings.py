@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-4lr!q6(&f6%*y-5&odndzpfo$y8ze9j01#y0@hzm=lp=ny$nm*"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True  # Set to False in production
 
 # ALLOWED_HOSTS = [".vercel.app", "localhost", "127.0.0.1"]
 ALLOWED_HOSTS = ['*']  # Allow all hosts for development, restrict in production
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "drf_yasg",
     "accounts",
     "services",
@@ -97,20 +98,22 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
 
-# Use the Render PostgreSQL external link for production
+# Local Development: Use SQLite
 DATABASES = {
-    'default': dj_database_url.parse(
-        'postgresql://homecrew_user:wtxA7uqjZp5ATD85gKwukcYK687uiZof@dpg-d6gpp6pdrdic738k2jng-a.oregon-postgres.render.com/homecrew',
-        conn_max_age=600
-    )
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
 }
+
+# Production: Use PostgreSQL (uncomment when deploying)
+# DATABASES = {
+#     'default': dj_database_url.parse(
+#         'postgresql://homecrew_user:wtxA7uqjZp5ATD85gKwukcYK687uiZof@dpg-d6gpp6pdrdic738k2jng-a.oregon-postgres.render.com/homecrew',
+#         conn_max_age=600
+#     )
+# }
 
 # DATABASES = {
 #     "default": {
@@ -192,7 +195,7 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
+    'AUTH_HEADER_TYPES': ('Bearer',),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
 }
 
@@ -201,6 +204,10 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
+    'SEND_CONFIRMATION_EMAIL': False,
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': False,
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION': False,
+    'USER_CREATE_PASSWORD_RETYPE': False,
     'SERIALIZERS': {
         'user_create': 'accounts.serializers.UserCreateSerializer',
         'current_user': 'accounts.serializers.UserSerializer',
@@ -208,6 +215,12 @@ DJOSER = {
     'PERMISSIONS': {
         'user_create': ['rest_framework.permissions.AllowAny'],
     },
+    'EMAIL': {
+        'activation': 'accounts.email.ActivationEmail',
+    },
+    'DOMAIN': 'localhost:5175',
+    'SITE_NAME': 'HomeCrew',
+    'PROTOCOL': 'http',
 }
 
 SWAGGER_SETTINGS = {
@@ -220,6 +233,8 @@ SWAGGER_SETTINGS = {
       }
    }
 }
+# Email Configuration
+# Use SMTP backend for both development and production to send real emails
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -239,3 +254,27 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='rifatrizviofficial001@gmail.com')
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]

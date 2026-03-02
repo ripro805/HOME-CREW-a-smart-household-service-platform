@@ -76,30 +76,52 @@ class RegisterView(APIView):
 	"""
 	User Registration Endpoint
 	Features:
-	1. Accepts username, password, and email.
-	2. Validates uniqueness of username.
-	3. Creates new user and authentication token.
+	1. Accepts email, password, first_name, last_name, and optional fields.
+	2. Validates uniqueness of email.
+	3. Creates new user with 'client' role.
 	4. Returns registration success or error message.
 	"""
 	permission_classes = [AllowAny]
 
 	def post(self, request):
-		username = request.data.get('username')
-		password = request.data.get('password')
 		email = request.data.get('email')
-		if not username or not password:
-			return Response({'error': 'Username and password required'}, status=status.HTTP_400_BAD_REQUEST)
-		if User.objects.filter(username=username).exists():
-			return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
-		user = User.objects.create_user(username=username, password=password, email=email)
-		Token.objects.create(user=user)
-		return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+		password = request.data.get('password')
+		first_name = request.data.get('first_name', '')
+		last_name = request.data.get('last_name', '')
+		phone_number = request.data.get('phone_number', '')
+		address = request.data.get('address', '')
+		
+		if not email or not password:
+			return Response({'error': 'Email and password required'}, status=status.HTTP_400_BAD_REQUEST)
+		
+		if User.objects.filter(email=email).exists():
+			return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+		
+		user = User.objects.create_user(
+			email=email, 
+			password=password, 
+			first_name=first_name,
+			last_name=last_name,
+			phone_number=phone_number,
+			address=address,
+			role='client'
+		)
+		
+		return Response({
+			'message': 'User registered successfully',
+			'user': {
+				'id': user.id,
+				'email': user.email,
+				'first_name': user.first_name,
+				'last_name': user.last_name
+			}
+		}, status=status.HTTP_201_CREATED)
 
 class UserLoginView(APIView):
 	"""
 	User Login Endpoint
 	Features:
-	1. Accepts username and password.
+	1. Accepts email and password.
 	2. Authenticates user and returns token.
 	3. Returns user ID and role on success.
 	4. Returns error message on failure.
@@ -107,12 +129,23 @@ class UserLoginView(APIView):
 	permission_classes = [AllowAny]
 
 	def post(self, request):
-		username = request.data.get('username')
+		email = request.data.get('email')
 		password = request.data.get('password')
-		user = authenticate(request, username=username, password=password)
+		
+		if not email or not password:
+			return Response({'error': 'Email and password required'}, status=status.HTTP_400_BAD_REQUEST)
+		
+		# Authenticate using email (USERNAME_FIELD)
+		user = authenticate(request, username=email, password=password)
+		
 		if user is not None:
 			token, created = Token.objects.get_or_create(user=user)
-			return Response({'token': token.key, 'user_id': user.id, 'role': user.role})
+			return Response({
+				'token': token.key, 
+				'user_id': user.id, 
+				'role': user.role,
+				'email': user.email
+			})
 		else:
 			return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
