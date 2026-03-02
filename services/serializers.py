@@ -15,11 +15,9 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         plain URL strings stored by populate_db / migrations."""
         if not obj.image:
             return None
-        # If image value is already a full URL (e.g. stored via populate_db)
         raw = str(obj.image)
         if raw.startswith('http://') or raw.startswith('https://'):
             return raw
-        # For actual uploaded files, let Django/Cloudinary build the URL
         try:
             url = obj.image.url
             if url.startswith('http'):

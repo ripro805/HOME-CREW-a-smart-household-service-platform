@@ -106,7 +106,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
             logger.error("ServiceViewSet.destroy error: %s", str(e), exc_info=True)
             raise
 
-    queryset = Service.objects.select_related('category').all()
+    queryset = Service.objects.select_related('category').order_by('id').all()
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ServiceFilter

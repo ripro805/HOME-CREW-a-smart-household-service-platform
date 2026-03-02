@@ -91,7 +91,22 @@ class SimpleServiceSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         from services.models import ServiceImage
         images = ServiceImage.objects.filter(service=obj)[:3]
-        return [{'id': img.id, 'image': img.image} for img in images]
+        result = []
+        for img in images:
+            raw = str(img.image) if img.image else ''
+            if raw.startswith('http://') or raw.startswith('https://'):
+                url = raw
+            elif img.image:
+                try:
+                    url = img.image.url
+                    if not url.startswith('http'):
+                        url = raw
+                except Exception:
+                    url = raw
+            else:
+                url = ''
+            result.append({'id': img.id, 'image': url})
+        return result
     
     def get_category(self, obj):
         if obj.category:
