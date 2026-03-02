@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from api.permissions import IsAdminOrSelfOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, Review, ServiceCategory, ServiceImage
-from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer
+from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer, AdminReviewSerializer
 from django.db import models
 from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer
 from .filters import ServiceFilter, ReviewFilter
@@ -208,14 +208,8 @@ class ServicesSortedByRatingView(generics.ListAPIView):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """
-    Review Management Endpoint
-    Features:
-    1. Admins can manage all reviews.
-    2. Clients can create reviews for services.
-    3. Supports filtering, searching, and ordering by rating/date.
-    4. Returns review details including rating, comment, and timestamps.
+    Review Management Endpoint (nested under /services/{id}/reviews/)
     """
-    
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAdminOrSelfOrReadOnly]
@@ -223,6 +217,26 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_class = ReviewFilter
     search_fields = ['comment']
     ordering_fields = ['rating', 'created_at']
+
     def perform_create(self, serializer):
         service_id = self.kwargs['service_pk']
         serializer.save(client=self.request.user, service_id=service_id)
+
+
+class AdminReviewViewSet(viewsets.ModelViewSet):
+    """
+    Admin-only flat reviews endpoint: GET /api/v1/reviews/
+    Allows listing all reviews and deleting any review.
+    """
+    serializer_class = AdminReviewSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'delete', 'head', 'options']
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['comment', 'service__name', 'client__email']
+    ordering_fields = ['rating', 'created_at']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        if not (self.request.user.is_authenticated and getattr(self.request.user, 'role', '') == 'admin'):
+            return Review.objects.none()
+        return Review.objects.select_related('service', 'client').order_by('-created_at')

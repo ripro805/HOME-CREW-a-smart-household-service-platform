@@ -45,3 +45,12 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ["id", "service", "client", "rating", "comment", "created_at"]
+
+
+class AdminReviewSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    client_email = serializers.EmailField(source='client.email', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ["id", "service", "service_name", "client", "client_email", "rating", "comment", "created_at"]
