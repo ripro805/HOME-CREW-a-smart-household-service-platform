@@ -1084,6 +1084,13 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) 
         <span className="brand-icon">🏠</span>
         <span className="brand-text">HomeCrew <sup>Admin</sup></span>
       </div>
+      <button
+        className="nav-pill nav-home-btn"
+        title="View public home page"
+        onClick={() => window.open('/preview-home', '_blank')}
+      >
+        🌐 <span>Home Page</span>
+      </button>
 
       <div className="nav-search" ref={searchRef}>
         <span className="search-icon-nav">🔍</span>

@@ -34,6 +34,13 @@ function AppContent() {
     return (
       <Routes>
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        {/* Preview home page — opened in new tab from admin navbar */}
+        <Route path="/preview-home" element={
+          <div className="app">
+            <Navbar />
+            <main className="main-content"><Home /></main>
+          </div>
+        } />
         <Route path="*" element={<Navigate to="/admin-dashboard" replace />} />
       </Routes>
     );

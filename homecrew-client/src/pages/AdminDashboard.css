@@ -165,6 +165,13 @@
   position: relative;
 }
 .nav-pill:hover { border-color: var(--accent); color: var(--accent); }
+.nav-home-btn {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+  font-weight: 600;
+}
+.nav-home-btn:hover { background: #0369a1; color: #fff; border-color: #0369a1; }
 .avatar-pill { gap: 0.45rem; }
 
 .notif-dot {
