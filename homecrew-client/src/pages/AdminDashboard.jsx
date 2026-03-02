@@ -375,55 +375,66 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [data, setData] = useState({ orders: [], services: [], users: [], categories: [] });
   const [loading, setLoading] = useState(true);
+  const [fetchErrors, setFetchErrors] = useState([]);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     fetchAll();
   }, [isAdmin]);
 
-  // Fetch all pages of a paginated endpoint
+  // Fetch all pages of a paginated DRF endpoint; handles flat arrays too
   const fetchAllPages = async (url) => {
     let results = [];
     let next = url;
     while (next) {
-      // For relative URLs keep as-is; axios baseURL handles it
-      const res = await api.get(next.includes('://') ? next : next.replace(/.*\/api\/v1/, ''));
-      const data = res.data;
-      if (Array.isArray(data)) {
-        results = results.concat(data);
-        break;
-      }
-      results = results.concat(data.results || []);
-      next = data.next || null;
+      const requestUrl = next.includes('://') ? next : next;
+      const res = await api.get(requestUrl);
+      const d = res.data;
+      if (Array.isArray(d)) { results = results.concat(d); break; }
+      results = results.concat(d.results ?? []);
+      // next is an absolute URL from DRF — pass directly to axios
+      next = d.next ?? null;
     }
     return results;
   };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    try {
-      const [orders, services, users, categories] = await Promise.all([
-        fetchAllPages('/orders/'),
-        fetchAllPages('/services/?page_size=100'),
-        fetchAllPages('/accounts/'),
-        fetchAllPages('/categories/'),
-      ]);
-      setData({ orders, services, users, categories });
-    } catch (e) {
-      console.error('Dashboard fetch error:', e);
-    } finally {
-      setLoading(false);
-    }
+    setFetchErrors([]);
+    const [ordersRes, servicesRes, usersRes, catsRes] = await Promise.allSettled([
+      fetchAllPages('/orders/'),
+      fetchAllPages('/services/?page_size=100'),
+      fetchAllPages('/accounts/'),
+      fetchAllPages('/categories/'),
+    ]);
+
+    const errors = [];
+    const safe = (r, key) => {
+      if (r.status === 'fulfilled') return r.value;
+      errors.push(`${key}: ${r.reason?.response?.status || r.reason?.message || 'failed'}`);
+      return [];
+    };
+
+    setData({
+      orders:     safe(ordersRes,   'Orders'),
+      services:   safe(servicesRes, 'Services'),
+      users:      safe(usersRes,    'Users'),
+      categories: safe(catsRes,     'Categories'),
+    });
+    setFetchErrors(errors);
+    setLoading(false);
   }, []);
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await api.patch(`/orders/${orderId}/`, { status: newStatus });
+      await api.patch(`/orders/${orderId}/update_status/`, { status: newStatus });
       setData(prev => ({
         ...prev,
         orders: prev.orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o),
       }));
-    } catch { alert('Failed to update order status'); }
+    } catch (e) {
+      alert('Failed to update order status: ' + (e.response?.data?.detail || e.message));
+    }
   };
 
   if (!isAdmin) return null;
@@ -462,6 +473,12 @@ const AdminDashboard = () => {
             {loading ? 'Loading...' : '🔄 Refresh'}
           </button>
         </div>
+
+        {fetchErrors.length > 0 && (
+          <div className="form-msg msg-err" style={{ marginBottom: '1rem' }}>
+            ⚠️ Some data failed to load: {fetchErrors.join(' | ')}
+          </div>
+        )}
 
         {loading ? (
           <div className="admin-loading">
