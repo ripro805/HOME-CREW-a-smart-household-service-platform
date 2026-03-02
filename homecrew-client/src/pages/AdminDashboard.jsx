@@ -107,31 +107,63 @@ const OrdersTab = ({ orders, onStatusChange }) => {
 
 // ─── SERVICES TAB ──────────────────────────────────────────────────────────
 const ServicesTab = ({ services, categories, onRefresh }) => {
-  const empty = { name: '', description: '', price: '', category: '', image_url: '' };
-  const [form, setForm] = useState(empty);
+  const emptyForm = { name: '', description: '', price: '', category: '' };
+  const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [currentImage, setCurrentImage] = useState(''); // existing image when editing
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [msg, setMsg] = useState({ text: '', ok: true });
+  const [saving, setSaving] = useState(false);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview('');
+    setCurrentImage('');
+    setEditId(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
-      const payload = { name: form.name, description: form.description, price: parseFloat(form.price), category_id: form.category || null };
+      const payload = {
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price),
+        category_id: form.category || null,
+      };
       let res;
       if (editId) {
         res = await api.patch(`/services/${editId}/`, payload);
       } else {
         res = await api.post('/services/', payload);
       }
-      // Handle image URL — POST to nested images endpoint
-      if (form.image_url.trim()) {
+      // Upload image file if selected
+      if (imageFile) {
         const serviceId = editId || res.data.id;
-        await api.post(`/services/${serviceId}/images/`, { image: form.image_url.trim() });
+        const fd = new FormData();
+        fd.append('image', imageFile);
+        await api.post(`/services/${serviceId}/images/`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
       }
       setMsg({ text: editId ? 'Service updated!' : 'Service created!', ok: true });
-      setForm(empty); setEditId(null); onRefresh();
+      resetForm();
+      onRefresh();
     } catch (err) {
       setMsg({ text: 'Error: ' + JSON.stringify(err.response?.data || err.message), ok: false });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -142,16 +174,23 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
       description: svc.description,
       price: svc.price,
       category: svc.category?.id || svc.category || '',
-      image_url: svc.images?.[0]?.image || '',
     });
+    setImageFile(null);
+    setImagePreview('');
+    setCurrentImage(svc.images?.[0]?.image || '');
     window.scrollTo(0, 0);
   };
 
   const handleDelete = async () => {
     try {
       await api.delete(`/services/${deleteId}/`);
-      setDeleteId(null); setMsg({ text: 'Service deleted.', ok: true }); onRefresh();
-    } catch { setMsg({ text: 'Delete failed.', ok: false }); setDeleteId(null); }
+      setDeleteId(null);
+      setMsg({ text: 'Service deleted.', ok: true });
+      onRefresh();
+    } catch {
+      setMsg({ text: 'Delete failed.', ok: false });
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -174,20 +213,24 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
           </div>
           <div className="form-group"><label>Description *</label><textarea rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} required /></div>
           <div className="form-group">
-            <label>Image URL</label>
-            <input
-              type="url"
-              placeholder="https://example.com/image.jpg"
-              value={form.image_url}
-              onChange={e => setForm({...form, image_url: e.target.value})}
-            />
-            {form.image_url && (
-              <img src={form.image_url} alt="preview" style={{ marginTop: 6, maxHeight: 80, borderRadius: 6, objectFit: 'cover' }} />
+            <label>Image {editId ? '(leave empty to keep current)' : ''}</label>
+            <input type="file" accept="image/*" onChange={handleImageChange} style={{ padding: '4px 0' }} />
+            {/* Preview: new file takes priority, else show current saved image */}
+            {(imagePreview || currentImage) && (
+              <div className="img-preview-wrap">
+                <img
+                  src={imagePreview || currentImage}
+                  alt="preview"
+                  className="img-preview"
+                />
+                {imagePreview && <span className="img-preview-label">New image selected</span>}
+                {!imagePreview && currentImage && <span className="img-preview-label">Current image</span>}
+              </div>
             )}
           </div>
           <div className="form-actions">
-            <button type="submit" className="btn-primary">{editId ? 'Update Service' : 'Create Service'}</button>
-            {editId && <button type="button" className="btn-secondary" onClick={() => { setEditId(null); setForm(empty); }}>Cancel</button>}
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editId ? 'Update Service' : 'Create Service'}</button>
+            {editId && <button type="button" className="btn-secondary" onClick={resetForm}>Cancel</button>}
           </div>
         </form>
       </div>
