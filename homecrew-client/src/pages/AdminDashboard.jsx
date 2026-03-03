@@ -1259,9 +1259,9 @@ const PaymentsTab = ({ orders }) => {
       {/* ── Revenue Chart ── */}
       <div className="charts-row">
         <div className="chart-card wide">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <ChartBarIcon className="w-5 h-5 text-gray-500" />
+              <ChartBarIcon className="w-5 h-5 text-teal-600" />
               <h4 className="chart-title">Revenue – Last 14 Days</h4>
             </div>
             <div className="flex gap-4 text-xs text-gray-500">
@@ -1270,7 +1270,68 @@ const PaymentsTab = ({ orders }) => {
               <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400"/>{failedCount} failed</span>
             </div>
           </div>
-          <BarChart data={revenueByDay} height={150} />
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={revenueByDay} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="payRevGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#14b8a6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis
+                dataKey="l"
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                interval={1}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => v === 0 ? '0' : `৳${v >= 1000 ? (v/1000).toFixed(1)+'k' : v}`}
+                width={52}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', fontSize: 12 }}
+                formatter={(value) => [`৳${Number(value).toLocaleString()}`, 'Revenue']}
+                labelStyle={{ color: '#374151', fontWeight: 600 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="v"
+                name="Revenue"
+                stroke="#14b8a6"
+                strokeWidth={2.5}
+                fill="url(#payRevGrad)"
+                dot={{ r: 3, fill: '#14b8a6', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#0d9488', strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {/* Bar chart below for daily comparison */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-400 font-medium mb-3 uppercase tracking-wide">Daily Breakdown</p>
+            <ResponsiveContainer width="100%" height={100}>
+              <RechartsBarChart data={revenueByDay} margin={{ top: 0, right: 10, left: 0, bottom: 0 }} barSize={14}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
+                <XAxis dataKey="l" tick={{ fontSize: 10, fill: '#d1d5db' }} axisLine={false} tickLine={false} interval={1} />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', fontSize: 11 }}
+                  formatter={(value) => [`৳${Number(value).toLocaleString()}`, 'Revenue']}
+                  labelStyle={{ color: '#374151', fontWeight: 600 }}
+                />
+                <Bar dataKey="v" name="Revenue" radius={[4, 4, 0, 0]}>
+                  {revenueByDay.map((entry, index) => (
+                    <Cell key={index} fill={entry.v > 0 ? '#14b8a6' : '#e5e7eb'} />
+                  ))}
+                </Bar>
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
