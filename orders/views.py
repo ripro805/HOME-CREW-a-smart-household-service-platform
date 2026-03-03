@@ -8,6 +8,7 @@ from .models import Cart, CartItem, Order, OrderItem, Service
 from rest_framework.decorators import api_view, permission_classes
 from sslcommerz_lib import SSLCOMMERZ 
 from .service import OrderService
+from . import emails as order_emails
 from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
 
@@ -157,7 +158,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         if order.status in [order.SHIPPED, order.DELIVERED]:
             return Response({'detail': 'Cannot cancel an order that is already ongoing or delivered.'}, status=status.HTTP_400_BAD_REQUEST)
+        old_status = order.status
         OrderService.cancel_order(order=order, user=request.user)
+        order.refresh_from_db()
+        order_emails.send_order_status_email(order, old_status)
         return Response({'status': 'Order canceled'})
 
     @action(detail=True, methods=['patch'])
@@ -166,9 +170,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         new_status = request.data.get('status')
         if new_status == order.CANCELLED and order.status in [order.SHIPPED, order.DELIVERED]:
             return Response({'detail': 'Cannot cancel an order that is already ongoing or delivered.'}, status=status.HTTP_400_BAD_REQUEST)
+        old_status = order.status
         serializer = UpdateOrderSerializer(order, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        order.refresh_from_db()
+        if order.status != old_status:
+            order_emails.send_order_status_email(order, old_status)
         return Response({'status': f"Order status updated to {new_status}"})
 
     @swagger_auto_schema(
@@ -560,7 +568,7 @@ def payment_success_callback(request):
             order.status = Order.READY_TO_SHIP
             order.save()
             print(f"Order {order_id} status updated to READY_TO_SHIP")
-            
+            order_emails.send_payment_success_email(order)
             # Redirect to frontend success page
             return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
         else:
@@ -581,6 +589,7 @@ def payment_success_callback(request):
                     order.status = Order.READY_TO_SHIP
                     order.save()
                     print(f"Order {order_id} validated and updated via API")
+                    order_emails.send_payment_success_email(order)
                     return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
             except Exception as validation_error:
                 print(f"Validation API error: {str(validation_error)}")
@@ -589,6 +598,7 @@ def payment_success_callback(request):
                     print(f"Sandbox mode: Updating order anyway")
                     order.status = Order.READY_TO_SHIP
                     order.save()
+                    order_emails.send_payment_success_email(order)
                     return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
             
             print(f"Payment validation failed for order {order_id}")
@@ -612,8 +622,13 @@ def payment_fail_callback(request):
     frontend_url = get_frontend_url()
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
-    
+
     if order_id:
+        try:
+            order = Order.objects.prefetch_related('items__service').get(id=order_id)
+            order_emails.send_payment_fail_email(order)
+        except Order.DoesNotExist:
+            pass
         return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id}')
     return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
 
@@ -628,8 +643,13 @@ def payment_cancel_callback(request):
     frontend_url = get_frontend_url()
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
-    
+
     if order_id:
+        try:
+            order = Order.objects.prefetch_related('items__service').get(id=order_id)
+            order_emails.send_payment_fail_email(order)
+        except Order.DoesNotExist:
+            pass
         return HttpResponseRedirect(f'{frontend_url}/payment/cancel/{order_id}')
     return HttpResponseRedirect(f'{frontend_url}/payment/cancel/')
 
@@ -648,10 +668,11 @@ def payment_ipn_listener(request):
     
     if order_id and status_code in ['VALID', 'VALIDATED']:
         try:
-            order = Order.objects.get(id=order_id)
+            order = Order.objects.prefetch_related('items__service').get(id=order_id)
             if order.status == Order.NOT_PAID:
                 order.status = Order.READY_TO_SHIP
                 order.save()
+                order_emails.send_payment_success_email(order)
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except Order.DoesNotExist:
             pass
