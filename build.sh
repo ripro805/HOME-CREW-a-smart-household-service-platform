@@ -9,7 +9,7 @@ pip install -r requirements.txt
 # Since Django and React are on the same domain on Render, /api/v1 works as a relative URL.
 # Locally VITE_API_URL falls back to http://localhost:8000/api/v1 in axios.js
 echo "Building React frontend..."
-cd homecrew-client && npm install && VITE_API_URL="/api/v1" npm run build
+cd homecrew-client && npm install && VITE_API_URL="https://home-crew-a-smart-household-service-hv7v.onrender.com/api/v1" npm run build
 cd ..
 echo "React build complete."
 
