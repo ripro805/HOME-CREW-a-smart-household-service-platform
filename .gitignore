@@ -51,6 +51,10 @@ Thumbs.db
 static/
 staticfiles/
 
+# Deployment docs (keep private)
+RENDER_DEPLOYMENT.md
+DEPLOYMENT_CHECKLIST.md
+
 # Test and coverage
 .coverage
 htmlcov/
