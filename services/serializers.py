@@ -36,9 +36,14 @@ class ServiceSerializer(serializers.ModelSerializer):
     images = ServiceImageSerializer(many=True, read_only=True)
     category = ServiceCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(queryset=ServiceCategory.objects.all(), source="category", write_only=True)
+    review_count = serializers.SerializerMethodField()
+    
+    def get_review_count(self, obj):
+        return obj.reviews.count()
+    
     class Meta:
         model = Service
-        fields = ["id", "name", "description", "price", "avg_rating", "category", "category_id", "images"]
+        fields = ["id", "name", "description", "price", "avg_rating", "review_count", "category", "category_id", "images"]
         
 
 class ReviewSerializer(serializers.ModelSerializer):

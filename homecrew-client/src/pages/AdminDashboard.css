@@ -21,7 +21,7 @@
 }
 
 .pill.active {
-  @apply bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700;
+  @apply bg-teal-600 text-white border-teal-600 hover:bg-teal-700;
 }
 
 /* ─── STATS GRID ───────────────────────────────────────────────────────── */
@@ -50,7 +50,7 @@
 }
 
 .stat-card.c-purple {
-  @apply bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200;
+  @apply bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200;
 }
 
 .stat-card.c-teal {
@@ -62,11 +62,11 @@
 }
 
 .stat-card.c-indigo {
-  @apply bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200;
+  @apply bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200;
 }
 
 .stat-card.c-pink {
-  @apply bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200;
+  @apply bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200;
 }
 
 .stat-icon {
@@ -178,7 +178,7 @@
 }
 
 .btn-primary {
-  @apply bg-indigo-600 text-white hover:bg-indigo-700;
+  @apply bg-teal-600 text-white hover:bg-teal-700;
 }
 
 .btn-danger {
@@ -207,7 +207,7 @@
 }
 
 .sub-tab.active {
-  @apply bg-indigo-100 text-indigo-700;
+  @apply bg-teal-100 text-teal-700;
 }
 
 .sub-badge {
@@ -215,7 +215,7 @@
 }
 
 .sub-tab.active .sub-badge {
-  @apply bg-indigo-600 text-white;
+  @apply bg-teal-600 text-white;
 }
 
 /* ─── TOOLBAR ──────────────────────────────────────────────────────────── */
@@ -224,7 +224,7 @@
 }
 
 .search-box {
-  @apply flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none;
+  @apply flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none;
 }
 
 /* ─── STATUS SELECT ────────────────────────────────────────────────────── */
@@ -251,7 +251,7 @@
 }
 
 .badge.st-shipped {
-  @apply bg-purple-100 text-purple-700 border-purple-200;
+  @apply bg-cyan-100 text-cyan-700 border-cyan-200;
 }
 
 .badge.st-delivered {
@@ -313,7 +313,7 @@
 }
 
 .note-input-row input {
-  @apply flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none;
+  @apply flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none;
 }
 
 /* ─── REVIEWS ──────────────────────────────────────────────────────────── */
@@ -362,11 +362,11 @@
 }
 
 .count-badge {
-  @apply ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full;
+  @apply ml-2 px-2 py-1 bg-teal-100 text-teal-700 text-xs font-semibold rounded-full;
 }
 
 .filter-sel {
-  @apply px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white;
+  @apply px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white;
 }
 
 .filter-sel.sm {
@@ -399,7 +399,7 @@
 }
 
 .ticket-item.active {
-  @apply bg-indigo-50 border-l-4 border-l-indigo-600;
+  @apply bg-teal-50 border-l-4 border-l-teal-600;
 }
 
 .ticket-item.priority-high {
@@ -463,7 +463,7 @@
 }
 
 .chat-msg.admin-msg {
-  @apply bg-indigo-50 border border-indigo-200;
+  @apply bg-teal-50 border border-teal-200;
 }
 
 .chat-msg.user-msg {
@@ -483,7 +483,7 @@
 }
 
 .chat-input textarea {
-  @apply flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none;
+  @apply flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none resize-none;
 }
 
 .empty-chat {
@@ -517,7 +517,7 @@
 
 .form-group input,
 .form-group select {
-  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none;
+  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none;
 }
 
 .toggles-row {
@@ -529,7 +529,7 @@
 }
 
 .toggle-label input[type="checkbox"] {
-  @apply w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500;
+  @apply w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500;
 }
 
 .form-actions {
@@ -554,7 +554,7 @@
 }
 
 .brand-text sup {
-  @apply text-xs font-normal text-indigo-600;
+  @apply text-xs font-normal text-teal-600;
 }
 
 .nav-search {
@@ -566,7 +566,7 @@
 }
 
 .nav-search-input {
-  @apply w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none;
+  @apply w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none;
 }
 
 .search-results-dropdown {
@@ -590,7 +590,7 @@
 }
 
 .result-user {
-  @apply bg-purple-100 text-purple-700;
+  @apply bg-cyan-100 text-cyan-700;
 }
 
 .nav-actions {
@@ -646,7 +646,7 @@
 }
 
 .nav-avatar-circle {
-  @apply w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold;
+  @apply w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-semibold;
 }
 
 .nav-username {
@@ -699,7 +699,7 @@
 }
 
 .sidebar-item.active {
-  @apply bg-indigo-100 text-indigo-700;
+  @apply bg-teal-100 text-teal-700;
 }
 
 .item-icon {

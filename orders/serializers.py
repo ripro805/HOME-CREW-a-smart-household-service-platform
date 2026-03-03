@@ -156,10 +156,12 @@ class OrderSerializer(serializers.ModelSerializer):
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     client_email = serializers.SerializerMethodField()
     client_name = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+    can_pay = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'client', 'client_email', 'client_name', 'status', 'items', 'total_price', 'created_at']
+        fields = ['id', 'client', 'client_email', 'client_name', 'status', 'items', 'total_price', 'created_at', 'payment_status', 'can_pay']
 
     def get_client_email(self, obj):
         return obj.client.email if obj.client else None
@@ -168,3 +170,14 @@ class OrderSerializer(serializers.ModelSerializer):
         if obj.client:
             return obj.client.get_full_name() or obj.client.email
         return None
+    
+    def get_payment_status(self, obj):
+        """Return human-readable payment status"""
+        if obj.status == Order.NOT_PAID:
+            return 'Pending Payment'
+        else:
+            return 'Paid'
+    
+    def get_can_pay(self, obj):
+        """Return True if order can be paid (status is NOT_PAID)"""
+        return obj.status == Order.NOT_PAID

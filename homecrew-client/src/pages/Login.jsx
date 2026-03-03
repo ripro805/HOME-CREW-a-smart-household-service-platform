@@ -31,7 +31,7 @@ const Login = () => {
     setLoading(false);
   };
 
-  const inputCls = "w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition";
+  const inputCls = "w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition";
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
@@ -52,14 +52,14 @@ const Login = () => {
             <input type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="Enter your password" className={inputCls} />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors mt-2">
+            className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors mt-2">
             {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-5">
           Don't have an account?{' '}
-          <Link to="/register" className="text-indigo-600 font-semibold hover:underline">Register here</Link>
+          <Link to="/register" className="text-teal-600 font-semibold hover:underline">Register here</Link>
         </p>
       </div>
     </div>

@@ -20,9 +20,9 @@ from django.db import models
 from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer
 from .filters import ServiceFilter, ReviewFilter
 from .pagination import ServiceResultsSetPagination
+from drf_yasg.utils import swagger_auto_schema
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    from drf_yasg.utils import swagger_auto_schema
 
     @swagger_auto_schema(operation_description="""
     Service Listing & Management Endpoint

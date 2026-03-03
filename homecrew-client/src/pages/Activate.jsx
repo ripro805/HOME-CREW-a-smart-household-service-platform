@@ -34,7 +34,7 @@ const Activate = () => {
         
         {status === 'loading' && (
           <div className="text-center py-6">
-            <div className="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+            <div className="inline-block w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
             <p className="text-gray-600">{message}</p>
           </div>
         )}
@@ -54,7 +54,7 @@ const Activate = () => {
               <XCircleIcon className="w-10 h-10" />
             </div>
             <p className="text-gray-600 mb-6">{message}</p>
-            <button onClick={() => navigate('/register')} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors">
+            <button onClick={() => navigate('/register')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
               Try Register Again
             </button>
           </div>

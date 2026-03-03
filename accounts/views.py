@@ -6,11 +6,11 @@ from api.permissions import IsAdminOrSelfOrReadOnly
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from .models import User, ClientProfile
-## Removed import of UserSerializer, ClientProfileSerializer (no longer exist)
+from .serializers import UserSerializer
 from rest_framework.decorators import api_view
+from drf_yasg.utils import swagger_auto_schema
 
 class UserViewSet(viewsets.ModelViewSet):
-	from drf_yasg.utils import swagger_auto_schema
 
 	@swagger_auto_schema(operation_description="""
 	User Management Endpoint
@@ -61,7 +61,6 @@ class UserViewSet(viewsets.ModelViewSet):
 		return super().destroy(request, *args, **kwargs)
 
 	queryset = User.objects.all()
-	from .serializers import UserSerializer
 	serializer_class = UserSerializer
 
 	def get_permissions(self):

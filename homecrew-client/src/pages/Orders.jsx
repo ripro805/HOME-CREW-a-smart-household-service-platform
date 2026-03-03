@@ -62,7 +62,7 @@ const Orders = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">No orders yet</h2>
           <p className="text-gray-600 mb-4">Start shopping to create your first order!</p>
-          <button onClick={() => navigate('/services')} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors">
+          <button onClick={() => navigate('/services')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
             Browse Services
           </button>
         </div>
@@ -74,8 +74,8 @@ const Orders = () => {
     const baseClass = "px-3 py-1 rounded-full text-xs font-semibold";
     const statusColors = {
       'NOT_PAID': 'bg-orange-100 text-orange-700',
-      'READY_TO_SHIP': 'bg-blue-100 text-blue-700',
-      'SHIPPED': 'bg-purple-100 text-purple-700',
+      'READY_TO_SHIP': 'bg-navy-100 text-navy-700',
+      'SHIPPED': 'bg-cyan-100 text-cyan-700',
       'DELIVERED': 'bg-green-100 text-green-700',
       'CANCELLED': 'bg-red-100 text-red-700',
     };
@@ -127,10 +127,10 @@ const Orders = () => {
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                 <span className="font-semibold text-gray-700">Total:</span>
-                <span className="text-xl font-bold text-indigo-600">৳{Math.round(parseFloat(order.total_price))}</span>
+                <span className="text-xl font-bold text-teal-600">৳{Math.round(parseFloat(order.total_price))}</span>
               </div>
 
-              <div className="text-right text-indigo-600 font-semibold text-sm mt-3">
+              <div className="text-right text-teal-600 font-semibold text-sm mt-3">
                 View Details →
               </div>
             </div>
