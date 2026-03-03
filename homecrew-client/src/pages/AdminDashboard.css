@@ -793,6 +793,55 @@
   font-size: 9px;
 }
 
+.sidebar-item-danger {
+  @apply text-red-600 hover:bg-red-50;
+}
+
+/* ─── SIDEBAR USER INFO ────────────────────────────────────────────────── */
+.sidebar-user-info {
+  @apply flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-teal-50;
+}
+
+.sidebar-avatar {
+  @apply w-10 h-10 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold text-base flex-shrink-0;
+}
+
+.sidebar-user-text {
+  @apply min-w-0;
+}
+
+.sidebar-user-name {
+  @apply font-semibold text-gray-800 truncate text-sm;
+}
+
+.sidebar-user-email {
+  @apply text-xs text-gray-400 truncate;
+}
+
+.sidebar-bottom {
+  @apply px-4 pb-4;
+}
+
+.sidebar-divider {
+  @apply border-t border-gray-100 my-2;
+}
+
+.sidebar-notif-list {
+  @apply mx-2 mb-1 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden;
+}
+
+.sidebar-notif-item {
+  @apply flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0;
+}
+
+.sidebar-notif-icon {
+  @apply text-base flex-shrink-0 mt-0.5;
+}
+
+.sidebar-notif-text {
+  @apply text-xs text-gray-700 leading-snug;
+}
+
 /* ─── UTILITIES ────────────────────────────────────────────────────────── */
 .empty {
   @apply text-gray-400 italic text-center py-4;
@@ -805,7 +854,7 @@
   @apply hidden;
 }
 
-/* Tablet (640px – 1023px): sidebar as slide-in drawer */
+/* Tablet + Mobile (< 1024px): sidebar as slide-in drawer */
 @media (max-width: 1023px) {
   .admin-sidebar {
     position: fixed;
@@ -816,38 +865,33 @@
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+    display: flex !important;
+    flex-direction: column;
+    overflow-y: auto;
   }
 
   .admin-root.mobile-sidebar-open .admin-sidebar {
     transform: translateX(0);
   }
 
-  /* On tablet, sidebar-collapsed class has no effect (drawer controls it) */
+  /* sidebar-collapsed class has no effect on mobile (drawer controls it) */
   .admin-root.sidebar-collapsed .admin-sidebar {
-    display: block;
+    display: flex !important;
   }
-}
 
-/* Mobile (< 640px): hide sidebar drawer entirely, show bottom nav */
-@media (max-width: 639px) {
-  .admin-sidebar {
+  .nav-actions-desktop {
     display: none !important;
-  }
-
-  .mobile-overlay {
-    display: none;
-  }
-
-  .mobile-bottom-nav {
-    display: flex;
-  }
-
-  .admin-root .main-content {
-    padding-bottom: 72px;
   }
 
   .nav-search {
     display: none;
+  }
+}
+
+/* Mobile (< 640px) extra tweaks */
+@media (max-width: 639px) {
+  .admin-root .main-content {
+    @apply p-3;
   }
 
   .nav-brand .brand-text {

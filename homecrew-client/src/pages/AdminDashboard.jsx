@@ -2258,7 +2258,7 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user, on
         )}
       </div>
 
-      <div className="nav-actions">
+      <div className="nav-actions nav-actions-desktop">
         <button
           className="nav-pill nav-home-btn"
           title="View public home page"
@@ -2341,7 +2341,9 @@ const SIDEBAR_ITEMS = [
   { key:'settings',   icon: CogIcon, label:'Settings' },
 ];
 
-const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, onClose }) => {
+const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, onClose, user, notifs, unreadNotifs, onLogout, navigate, setActiveTabNav }) => {
+  const [showNotifList, setShowNotifList] = useState(false);
+
   const badges = {
     orders:  orders.filter(o => o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id)).length || null,
     support: (seenIds.support ? 0 : 2) || null,
@@ -2356,7 +2358,19 @@ const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, o
 
   return (
     <aside className="admin-sidebar">
-      <nav className="sidebar-nav" style={{paddingTop:'12px'}}>
+      {/* User info strip */}
+      {user && (
+        <div className="sidebar-user-info">
+          <div className="sidebar-avatar">{(user.first_name||'A')[0].toUpperCase()}</div>
+          <div className="sidebar-user-text">
+            <p className="sidebar-user-name">{user.first_name ? `${user.first_name} ${user.last_name||''}`.trim() : 'Admin'}</p>
+            <p className="sidebar-user-email">{user.email}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Nav items */}
+      <nav className="sidebar-nav" style={{paddingTop:'8px'}}>
         {SIDEBAR_ITEMS.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
@@ -2369,38 +2383,55 @@ const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, o
           </button>
         ))}
       </nav>
-    </aside>
-  );
-};
 
-// ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────────────
-const MOBILE_NAV_ITEMS = [
-  { key:'dashboard',  icon: ChartBarIcon,          label:'Home' },
-  { key:'orders',     icon: ShoppingBagIcon,        label:'Orders' },
-  { key:'services',   icon: WrenchScrewdriverIcon,  label:'Services' },
-  { key:'payments',   icon: CreditCardIcon,         label:'Payments' },
-  { key:'users',      icon: UsersIcon,              label:'Users' },
-];
-const MobileBottomNav = ({ active, setActive, orders, seenIds, markSeen }) => {
-  const pendingOrders = orders.filter(o => o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id)).length;
-  return (
-    <nav className="mobile-bottom-nav">
-      {MOBILE_NAV_ITEMS.map(({ key, icon: Icon, label }) => (
-        <button
-          key={key}
-          className={`mobile-nav-item ${active===key ? 'active' : ''}`}
-          onClick={() => { markSeen(key); setActive(key); }}
-        >
-          <div className="relative">
-            <Icon className="w-6 h-6" />
-            {key==='orders' && pendingOrders > 0 && (
-              <span className="mobile-nav-badge">{pendingOrders}</span>
-            )}
-          </div>
-          <span>{label}</span>
+      {/* Bottom section: Home, Notifications, Logout */}
+      <div className="sidebar-bottom">
+        <div className="sidebar-divider" />
+
+        {/* Home */}
+        <button className="sidebar-item" onClick={() => { navigate('/preview-home'); onClose?.(); }}>
+          <HomeIcon className="w-5 h-5" />
+          <span className="item-label">View Website</span>
         </button>
-      ))}
-    </nav>
+
+        {/* Notifications */}
+        <button className="sidebar-item" onClick={() => setShowNotifList(p => !p)}>
+          <BellIcon className="w-5 h-5" />
+          <span className="item-label">Notifications</span>
+          {unreadNotifs?.length > 0 && <span className="item-badge">{unreadNotifs.length}</span>}
+        </button>
+        {showNotifList && notifs?.length > 0 && (
+          <div className="sidebar-notif-list">
+            {notifs.slice(0,4).map((n,i) => (
+              <div key={i} className="sidebar-notif-item" onClick={() => { setActive(n.tab); onClose?.(); }}>
+                <span className="sidebar-notif-icon">{n.icon}</span>
+                <span className="sidebar-notif-text">{n.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Profile */}
+        <button className="sidebar-item" onClick={() => { handleClick('profile'); }}>
+          <UserCircleIcon className="w-5 h-5" />
+          <span className="item-label">My Profile</span>
+        </button>
+
+        {/* Settings */}
+        <button className="sidebar-item" onClick={() => { handleClick('settings'); }}>
+          <CogIcon className="w-5 h-5" />
+          <span className="item-label">Settings</span>
+        </button>
+
+        <div className="sidebar-divider" />
+
+        {/* Logout */}
+        <button className="sidebar-item sidebar-item-danger" onClick={() => { onLogout(); onClose?.(); }}>
+          <ArrowRightOnRectangleIcon className="w-5 h-5" />
+          <span className="item-label">Logout</span>
+        </button>
+      </div>
+    </aside>
   );
 };
 
@@ -2550,6 +2581,11 @@ const AdminDashboard = () => {
           seenIds={seenIds}
           markSeen={markSeen}
           onClose={() => setMobileOpen(false)}
+          user={user}
+          notifs={data.orders.filter(o=>o.status==='NOT_PAID').slice(0,5).map(o=>({ id:`o-${o.id}`, icon:'📦', text:`Order #${o.id} awaiting payment`, time:fmtD(o.created_at), tab:'orders' }))}
+          unreadNotifs={data.orders.filter(o=>o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id))}
+          onLogout={handleLogout}
+          navigate={navigate}
         />
 
         <main className="flex-1 overflow-auto">
@@ -2597,14 +2633,7 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* Mobile bottom navigation — only on small screens */}
-      <MobileBottomNav
-        active={activeTab}
-        setActive={setActiveTab}
-        orders={data.orders}
-        seenIds={seenIds}
-        markSeen={markSeen}
-      />
+
     </div>
   );
 };
