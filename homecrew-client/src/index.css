@@ -154,46 +154,46 @@
 ───────────────────────────────────────────────────────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.7s cubic-bezier(.22,1,.36,1),
-              transform 0.7s cubic-bezier(.22,1,.36,1);
+  transform: translateY(28px);
+  transition: opacity 0.5s cubic-bezier(.22,1,.36,1),
+              transform 0.5s cubic-bezier(.22,1,.36,1);
   will-change: opacity, transform;
 }
 .reveal.revealed { opacity: 1; transform: none; }
 
 .reveal-left {
   opacity: 0;
-  transform: translateX(-50px);
-  transition: opacity 0.7s cubic-bezier(.22,1,.36,1),
-              transform 0.7s cubic-bezier(.22,1,.36,1);
+  transform: translateX(-36px);
+  transition: opacity 0.5s cubic-bezier(.22,1,.36,1),
+              transform 0.5s cubic-bezier(.22,1,.36,1);
 }
 .reveal-left.revealed { opacity: 1; transform: none; }
 
 .reveal-right {
   opacity: 0;
-  transform: translateX(50px);
-  transition: opacity 0.7s cubic-bezier(.22,1,.36,1),
-              transform 0.7s cubic-bezier(.22,1,.36,1);
+  transform: translateX(36px);
+  transition: opacity 0.5s cubic-bezier(.22,1,.36,1),
+              transform 0.5s cubic-bezier(.22,1,.36,1);
 }
 .reveal-right.revealed { opacity: 1; transform: none; }
 
 .reveal-scale {
   opacity: 0;
-  transform: scale(0.88);
-  transition: opacity 0.6s cubic-bezier(.22,1,.36,1),
-              transform 0.6s cubic-bezier(.22,1,.36,1);
+  transform: scale(0.92);
+  transition: opacity 0.45s cubic-bezier(.22,1,.36,1),
+              transform 0.45s cubic-bezier(.22,1,.36,1);
 }
 .reveal-scale.revealed { opacity: 1; transform: none; }
 
-/* Stagger delays */
-.delay-1  { transition-delay: .1s !important; }
-.delay-2  { transition-delay: .2s !important; }
-.delay-3  { transition-delay: .3s !important; }
-.delay-4  { transition-delay: .4s !important; }
-.delay-5  { transition-delay: .5s !important; }
-.delay-6  { transition-delay: .6s !important; }
-.delay-7  { transition-delay: .7s !important; }
-.delay-8  { transition-delay: .8s !important; }
+/* Stagger delays — kept short so last card never waits more than ~400 ms */
+.delay-1  { transition-delay: .05s !important; }
+.delay-2  { transition-delay: .10s !important; }
+.delay-3  { transition-delay: .15s !important; }
+.delay-4  { transition-delay: .20s !important; }
+.delay-5  { transition-delay: .25s !important; }
+.delay-6  { transition-delay: .30s !important; }
+.delay-7  { transition-delay: .35s !important; }
+.delay-8  { transition-delay: .40s !important; }
 
 /* ─────────────────────────────────────────────────────────────
    UTILITY ANIMATION CLASSES

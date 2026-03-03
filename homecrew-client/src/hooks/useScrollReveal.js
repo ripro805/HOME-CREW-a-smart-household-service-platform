@@ -20,8 +20,13 @@ export function useScrollReveal(options = {}) {
     const container = ref.current;
     if (!container) return;
 
-    const { threshold = 0.12, rootMargin = '0px 0px -40px 0px' } = options;
+    const { threshold = 0.05, rootMargin = '0px 0px 0px 0px' } = options;
     const SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
+
+    // Force-reveal any element that is still hidden (safety net for IO misses)
+    const forceReveal = (el) => {
+      if (!el.classList.contains('revealed')) el.classList.add('revealed');
+    };
 
     // IntersectionObserver — makes elements visible when they enter viewport
     const io = new IntersectionObserver(
@@ -48,18 +53,29 @@ export function useScrollReveal(options = {}) {
 
     // MutationObserver — watches for new .reveal elements added after async data loads
     const mo = new MutationObserver((mutations) => {
+      const newEls = [];
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType !== 1) return; // elements only
-          // The node itself
-          if (node.matches && node.matches(SELECTOR)) observe(node);
-          // Descendants of the node
-          node.querySelectorAll && node.querySelectorAll(SELECTOR).forEach(observe);
+          if (node.matches && node.matches(SELECTOR)) { observe(node); newEls.push(node); }
+          if (node.querySelectorAll) {
+            node.querySelectorAll(SELECTOR).forEach((el) => { observe(el); newEls.push(el); });
+          }
         });
       });
+      // Fallback: if IO never fires for a card (fast scroll / layout edge case),
+      // force-reveal it after 1.8 s so it never stays invisible forever
+      if (newEls.length) {
+        setTimeout(() => newEls.forEach(forceReveal), 1800);
+      }
     });
 
     mo.observe(container, { childList: true, subtree: true });
+
+    // Fallback for elements already in DOM at mount time
+    setTimeout(() => {
+      container.querySelectorAll(SELECTOR).forEach(forceReveal);
+    }, 1800);
 
     return () => {
       io.disconnect();
@@ -81,7 +97,7 @@ export function useSingleReveal(options = {}) {
     const el = ref.current;
     if (!el) return;
 
-    const { threshold = 0.15, rootMargin = '0px 0px -40px 0px' } = options;
+    const { threshold = 0.05, rootMargin = '0px 0px 0px 0px' } = options;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
