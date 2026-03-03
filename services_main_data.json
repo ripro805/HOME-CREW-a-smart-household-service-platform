@@ -1,0 +1,1498 @@
+[
+{
+  "model": "services.service",
+  "pk": 1,
+  "fields": {
+    "name": "House Cleaning - Basic",
+    "description": "Professional house cleaning service. Get basic quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "221.00",
+    "avg_rating": 4.2,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 2,
+  "fields": {
+    "name": "House Cleaning - Basic - Express",
+    "description": "Professional house cleaning service. Get basic quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "259.00",
+    "avg_rating": 4.5,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 3,
+  "fields": {
+    "name": "House Cleaning - Basic - Standard",
+    "description": "Professional house cleaning service. Get basic quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "180.00",
+    "avg_rating": 3.5,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 4,
+  "fields": {
+    "name": "House Cleaning - Standard",
+    "description": "Professional house cleaning service. Get standard quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "211.00",
+    "avg_rating": 5.0,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 5,
+  "fields": {
+    "name": "House Cleaning - Standard - Express",
+    "description": "Professional house cleaning service. Get standard quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "274.00",
+    "avg_rating": 3.0,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 6,
+  "fields": {
+    "name": "House Cleaning - Standard - Standard",
+    "description": "Professional house cleaning service. Get standard quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "150.00",
+    "avg_rating": 3.7,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 7,
+  "fields": {
+    "name": "House Cleaning - Premium",
+    "description": "Professional house cleaning service. Get premium quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "144.00",
+    "avg_rating": 3.8,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 8,
+  "fields": {
+    "name": "House Cleaning - Premium - Express",
+    "description": "Professional house cleaning service. Get premium quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "189.00",
+    "avg_rating": 3.8,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 9,
+  "fields": {
+    "name": "House Cleaning - Premium - Standard",
+    "description": "Professional house cleaning service. Get premium quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "297.00",
+    "avg_rating": 3.0,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 10,
+  "fields": {
+    "name": "House Cleaning - Deluxe",
+    "description": "Professional house cleaning service. Get deluxe quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "128.00",
+    "avg_rating": 4.0,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 11,
+  "fields": {
+    "name": "House Cleaning - Deluxe - Express",
+    "description": "Professional house cleaning service. Get deluxe quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "57.00",
+    "avg_rating": 4.2,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 12,
+  "fields": {
+    "name": "House Cleaning - Deluxe - Standard",
+    "description": "Professional house cleaning service. Get deluxe quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "197.00",
+    "avg_rating": 3.6,
+    "category": 1
+  }
+},
+{
+  "model": "services.service",
+  "pk": 13,
+  "fields": {
+    "name": "Deep Cleaning - Kitchen",
+    "description": "Professional deep cleaning service. Get kitchen quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "220.00",
+    "avg_rating": 3.6,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 14,
+  "fields": {
+    "name": "Deep Cleaning - Kitchen - Express",
+    "description": "Professional deep cleaning service. Get kitchen quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "192.00",
+    "avg_rating": 3.5,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 15,
+  "fields": {
+    "name": "Deep Cleaning - Kitchen - Standard",
+    "description": "Professional deep cleaning service. Get kitchen quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "70.00",
+    "avg_rating": 3.5,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 16,
+  "fields": {
+    "name": "Deep Cleaning - Bathroom",
+    "description": "Professional deep cleaning service. Get bathroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "109.00",
+    "avg_rating": 4.2,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 17,
+  "fields": {
+    "name": "Deep Cleaning - Bathroom - Express",
+    "description": "Professional deep cleaning service. Get bathroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "232.00",
+    "avg_rating": 4.0,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 18,
+  "fields": {
+    "name": "Deep Cleaning - Bathroom - Standard",
+    "description": "Professional deep cleaning service. Get bathroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "47.00",
+    "avg_rating": 4.0,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 19,
+  "fields": {
+    "name": "Deep Cleaning - Bedroom",
+    "description": "Professional deep cleaning service. Get bedroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "37.00",
+    "avg_rating": 4.0,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 20,
+  "fields": {
+    "name": "Deep Cleaning - Bedroom - Express",
+    "description": "Professional deep cleaning service. Get bedroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "30.00",
+    "avg_rating": 3.7,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 21,
+  "fields": {
+    "name": "Deep Cleaning - Bedroom - Standard",
+    "description": "Professional deep cleaning service. Get bedroom quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "213.00",
+    "avg_rating": 4.2,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 22,
+  "fields": {
+    "name": "Deep Cleaning - Full House",
+    "description": "Professional deep cleaning service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "209.00",
+    "avg_rating": 4.4,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 23,
+  "fields": {
+    "name": "Deep Cleaning - Full House - Express",
+    "description": "Professional deep cleaning service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "283.00",
+    "avg_rating": 3.8,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 24,
+  "fields": {
+    "name": "Deep Cleaning - Full House - Standard",
+    "description": "Professional deep cleaning service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "57.00",
+    "avg_rating": 3.8,
+    "category": 2
+  }
+},
+{
+  "model": "services.service",
+  "pk": 25,
+  "fields": {
+    "name": "Plumbing - Leak Repair",
+    "description": "Professional plumbing service. Get leak repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "288.00",
+    "avg_rating": 3.8,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 26,
+  "fields": {
+    "name": "Plumbing - Leak Repair - Express",
+    "description": "Professional plumbing service. Get leak repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "124.00",
+    "avg_rating": 3.5,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 27,
+  "fields": {
+    "name": "Plumbing - Leak Repair - Standard",
+    "description": "Professional plumbing service. Get leak repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "190.00",
+    "avg_rating": 3.0,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 28,
+  "fields": {
+    "name": "Plumbing - Pipe Installation",
+    "description": "Professional plumbing service. Get pipe installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "120.00",
+    "avg_rating": 4.0,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 29,
+  "fields": {
+    "name": "Plumbing - Pipe Installation - Express",
+    "description": "Professional plumbing service. Get pipe installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "50.00",
+    "avg_rating": 3.5,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 30,
+  "fields": {
+    "name": "Plumbing - Pipe Installation - Standard",
+    "description": "Professional plumbing service. Get pipe installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "72.00",
+    "avg_rating": 4.0,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 31,
+  "fields": {
+    "name": "Plumbing - Drain Cleaning",
+    "description": "Professional plumbing service. Get drain cleaning quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "234.00",
+    "avg_rating": 3.5,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 32,
+  "fields": {
+    "name": "Plumbing - Drain Cleaning - Express",
+    "description": "Professional plumbing service. Get drain cleaning quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "120.00",
+    "avg_rating": 3.0,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 33,
+  "fields": {
+    "name": "Plumbing - Drain Cleaning - Standard",
+    "description": "Professional plumbing service. Get drain cleaning quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "204.00",
+    "avg_rating": 4.3,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 34,
+  "fields": {
+    "name": "Plumbing - Faucet Repair",
+    "description": "Professional plumbing service. Get faucet repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "171.00",
+    "avg_rating": 4.4,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 35,
+  "fields": {
+    "name": "Plumbing - Faucet Repair - Express",
+    "description": "Professional plumbing service. Get faucet repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "279.00",
+    "avg_rating": 4.3,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 36,
+  "fields": {
+    "name": "Plumbing - Faucet Repair - Standard",
+    "description": "Professional plumbing service. Get faucet repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "256.00",
+    "avg_rating": 4.5,
+    "category": 3
+  }
+},
+{
+  "model": "services.service",
+  "pk": 37,
+  "fields": {
+    "name": "Electrical - Wiring",
+    "description": "Professional electrical service. Get wiring quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "189.00",
+    "avg_rating": 3.7,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 38,
+  "fields": {
+    "name": "Electrical - Wiring - Express",
+    "description": "Professional electrical service. Get wiring quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "31.00",
+    "avg_rating": 5.0,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 39,
+  "fields": {
+    "name": "Electrical - Wiring - Standard",
+    "description": "Professional electrical service. Get wiring quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "297.00",
+    "avg_rating": 3.0,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 40,
+  "fields": {
+    "name": "Electrical - Light Installation",
+    "description": "Professional electrical service. Get light installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "200.00",
+    "avg_rating": 3.0,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 41,
+  "fields": {
+    "name": "Electrical - Light Installation - Express",
+    "description": "Professional electrical service. Get light installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "288.00",
+    "avg_rating": 4.6,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 42,
+  "fields": {
+    "name": "Electrical - Light Installation - Standard",
+    "description": "Professional electrical service. Get light installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "34.00",
+    "avg_rating": 4.0,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 43,
+  "fields": {
+    "name": "Electrical - Socket Repair",
+    "description": "Professional electrical service. Get socket repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "217.00",
+    "avg_rating": 4.0,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 44,
+  "fields": {
+    "name": "Electrical - Socket Repair - Express",
+    "description": "Professional electrical service. Get socket repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "69.00",
+    "avg_rating": 3.8,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 45,
+  "fields": {
+    "name": "Electrical - Socket Repair - Standard",
+    "description": "Professional electrical service. Get socket repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "249.00",
+    "avg_rating": 3.8,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 46,
+  "fields": {
+    "name": "Electrical - Panel Upgrade",
+    "description": "Professional electrical service. Get panel upgrade quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "120.00",
+    "avg_rating": 3.8,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 47,
+  "fields": {
+    "name": "Electrical - Panel Upgrade - Express",
+    "description": "Professional electrical service. Get panel upgrade quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "242.00",
+    "avg_rating": 4.2,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 48,
+  "fields": {
+    "name": "Electrical - Panel Upgrade - Standard",
+    "description": "Professional electrical service. Get panel upgrade quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "291.00",
+    "avg_rating": 4.3,
+    "category": 4
+  }
+},
+{
+  "model": "services.service",
+  "pk": 49,
+  "fields": {
+    "name": "Painting - Interior",
+    "description": "Professional painting service. Get interior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "76.00",
+    "avg_rating": 3.5,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 50,
+  "fields": {
+    "name": "Painting - Interior - Express",
+    "description": "Professional painting service. Get interior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "262.00",
+    "avg_rating": 4.0,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 51,
+  "fields": {
+    "name": "Painting - Interior - Standard",
+    "description": "Professional painting service. Get interior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "128.00",
+    "avg_rating": 4.0,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 52,
+  "fields": {
+    "name": "Painting - Exterior",
+    "description": "Professional painting service. Get exterior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "193.00",
+    "avg_rating": 3.8,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 53,
+  "fields": {
+    "name": "Painting - Exterior - Express",
+    "description": "Professional painting service. Get exterior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "116.00",
+    "avg_rating": 4.2,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 54,
+  "fields": {
+    "name": "Painting - Exterior - Standard",
+    "description": "Professional painting service. Get exterior quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "299.00",
+    "avg_rating": 4.0,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 55,
+  "fields": {
+    "name": "Painting - Room",
+    "description": "Professional painting service. Get room quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "130.00",
+    "avg_rating": 4.2,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 56,
+  "fields": {
+    "name": "Painting - Room - Express",
+    "description": "Professional painting service. Get room quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "283.00",
+    "avg_rating": 4.3,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 57,
+  "fields": {
+    "name": "Painting - Room - Standard",
+    "description": "Professional painting service. Get room quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "31.00",
+    "avg_rating": 3.7,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 58,
+  "fields": {
+    "name": "Painting - Full House",
+    "description": "Professional painting service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "213.00",
+    "avg_rating": 4.0,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 59,
+  "fields": {
+    "name": "Painting - Full House - Express",
+    "description": "Professional painting service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "119.00",
+    "avg_rating": 3.7,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 60,
+  "fields": {
+    "name": "Painting - Full House - Standard",
+    "description": "Professional painting service. Get full house quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "102.00",
+    "avg_rating": 3.0,
+    "category": 5
+  }
+},
+{
+  "model": "services.service",
+  "pk": 61,
+  "fields": {
+    "name": "Carpentry - Furniture Assembly",
+    "description": "Professional carpentry service. Get furniture assembly quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "70.00",
+    "avg_rating": 3.3,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 62,
+  "fields": {
+    "name": "Carpentry - Furniture Assembly - Express",
+    "description": "Professional carpentry service. Get furniture assembly quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "191.00",
+    "avg_rating": 4.3,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 63,
+  "fields": {
+    "name": "Carpentry - Furniture Assembly - Standard",
+    "description": "Professional carpentry service. Get furniture assembly quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "297.00",
+    "avg_rating": 4.8,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 64,
+  "fields": {
+    "name": "Carpentry - Cabinet Installation",
+    "description": "Professional carpentry service. Get cabinet installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "86.00",
+    "avg_rating": 3.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 65,
+  "fields": {
+    "name": "Carpentry - Cabinet Installation - Express",
+    "description": "Professional carpentry service. Get cabinet installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "141.00",
+    "avg_rating": 4.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 66,
+  "fields": {
+    "name": "Carpentry - Cabinet Installation - Standard",
+    "description": "Professional carpentry service. Get cabinet installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "82.00",
+    "avg_rating": 3.5,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 67,
+  "fields": {
+    "name": "Carpentry - Door Repair",
+    "description": "Professional carpentry service. Get door repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "41.00",
+    "avg_rating": 4.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 68,
+  "fields": {
+    "name": "Carpentry - Door Repair - Express",
+    "description": "Professional carpentry service. Get door repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "148.00",
+    "avg_rating": 5.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 69,
+  "fields": {
+    "name": "Carpentry - Door Repair - Standard",
+    "description": "Professional carpentry service. Get door repair quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "110.00",
+    "avg_rating": 4.2,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 70,
+  "fields": {
+    "name": "Carpentry - Custom Work",
+    "description": "Professional carpentry service. Get custom work quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "242.00",
+    "avg_rating": 4.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 71,
+  "fields": {
+    "name": "Carpentry - Custom Work - Express",
+    "description": "Professional carpentry service. Get custom work quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "252.00",
+    "avg_rating": 4.0,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 72,
+  "fields": {
+    "name": "Carpentry - Custom Work - Standard",
+    "description": "Professional carpentry service. Get custom work quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "292.00",
+    "avg_rating": 3.5,
+    "category": 6
+  }
+},
+{
+  "model": "services.service",
+  "pk": 73,
+  "fields": {
+    "name": "Gardening - Lawn Mowing",
+    "description": "Professional gardening service. Get lawn mowing quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "101.00",
+    "avg_rating": 4.2,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 74,
+  "fields": {
+    "name": "Gardening - Lawn Mowing - Express",
+    "description": "Professional gardening service. Get lawn mowing quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "250.00",
+    "avg_rating": 4.0,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 75,
+  "fields": {
+    "name": "Gardening - Lawn Mowing - Standard",
+    "description": "Professional gardening service. Get lawn mowing quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "159.00",
+    "avg_rating": 4.8,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 76,
+  "fields": {
+    "name": "Gardening - Tree Trimming",
+    "description": "Professional gardening service. Get tree trimming quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "266.00",
+    "avg_rating": 4.0,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 77,
+  "fields": {
+    "name": "Gardening - Tree Trimming - Express",
+    "description": "Professional gardening service. Get tree trimming quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "166.00",
+    "avg_rating": 4.0,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 78,
+  "fields": {
+    "name": "Gardening - Tree Trimming - Standard",
+    "description": "Professional gardening service. Get tree trimming quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "219.00",
+    "avg_rating": 3.8,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 79,
+  "fields": {
+    "name": "Gardening - Weed Control",
+    "description": "Professional gardening service. Get weed control quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "54.00",
+    "avg_rating": 3.7,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 80,
+  "fields": {
+    "name": "Gardening - Weed Control - Express",
+    "description": "Professional gardening service. Get weed control quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "155.00",
+    "avg_rating": 4.5,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 81,
+  "fields": {
+    "name": "Gardening - Weed Control - Standard",
+    "description": "Professional gardening service. Get weed control quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "211.00",
+    "avg_rating": 4.0,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 82,
+  "fields": {
+    "name": "Gardening - Landscaping",
+    "description": "Professional gardening service. Get landscaping quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "34.00",
+    "avg_rating": 5.0,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 83,
+  "fields": {
+    "name": "Gardening - Landscaping - Express",
+    "description": "Professional gardening service. Get landscaping quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "180.00",
+    "avg_rating": 4.3,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 84,
+  "fields": {
+    "name": "Gardening - Landscaping - Standard",
+    "description": "Professional gardening service. Get landscaping quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "165.00",
+    "avg_rating": 3.3,
+    "category": 7
+  }
+},
+{
+  "model": "services.service",
+  "pk": 85,
+  "fields": {
+    "name": "Pest Control - Termite",
+    "description": "Professional pest control service. Get termite quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "175.00",
+    "avg_rating": 4.0,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 86,
+  "fields": {
+    "name": "Pest Control - Termite - Express",
+    "description": "Professional pest control service. Get termite quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "130.00",
+    "avg_rating": 3.4,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 87,
+  "fields": {
+    "name": "Pest Control - Termite - Standard",
+    "description": "Professional pest control service. Get termite quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "87.00",
+    "avg_rating": 4.0,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 88,
+  "fields": {
+    "name": "Pest Control - Rodent",
+    "description": "Professional pest control service. Get rodent quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "167.00",
+    "avg_rating": 4.2,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 89,
+  "fields": {
+    "name": "Pest Control - Rodent - Express",
+    "description": "Professional pest control service. Get rodent quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "276.00",
+    "avg_rating": 4.2,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 90,
+  "fields": {
+    "name": "Pest Control - Rodent - Standard",
+    "description": "Professional pest control service. Get rodent quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "63.00",
+    "avg_rating": 3.8,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 91,
+  "fields": {
+    "name": "Pest Control - Insect",
+    "description": "Professional pest control service. Get insect quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "127.00",
+    "avg_rating": 4.5,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 92,
+  "fields": {
+    "name": "Pest Control - Insect - Express",
+    "description": "Professional pest control service. Get insect quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "254.00",
+    "avg_rating": 4.0,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 93,
+  "fields": {
+    "name": "Pest Control - Insect - Standard",
+    "description": "Professional pest control service. Get insect quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "258.00",
+    "avg_rating": 4.0,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 94,
+  "fields": {
+    "name": "Pest Control - General",
+    "description": "Professional pest control service. Get general quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "186.00",
+    "avg_rating": 3.6,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 95,
+  "fields": {
+    "name": "Pest Control - General - Express",
+    "description": "Professional pest control service. Get general quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "192.00",
+    "avg_rating": 3.3,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 96,
+  "fields": {
+    "name": "Pest Control - General - Standard",
+    "description": "Professional pest control service. Get general quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "227.00",
+    "avg_rating": 3.8,
+    "category": 8
+  }
+},
+{
+  "model": "services.service",
+  "pk": 97,
+  "fields": {
+    "name": "AC Repair - Maintenance",
+    "description": "Professional ac repair service. Get maintenance quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "42.00",
+    "avg_rating": 3.5,
+    "category": 9
+  }
+},
+{
+  "model": "services.service",
+  "pk": 98,
+  "fields": {
+    "name": "AC Repair - Maintenance - Express",
+    "description": "Professional ac repair service. Get maintenance quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "289.00",
+    "avg_rating": 4.0,
+    "category": 9
+  }
+},
+{
+  "model": "services.service",
+  "pk": 99,
+  "fields": {
+    "name": "AC Repair - Maintenance - Standard",
+    "description": "Professional ac repair service. Get maintenance quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "39.00",
+    "avg_rating": 4.0,
+    "category": 9
+  }
+},
+{
+  "model": "services.service",
+  "pk": 100,
+  "fields": {
+    "name": "AC Repair - Installation",
+    "description": "Professional ac repair service. Get installation quality work done by experienced professionals. We guarantee satisfaction and quality workmanship.",
+    "price": "59.00",
+    "avg_rating": 5.0,
+    "category": 9
+  }
+},
+{
+  "model": "services.service",
+  "pk": 101,
+  "fields": {
+    "name": "Refrigerator Repair",
+    "description": "Expert refrigerator diagnosis and repair service.",
+    "price": "700.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 102,
+  "fields": {
+    "name": "Washing Machine Repair",
+    "description": "Fix washing machine issues including drum, motor, and electronics.",
+    "price": "600.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 103,
+  "fields": {
+    "name": "Dryer Repair",
+    "description": "Professional dryer repair and maintenance.",
+    "price": "550.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 104,
+  "fields": {
+    "name": "Dishwasher Repair",
+    "description": "Dishwasher troubleshooting and repair.",
+    "price": "500.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 105,
+  "fields": {
+    "name": "Oven & Stove Repair",
+    "description": "Oven, stove, and cooktop repair services.",
+    "price": "650.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 106,
+  "fields": {
+    "name": "Microwave Repair",
+    "description": "Microwave oven repair and part replacement.",
+    "price": "350.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 107,
+  "fields": {
+    "name": "Water Dispenser Repair",
+    "description": "Water dispenser cleaning, repair, and maintenance.",
+    "price": "400.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 108,
+  "fields": {
+    "name": "TV & Electronics Repair",
+    "description": "Television and home electronics repair.",
+    "price": "800.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 109,
+  "fields": {
+    "name": "Air Purifier Service",
+    "description": "Air purifier filter replacement and servicing.",
+    "price": "300.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 110,
+  "fields": {
+    "name": "Water Heater Repair",
+    "description": "Water heater diagnosis and repair.",
+    "price": "750.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 111,
+  "fields": {
+    "name": "Small Appliance Repair",
+    "description": "Repair for blenders, irons, fans and other small appliances.",
+    "price": "250.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 112,
+  "fields": {
+    "name": "Generator Servicing",
+    "description": "Generator maintenance, oil change, and repair.",
+    "price": "900.00",
+    "avg_rating": 0.0,
+    "category": 10
+  }
+},
+{
+  "model": "services.service",
+  "pk": 113,
+  "fields": {
+    "name": "Local Moving",
+    "description": "Full local moving service with packing and transport.",
+    "price": "2500.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 114,
+  "fields": {
+    "name": "Home Shifting",
+    "description": "Complete home shifting with careful handling of belongings.",
+    "price": "3500.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 115,
+  "fields": {
+    "name": "Office Relocation",
+    "description": "Professional office moving and setup service.",
+    "price": "5000.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 116,
+  "fields": {
+    "name": "Furniture Moving",
+    "description": "Move heavy furniture safely within or between locations.",
+    "price": "1500.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 117,
+  "fields": {
+    "name": "Packing Service",
+    "description": "Professional packing of all household items with quality materials.",
+    "price": "1200.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 118,
+  "fields": {
+    "name": "Unpacking Service",
+    "description": "Careful unpacking and arrangement of items at destination.",
+    "price": "1000.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 119,
+  "fields": {
+    "name": "Piano & Heavy Item Moving",
+    "description": "Specialized moving for pianos and heavy items.",
+    "price": "2000.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 120,
+  "fields": {
+    "name": "Storage & Warehousing",
+    "description": "Temporary storage solution during relocation.",
+    "price": "800.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 121,
+  "fields": {
+    "name": "Vehicle Transport",
+    "description": "Safe vehicle transport during home relocation.",
+    "price": "4000.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 122,
+  "fields": {
+    "name": "Single Item Moving",
+    "description": "Move a single item like a sofa, fridge, or wardrobe.",
+    "price": "600.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 123,
+  "fields": {
+    "name": "Truck Rental with Driver",
+    "description": "Hire a truck with driver for moving needs.",
+    "price": "1800.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 124,
+  "fields": {
+    "name": "Express Moving",
+    "description": "Same-day express moving service for urgent relocations.",
+    "price": "4500.00",
+    "avg_rating": 0.0,
+    "category": 11
+  }
+},
+{
+  "model": "services.service",
+  "pk": 125,
+  "fields": {
+    "name": "Wash & Fold",
+    "description": "Machine wash and neatly fold your clothes.",
+    "price": "200.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 126,
+  "fields": {
+    "name": "Wash & Iron",
+    "description": "Wash and iron clothes for a crisp, clean look.",
+    "price": "300.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 127,
+  "fields": {
+    "name": "Dry Cleaning",
+    "description": "Professional dry cleaning for delicate garments.",
+    "price": "500.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 128,
+  "fields": {
+    "name": "Ironing Only",
+    "description": "Steam ironing for wrinkle-free clothes.",
+    "price": "150.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 129,
+  "fields": {
+    "name": "Blanket & Comforter Cleaning",
+    "description": "Deep cleaning for blankets, quilts, and comforters.",
+    "price": "600.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 130,
+  "fields": {
+    "name": "Curtain Cleaning",
+    "description": "Professional curtain wash, dry, and press.",
+    "price": "700.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 131,
+  "fields": {
+    "name": "Suit & Formal Wear Cleaning",
+    "description": "Specialized cleaning for suits and formal wear.",
+    "price": "450.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 132,
+  "fields": {
+    "name": "Shoe Cleaning",
+    "description": "Professional shoe cleaning and polishing service.",
+    "price": "250.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 133,
+  "fields": {
+    "name": "Carpet Cleaning",
+    "description": "Steam cleaning and stain removal for carpets.",
+    "price": "800.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 134,
+  "fields": {
+    "name": "Express Laundry",
+    "description": "Same-day express laundry service.",
+    "price": "400.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 135,
+  "fields": {
+    "name": "Leather & Suede Cleaning",
+    "description": "Expert cleaning for leather jackets, bags, and shoes.",
+    "price": "900.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+},
+{
+  "model": "services.service",
+  "pk": 136,
+  "fields": {
+    "name": "Subscription Laundry",
+    "description": "Weekly laundry subscription plan for regular customers.",
+    "price": "1500.00",
+    "avg_rating": 0.0,
+    "category": 12
+  }
+}
+]

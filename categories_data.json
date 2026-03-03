@@ -1,0 +1,98 @@
+[
+{
+  "model": "services.servicecategory",
+  "pk": 1,
+  "fields": {
+    "name": "House Cleaning",
+    "description": "Professional home cleaning services"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 2,
+  "fields": {
+    "name": "Deep Cleaning",
+    "description": "Thorough deep cleaning for your home"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 3,
+  "fields": {
+    "name": "Plumbing",
+    "description": "Expert plumbing services"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 4,
+  "fields": {
+    "name": "Electrical Work",
+    "description": "Licensed electrician services"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 5,
+  "fields": {
+    "name": "Painting",
+    "description": "Interior and exterior painting"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 6,
+  "fields": {
+    "name": "Carpentry",
+    "description": "Furniture and wood work"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 7,
+  "fields": {
+    "name": "Gardening",
+    "description": "Lawn care and gardening"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 8,
+  "fields": {
+    "name": "Pest Control",
+    "description": "Remove pests from your home"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 9,
+  "fields": {
+    "name": "AC Repair",
+    "description": "Air conditioning maintenance and repair"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 10,
+  "fields": {
+    "name": "Appliance Repair",
+    "description": "Fix home appliances"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 11,
+  "fields": {
+    "name": "Moving Services",
+    "description": "Professional moving and packing"
+  }
+},
+{
+  "model": "services.servicecategory",
+  "pk": 12,
+  "fields": {
+    "name": "Laundry Services",
+    "description": "Wash, dry, and fold services"
+  }
+}
+]

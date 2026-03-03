@@ -1,0 +1,1092 @@
+[
+{
+  "model": "accounts.user",
+  "pk": 1,
+  "fields": {
+    "last_login": "2026-03-03T06:56:23.343Z",
+    "is_superuser": true,
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:55:43.303Z",
+    "first_name": "Admin",
+    "last_name": "Superuser",
+    "email": "admin@homecrew.com",
+    "address": null,
+    "phone_number": null,
+    "password": "pbkdf2_sha256$1200000$ucMQzytzP5KmFrGZkG5cil$gzPFF/AO0t7fJGmJrmifMbhhUjc22j8EWXFu+07zgxk=",
+    "role": "admin",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 2,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:43.701Z",
+    "first_name": "Laura",
+    "last_name": "Gonzalez",
+    "email": "laura.gonzalez0@example.com",
+    "address": "6668 Main St, City, State 10106",
+    "phone_number": "+1-555-1188",
+    "password": "pbkdf2_sha256$1200000$YTGCBHQBBF7idzrVPJW4fW$BPpkZ79WPcFBgBtwbfGhlZbBh79SyzThckSxcFQcsnc=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 3,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:44.157Z",
+    "first_name": "Maria",
+    "last_name": "Lewis",
+    "email": "maria.lewis1@example.com",
+    "address": "6013 Main St, City, State 81297",
+    "phone_number": "+1-555-5779",
+    "password": "pbkdf2_sha256$1200000$7ECNJD6tDfFDjZd705hca1$5unAoWkzEyDGYvzqdGAM5QL8TZJLqBIt43ulaUTMdlI=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 4,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:44.622Z",
+    "first_name": "George",
+    "last_name": "Taylor",
+    "email": "george.taylor2@example.com",
+    "address": "398 Main St, City, State 73256",
+    "phone_number": "+1-555-5398",
+    "password": "pbkdf2_sha256$1200000$lquqC9eWn1PZNzl0whRq4M$vhVfWKCXCEpdoTUmbgNmwPOIPWBa4gunpGVoJkLDELw=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 5,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:45.061Z",
+    "first_name": "James",
+    "last_name": "Harris",
+    "email": "james.harris3@example.com",
+    "address": "9457 Main St, City, State 95165",
+    "phone_number": "+1-555-4373",
+    "password": "pbkdf2_sha256$1200000$rJUXoyb7YrmweuHxNdYS8z$ywy25jqq3xc7ORcUdtiXzEt1TkbpTgg3T3drn3ZZ1pg=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 6,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:45.500Z",
+    "first_name": "Carol",
+    "last_name": "Lopez",
+    "email": "carol.lopez4@example.com",
+    "address": "4307 Main St, City, State 38432",
+    "phone_number": "+1-555-2183",
+    "password": "pbkdf2_sha256$1200000$AkmIqMt5Z6V9JnWEW0vmwj$JVHU1xgwyXi8uaIodMmuO2qKi7h2t+m/1OwqWeh6NiM=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 7,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:45.943Z",
+    "first_name": "Mark",
+    "last_name": "Moore",
+    "email": "mark.moore5@example.com",
+    "address": "7525 Main St, City, State 17540",
+    "phone_number": "+1-555-1555",
+    "password": "pbkdf2_sha256$1200000$pjO2Slh6iAoyrDFDlIXmSl$LUS2FHlMUbpNjACbqbh4pvXtBERkeJIAAc0oDAhy+U4=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 8,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:46.384Z",
+    "first_name": "Timothy",
+    "last_name": "Brown",
+    "email": "timothy.brown6@example.com",
+    "address": "4452 Main St, City, State 50860",
+    "phone_number": "+1-555-9179",
+    "password": "pbkdf2_sha256$1200000$SP9QxGknHlJ8dvH94LiTVe$hnVg6qXfnnkI1DFRvWusHDHGiGG0dp3xAQugv/vbRHo=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 9,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:46.824Z",
+    "first_name": "Lisa",
+    "last_name": "Robinson",
+    "email": "lisa.robinson7@example.com",
+    "address": "5352 Main St, City, State 70847",
+    "phone_number": "+1-555-1700",
+    "password": "pbkdf2_sha256$1200000$9VdoaAbblpT6hvVunK9rID$61iYiE6PqPv5UL7Rwz4gigQD1j8rDUUfHDIzQXaFcDQ=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 10,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:47.266Z",
+    "first_name": "David",
+    "last_name": "Brown",
+    "email": "david.brown8@example.com",
+    "address": "2657 Main St, City, State 51495",
+    "phone_number": "+1-555-3482",
+    "password": "pbkdf2_sha256$1200000$eJnxisQNWegznxDmsIBRKW$c/nmgyA9cBQ2DAiQd+MRDxXd7BmQ6Y9XxKv8sF41w58=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 11,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:47.702Z",
+    "first_name": "Laura",
+    "last_name": "Miller",
+    "email": "laura.miller9@example.com",
+    "address": "5444 Main St, City, State 55802",
+    "phone_number": "+1-555-9322",
+    "password": "pbkdf2_sha256$1200000$niZ0IT5iK7Y93sBsGlYmAy$M/2522YyGGX/o9vFX3YX1AMwyRy3yamGWaLwEiJPhpw=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 12,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:48.141Z",
+    "first_name": "Brian",
+    "last_name": "Davis",
+    "email": "brian.davis10@example.com",
+    "address": "6572 Main St, City, State 51426",
+    "phone_number": "+1-555-5655",
+    "password": "pbkdf2_sha256$1200000$I0q9C0g0RbmK384QDfwtFv$1fRLi8/q0lbX8hWGbPbJCRIsS3lALExCffg1eLuBIe4=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 13,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:48.582Z",
+    "first_name": "Barbara",
+    "last_name": "Thomas",
+    "email": "barbara.thomas11@example.com",
+    "address": "4003 Main St, City, State 96382",
+    "phone_number": "+1-555-6346",
+    "password": "pbkdf2_sha256$1200000$IRDblfUocwSpZGabu5X3IR$bYadAn3eavJYyCStqq8oJXyGM5qohosEb2ej9UW0tac=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 14,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:49.020Z",
+    "first_name": "Betty",
+    "last_name": "Johnson",
+    "email": "betty.johnson12@example.com",
+    "address": "8735 Main St, City, State 36786",
+    "phone_number": "+1-555-5338",
+    "password": "pbkdf2_sha256$1200000$12MvJIXVxiICA57RCnNWYd$SgIyuVob5way5loDkfRsKr1XiUkIpKJDDUoQZB6xgLg=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 15,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:49.457Z",
+    "first_name": "James",
+    "last_name": "Anderson",
+    "email": "james.anderson13@example.com",
+    "address": "5568 Main St, City, State 58436",
+    "phone_number": "+1-555-6952",
+    "password": "pbkdf2_sha256$1200000$51LpT17jvNLx4EVXkmTzyx$z20nVfqlkphCt9Q6OCVZpZa/3amWH1WWLa2krgg9X+c=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 16,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:49.901Z",
+    "first_name": "Susan",
+    "last_name": "Brown",
+    "email": "susan.brown14@example.com",
+    "address": "789 Main St, City, State 50969",
+    "phone_number": "+1-555-7245",
+    "password": "pbkdf2_sha256$1200000$Z1G5wo3Y9V7M4FfU3rShZW$TIqdyuIWe3xSVy1tBVkzHmF9FV8zEsgNyHd+5vxuhxU=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 17,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:50.338Z",
+    "first_name": "James",
+    "last_name": "Hernandez",
+    "email": "james.hernandez15@example.com",
+    "address": "2880 Main St, City, State 98207",
+    "phone_number": "+1-555-8045",
+    "password": "pbkdf2_sha256$1200000$McUmJcYZ5MsT3WMFYclreU$/CzL0PhmuStas5N7wtz4TrWVed2qcNpOePTU2sCXZpU=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 18,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:50.773Z",
+    "first_name": "Patricia",
+    "last_name": "Anderson",
+    "email": "patricia.anderson16@example.com",
+    "address": "8975 Main St, City, State 58963",
+    "phone_number": "+1-555-4719",
+    "password": "pbkdf2_sha256$1200000$bxNqoihzwR2efsNXm3Zl20$+BttVe8ruIJbob/8zdxXfirZYHQc9OVymtwTeQsHzX4=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 19,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:51.211Z",
+    "first_name": "Thomas",
+    "last_name": "Miller",
+    "email": "thomas.miller17@example.com",
+    "address": "6173 Main St, City, State 72199",
+    "phone_number": "+1-555-8649",
+    "password": "pbkdf2_sha256$1200000$siIta1iW38CcgLlrRB5Ih3$uTlfZyov+dVMjE2NnJRmFqVOJRqyjbwQwUbC3ojZm1I=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 20,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:51.649Z",
+    "first_name": "Kenneth",
+    "last_name": "Jones",
+    "email": "kenneth.jones18@example.com",
+    "address": "7284 Main St, City, State 73849",
+    "phone_number": "+1-555-7931",
+    "password": "pbkdf2_sha256$1200000$qFrSv4cJxKSldPpjaXXfpY$vWyXCqadHFB2ehl5ReEy31sgZc9pRS4poLV6LbpHzog=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 21,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:52.175Z",
+    "first_name": "Mark",
+    "last_name": "Jackson",
+    "email": "mark.jackson19@example.com",
+    "address": "8253 Main St, City, State 25460",
+    "phone_number": "+1-555-2398",
+    "password": "pbkdf2_sha256$1200000$3uLvlgHBKJTiajexN3tIIU$swjW7fqYI2UWlz78dJoZzDovyyhc1N8ZYvJQUvEWDYM=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 22,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:52.674Z",
+    "first_name": "Paul",
+    "last_name": "Clark",
+    "email": "paul.clark20@example.com",
+    "address": "2591 Main St, City, State 77496",
+    "phone_number": "+1-555-5132",
+    "password": "pbkdf2_sha256$1200000$nZ9U3xEdSRXIyGh0rsX0U0$KDvf6fpW95oy9GAlHrLDTkS0U0uIVvBv5LCjKyJibzQ=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 23,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:53.194Z",
+    "first_name": "Linda",
+    "last_name": "Walker",
+    "email": "linda.walker21@example.com",
+    "address": "8735 Main St, City, State 32169",
+    "phone_number": "+1-555-2315",
+    "password": "pbkdf2_sha256$1200000$KjIYAkbdKEJjELuQ2QiQ2m$sQ65o9HKJHQ2ZMFE142G4odaI+G+9wFlSY+w1u7NGdA=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 24,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:53.712Z",
+    "first_name": "Susan",
+    "last_name": "Clark",
+    "email": "susan.clark22@example.com",
+    "address": "3722 Main St, City, State 40664",
+    "phone_number": "+1-555-2973",
+    "password": "pbkdf2_sha256$1200000$2i9D1ZXlpWv8SNe7aiuEhi$m1gjlQ8fyH6rSOxL8JkqXNNO3R8x7xJ9bLbGgt4Cg90=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 25,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:54.247Z",
+    "first_name": "Timothy",
+    "last_name": "Wilson",
+    "email": "timothy.wilson23@example.com",
+    "address": "4062 Main St, City, State 12855",
+    "phone_number": "+1-555-2314",
+    "password": "pbkdf2_sha256$1200000$EZKD28GTCLx8ymtFybv5UP$viEc/xijHYAJJoh1mlehVjV0czFvQfRRnnyYX06fVYI=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 26,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:54.751Z",
+    "first_name": "Kevin",
+    "last_name": "Hernandez",
+    "email": "kevin.hernandez24@example.com",
+    "address": "3940 Main St, City, State 34162",
+    "phone_number": "+1-555-9275",
+    "password": "pbkdf2_sha256$1200000$sNurZK1nq9VMajd72oDEWC$RpLPjuX6+O/A16ozntMUHDnrLUtrX7btcxp0vGYZ9MI=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 27,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:55.267Z",
+    "first_name": "James",
+    "last_name": "Brown",
+    "email": "james.brown25@example.com",
+    "address": "6481 Main St, City, State 25326",
+    "phone_number": "+1-555-7060",
+    "password": "pbkdf2_sha256$1200000$pcwLUswXLHmamt5RACAjnG$qQXM5yI7dOLHBiEq9CN8YLRM4PObM/FspQ6XU+H0ozM=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 28,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:55.740Z",
+    "first_name": "Ronald",
+    "last_name": "Wilson",
+    "email": "ronald.wilson26@example.com",
+    "address": "7643 Main St, City, State 71618",
+    "phone_number": "+1-555-3114",
+    "password": "pbkdf2_sha256$1200000$vSunjIMITtzSXvQvBLHAws$jW3KH9ukE1kWZh1zBtLZSWPNb061qskXizEa2Xinxt8=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 29,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:56.262Z",
+    "first_name": "Ruth",
+    "last_name": "Anderson",
+    "email": "ruth.anderson27@example.com",
+    "address": "9915 Main St, City, State 83201",
+    "phone_number": "+1-555-1881",
+    "password": "pbkdf2_sha256$1200000$TYID7OQHDbRkLcjXcLtsKw$4C9Ze7gPYcSOWBnYAGc61jIdAtmxggW7Cq3oV6XyLpA=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 30,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:56.749Z",
+    "first_name": "Daniel",
+    "last_name": "Taylor",
+    "email": "daniel.taylor28@example.com",
+    "address": "7061 Main St, City, State 82235",
+    "phone_number": "+1-555-5284",
+    "password": "pbkdf2_sha256$1200000$gVwyJjSGFeGERZqSW6F0tL$B7ZCCs8cZqlX5PyEEjD44lcC/CLfuMrv8e+jSwD+A1g=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 31,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:57.258Z",
+    "first_name": "Kevin",
+    "last_name": "Miller",
+    "email": "kevin.miller29@example.com",
+    "address": "9118 Main St, City, State 50536",
+    "phone_number": "+1-555-4679",
+    "password": "pbkdf2_sha256$1200000$HHsDto62N6ruQfUMixPz1T$6xv0i61r1w/BIB9Aw+IDeThylcVUdLHmBYdCvBFbNVs=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 32,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:57.756Z",
+    "first_name": "Robert",
+    "last_name": "Wilson",
+    "email": "robert.wilson30@example.com",
+    "address": "9154 Main St, City, State 99577",
+    "phone_number": "+1-555-6544",
+    "password": "pbkdf2_sha256$1200000$JJ08CRHp5HTTTgeOdzzAk6$rSiw7bHj82t2ZyT3ENWhlHryXCB+VWYLQQfeIIXcLmw=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 33,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:58.260Z",
+    "first_name": "Sandra",
+    "last_name": "Johnson",
+    "email": "sandra.johnson31@example.com",
+    "address": "3383 Main St, City, State 55592",
+    "phone_number": "+1-555-5106",
+    "password": "pbkdf2_sha256$1200000$sbq9JAelvGcI7KflIP3PrE$sDj+kOdgxRcNt+wylqwCWxqERCAkdD/4ZEA0kHU/ywo=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 34,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:58.785Z",
+    "first_name": "Elizabeth",
+    "last_name": "Davis",
+    "email": "elizabeth.davis32@example.com",
+    "address": "3475 Main St, City, State 80451",
+    "phone_number": "+1-555-1987",
+    "password": "pbkdf2_sha256$1200000$5nEuNBrCnfoYDA8nh1AxBt$+wn7YNfGYXDrkYMgem4DNrHKKUHh5v72yMFRT6w71+o=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 35,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:59.320Z",
+    "first_name": "Andrew",
+    "last_name": "Sanchez",
+    "email": "andrew.sanchez33@example.com",
+    "address": "2857 Main St, City, State 51431",
+    "phone_number": "+1-555-7253",
+    "password": "pbkdf2_sha256$1200000$Y3NWypGhT3OvXVPgYfyVjB$fkP+XE7G5953HELNXJfYv6IeQShBAVywtjAMNjbwa8w=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 36,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:58:59.817Z",
+    "first_name": "Sandra",
+    "last_name": "Williams",
+    "email": "sandra.williams34@example.com",
+    "address": "4055 Main St, City, State 15025",
+    "phone_number": "+1-555-1034",
+    "password": "pbkdf2_sha256$1200000$N1A7BOHiwJkY7c0iV5dVRB$u2bmsE9QqDE3ouoybhgte3CrVo4+Zz0W1uxySzdTD8U=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 37,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:00.324Z",
+    "first_name": "David",
+    "last_name": "Harris",
+    "email": "david.harris35@example.com",
+    "address": "350 Main St, City, State 38732",
+    "phone_number": "+1-555-9784",
+    "password": "pbkdf2_sha256$1200000$n4OvbNSN925vwkNO34lzpJ$Jytsp9gHqx8zjvbf3Gz826kIOJtEQqDhgrMONSIMQsc=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 38,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:00.819Z",
+    "first_name": "Andrew",
+    "last_name": "Sanchez",
+    "email": "andrew.sanchez36@example.com",
+    "address": "3653 Main St, City, State 96454",
+    "phone_number": "+1-555-9310",
+    "password": "pbkdf2_sha256$1200000$qmuoURj4XGy73H51w7VSW1$RY53+iAUnlR+xwVTr3W0p5f1OTqw2PCrlkamCcYKk8w=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 39,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:01.333Z",
+    "first_name": "Edward",
+    "last_name": "Garcia",
+    "email": "edward.garcia37@example.com",
+    "address": "5999 Main St, City, State 80642",
+    "phone_number": "+1-555-9937",
+    "password": "pbkdf2_sha256$1200000$6UG322QxuOY0K5bImT2bTK$iSYvR63lOgq7+tWo9a65vxeeVakyH6y7sEPvthYq0o8=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 40,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:01.816Z",
+    "first_name": "Carol",
+    "last_name": "Lopez",
+    "email": "carol.lopez38@example.com",
+    "address": "1222 Main St, City, State 59157",
+    "phone_number": "+1-555-6636",
+    "password": "pbkdf2_sha256$1200000$HWE0WLszf3jDlUzrMW3fW1$BdNeDiG1INLtALbG1beLQ4aHv0jeWi3GjXJSCimk+Ho=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 41,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:02.334Z",
+    "first_name": "Barbara",
+    "last_name": "Robinson",
+    "email": "barbara.robinson39@example.com",
+    "address": "3682 Main St, City, State 91892",
+    "phone_number": "+1-555-9846",
+    "password": "pbkdf2_sha256$1200000$SfavXgIegReoVkhzdr6JTo$ksDnuabpm/DtXg5hwpQuGGjCcMMrgkN8Q4vf3PwnVHg=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 42,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:02.840Z",
+    "first_name": "Betty",
+    "last_name": "Martinez",
+    "email": "betty.martinez40@example.com",
+    "address": "3886 Main St, City, State 30139",
+    "phone_number": "+1-555-2672",
+    "password": "pbkdf2_sha256$1200000$axWF5xsT9FoKgFuZyA1gzX$3RAg40XVsopdTSERJVm/yBjJ93JhwGQ2r0n+ifqwhU4=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 43,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:03.363Z",
+    "first_name": "Thomas",
+    "last_name": "Jackson",
+    "email": "thomas.jackson41@example.com",
+    "address": "633 Main St, City, State 28262",
+    "phone_number": "+1-555-5748",
+    "password": "pbkdf2_sha256$1200000$4BbmjNpCAZ9NjzFrrzTvOx$x4ddP89yCxskkXBEq+38q1EUiYQzGeQ5vwzM9OTp2Yk=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 44,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:03.897Z",
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "email": "jane.smith42@example.com",
+    "address": "9745 Main St, City, State 39381",
+    "phone_number": "+1-555-1909",
+    "password": "pbkdf2_sha256$1200000$35roGFgu9UMZ8xUz6Ui4Ac$yfUxhWX84HcBCG1akbX54WF8FdX0133i+JcNgYkUS0g=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 45,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:04.429Z",
+    "first_name": "Matthew",
+    "last_name": "Davis",
+    "email": "matthew.davis43@example.com",
+    "address": "996 Main St, City, State 28587",
+    "phone_number": "+1-555-4128",
+    "password": "pbkdf2_sha256$1200000$CHExPg7aCJwrOGvvHBvoNz$UDn6C7H9nnQal0MJJsa+ik9s/rWiUWmWvC0pDtnMdkg=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 46,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:04.934Z",
+    "first_name": "Richard",
+    "last_name": "Clark",
+    "email": "richard.clark44@example.com",
+    "address": "8850 Main St, City, State 91680",
+    "phone_number": "+1-555-3482",
+    "password": "pbkdf2_sha256$1200000$eYPUNGOxqxvgNOPe4tbUjK$1+PX7oeFQG5B+AJAtOQBQDwVIqkRTO1a9C+tVkbbmbU=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 47,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:05.461Z",
+    "first_name": "Maria",
+    "last_name": "Harris",
+    "email": "maria.harris45@example.com",
+    "address": "4236 Main St, City, State 49025",
+    "phone_number": "+1-555-5235",
+    "password": "pbkdf2_sha256$1200000$lmnyPLRHw6csLDAuKECm6R$2WkgPNLiyLFh66Ryhn4PpiZxfSXOIuq/OqG8GFdsS3Q=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 48,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:05.957Z",
+    "first_name": "Sandra",
+    "last_name": "White",
+    "email": "sandra.white46@example.com",
+    "address": "8816 Main St, City, State 95189",
+    "phone_number": "+1-555-2964",
+    "password": "pbkdf2_sha256$1200000$cwktHHj9LnP2a24lV2IFZt$cES+LdqA/DMTrAxcd5HcT22ijAx9z1p0O5YkLGejUgY=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 49,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:06.452Z",
+    "first_name": "Kenneth",
+    "last_name": "Martinez",
+    "email": "kenneth.martinez47@example.com",
+    "address": "9653 Main St, City, State 24568",
+    "phone_number": "+1-555-8885",
+    "password": "pbkdf2_sha256$1200000$pDKnDJaqi6NkALQ6g1Y0CB$tpcyl6fbYznxigdqZ9LoAoSlg87ITy0AWriIN0eYQI0=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 50,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:07.039Z",
+    "first_name": "Emily",
+    "last_name": "Walker",
+    "email": "emily.walker48@example.com",
+    "address": "5387 Main St, City, State 47195",
+    "phone_number": "+1-555-2509",
+    "password": "pbkdf2_sha256$1200000$KmYfFTR9qi2mkL27zddJkB$ui1TDOl92G+z2fVhnTF4eG7J/hIWuhcN4xRVb/NlcBU=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 51,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T06:59:07.574Z",
+    "first_name": "Ronald",
+    "last_name": "Moore",
+    "email": "ronald.moore49@example.com",
+    "address": "2208 Main St, City, State 61689",
+    "phone_number": "+1-555-3541",
+    "password": "pbkdf2_sha256$1200000$8AaeQKghwmRN0MzAYMSdyK$wdaLFl6yj5avidv82auC9ricVEqLUM+z0+MHlNoMdns=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 52,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T07:10:09.037Z",
+    "first_name": "Rifat",
+    "last_name": "User",
+    "email": "giyaye7969@bultoc.com",
+    "address": "jugia",
+    "phone_number": "01305612767",
+    "password": "pbkdf2_sha256$1200000$EubqHiduiq6isCWQu8oCD2$HFXAAZGPYjJbUROOldAodcpfjdA+L8bhKeY7UFZ7X/I=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 53,
+  "fields": {
+    "last_login": null,
+    "is_superuser": false,
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-03T12:29:27.723Z",
+    "first_name": "Rifat",
+    "last_name": "Rizvi",
+    "email": "gapilab912@pckage.com",
+    "address": "jugia",
+    "phone_number": "01305612767",
+    "password": "pbkdf2_sha256$1200000$cGqVR0Q0Qe2xh0QR5LWiCn$x6XPj/m/13tEcWoQXxmsne06T3LFvYVrPCoZmFEuQqE=",
+    "role": "client",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.clientprofile",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "bio": "",
+    "profile_pic": null,
+    "social_links": {}
+  }
+},
+{
+  "model": "accounts.clientprofile",
+  "pk": 2,
+  "fields": {
+    "user": 52,
+    "bio": "",
+    "profile_pic": null,
+    "social_links": {}
+  }
+},
+{
+  "model": "accounts.clientprofile",
+  "pk": 3,
+  "fields": {
+    "user": 4,
+    "bio": "",
+    "profile_pic": null,
+    "social_links": {}
+  }
+}
+]
