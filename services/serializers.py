@@ -9,29 +9,17 @@ class ServiceCategorySerializer(serializers.ModelSerializer):
 
 class ServiceImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
+    image_file = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    image_url = serializers.URLField(write_only=True, required=False, allow_null=True, allow_blank=True)
 
     def get_image(self, obj):
-        """Return the image URL, handling both uploaded files (Cloudinary) and
-        plain URL strings stored by populate_db / migrations."""
-        if not obj.image:
-            return None
-        raw = str(obj.image)
-        if raw.startswith('http://') or raw.startswith('https://'):
-            return raw
-        try:
-            url = obj.image.url
-            if url.startswith('http'):
-                return url
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(url)
-            return url
-        except Exception:
-            return raw
+        """Return the image URL from either image_file or image_url"""
+        return obj.image  # Uses the @property from model
 
     class Meta:
         model = ServiceImage
-        fields = ["id", "image"]
+        fields = ["id", "image", "image_file", "image_url"]
+        read_only_fields = ["image"]
 class ServiceSerializer(serializers.ModelSerializer):
     images = ServiceImageSerializer(many=True, read_only=True)
     category = ServiceCategorySerializer(read_only=True)

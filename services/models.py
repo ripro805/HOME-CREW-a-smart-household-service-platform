@@ -24,7 +24,19 @@ class Service(models.Model):
 		return self.name
 class  ServiceImage(models.Model):
 	service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="images")
-	image = models.ImageField(upload_to='services/images/', blank=True, null=True)
+	image_file = CloudinaryField('image', blank=True, null=True)  # For direct file uploads
+	image_url = models.URLField(max_length=500, blank=True, null=True)  # For external URLs
+	
+	@property
+	def image(self):
+		"""Return image_file URL if exists, otherwise return image_url"""
+		if self.image_file:
+			try:
+				return self.image_file.url
+			except Exception:
+				return str(self.image_file)
+		return self.image_url
+
 class Review(models.Model):
 	service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="reviews")
 	client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
