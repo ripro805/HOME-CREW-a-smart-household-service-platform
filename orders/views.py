@@ -13,7 +13,10 @@ from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
 
 # Helper function to get frontend URL
-def get_frontend_url():
+def get_frontend_url(request=None):
+    # In local dev, always point to React dev server
+    if request and request.get_host().startswith('localhost'):
+        return 'http://localhost:5173'
     protocol = django_settings.DJOSER.get('PROTOCOL', 'http')
     domain = django_settings.DJOSER.get('DOMAIN', 'localhost:5173')
     return f'{protocol}://{domain}'
@@ -553,7 +556,7 @@ def payment_success_callback(request):
     # Log callback data for debugging
     print(f"Payment Success Callback - Order: {order_id}, Transaction: {transaction_id}, Status: {status_code}")
     
-    frontend_url = get_frontend_url()
+    frontend_url = get_frontend_url(request)
     
     if not order_id:
         print("Error: No order_id in callback data")
@@ -619,7 +622,7 @@ def payment_fail_callback(request):
     SSLCommerz Fail Callback
     Called by SSLCommerz after failed payment
     """
-    frontend_url = get_frontend_url()
+    frontend_url = get_frontend_url(request)
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
 
@@ -640,7 +643,7 @@ def payment_cancel_callback(request):
     SSLCommerz Cancel Callback
     Called by SSLCommerz after user cancels payment
     """
-    frontend_url = get_frontend_url()
+    frontend_url = get_frontend_url(request)
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
 

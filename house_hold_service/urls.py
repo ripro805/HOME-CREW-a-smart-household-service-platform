@@ -47,6 +47,23 @@ def activate_redirect(request, uid, token):
 def password_reset_redirect(request, uid, token):
     return HttpResponseRedirect(f'{_frontend_url(request)}/password/reset/confirm/{uid}/{token}')
 
+
+# Safety-net: if payment callback redirects somehow land on the backend domain,
+# forward them to the React frontend
+def payment_success_redirect(request, order_id=None):
+    base = f'{_frontend_url(request)}/payment/success'
+    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
+
+
+def payment_fail_redirect(request, order_id=None):
+    base = f'{_frontend_url(request)}/payment/fail'
+    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
+
+
+def payment_cancel_redirect(request, order_id=None):
+    base = f'{_frontend_url(request)}/payment/cancel'
+    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
+
 schema_view = get_schema_view(
     openapi.Info(
         title="HOME_CREW-a-smart-household-service-platform API",
@@ -69,6 +86,13 @@ urlpatterns = [
     # and redirect them to the React frontend
     path("activate/<str:uid>/<str:token>", activate_redirect),
     path("password/reset/confirm/<str:uid>/<str:token>", password_reset_redirect),
+    # Catch payment result routes that may land on the backend domain and forward to frontend
+    path("payment/success/<int:order_id>", payment_success_redirect),
+    path("payment/success/", payment_success_redirect),
+    path("payment/fail/<int:order_id>", payment_fail_redirect),
+    path("payment/fail/", payment_fail_redirect),
+    path("payment/cancel/<int:order_id>", payment_cancel_redirect),
+    path("payment/cancel/", payment_cancel_redirect),
     path("api/v1/", include("api.urls")),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
