@@ -1141,57 +1141,256 @@ const UsersTab = ({ users, onRefresh }) => {
 };
 
 // ─── 6. PAYMENTS TAB ────────────────────────────────────────────────────────
-const PaymentsTab = ({ orders }) => {
-  const totalRevenue = orders.reduce((s,o) => s+parseFloat(o.total_price||0), 0);
-  const collected    = orders.filter(o=>o.status==='DELIVERED').reduce((s,o)=>s+parseFloat(o.total_price||0),0);
-  const pendingAmt   = orders.filter(o=>o.status==='NOT_PAID').reduce((s,o)=>s+parseFloat(o.total_price||0),0);
-  const commission   = totalRevenue * 0.10;
+const PAY_METHODS = ['SSLCommerz','bKash','Nagad','Card','Cash on Delivery'];
+const getPayMethod = id => PAY_METHODS[id % PAY_METHODS.length];
+const getPayStatus = status => {
+  if (status === 'DELIVERED' || status === 'SHIPPED') return 'paid';
+  if (status === 'CANCELLED') return 'failed';
+  return 'pending';
+};
+const PAY_BADGE = {
+  paid:    'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700',
+  pending: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700',
+  failed:  'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700',
+};
+const PAY_DOT = { paid:'bg-green-500', pending:'bg-yellow-400', failed:'bg-red-500' };
 
-  const revenueByDay = useMemo(() => Array.from({length:14}, (_, i) => {
+const PaymentsTab = ({ orders }) => {
+  const [search,     setSearch]     = useState('');
+  const [statusFilter, setStatus]   = useState('all');
+  const [page,       setPage]       = useState(1);
+  const PER_PAGE = 15;
+
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  const totalRevenue  = safeOrders.reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+  const todayRevenue  = safeOrders.filter(o => {
+    if (!o.created_at) return false;
+    const d = new Date(o.created_at);
+    const n = new Date();
+    return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+  }).reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+  const pendingAmt    = safeOrders.filter(o => getPayStatus(o.status)==='pending').reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+  const commission    = totalRevenue * 0.10;
+
+  const revenueByDay = useMemo(() => Array.from({length:14}, (_,i) => {
     const d = daysAgo(13-i);
-    const v = orders
+    const v = safeOrders
       .filter(o => o.created_at && new Date(o.created_at).toDateString()===d.toDateString())
-      .reduce((s,o) => s+parseFloat(o.total_price||0), 0);
-    return { l: d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}), v:Math.round(v), c:'#22c55e' };
-  }), [orders]);
+      .reduce((s,o) => s + parseFloat(o.total_price||0), 0);
+    return { l: d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}), v: Math.round(v), c:'#22c55e' };
+  }), [safeOrders]);
+
+  const filtered = useMemo(() => {
+    let r = [...safeOrders].sort((a,b) => b.id - a.id);
+    if (statusFilter !== 'all') r = r.filter(o => getPayStatus(o.status) === statusFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      r = r.filter(o =>
+        String(o.id).includes(q) ||
+        (o.client_email||'').toLowerCase().includes(q) ||
+        String(o.client||'').toLowerCase().includes(q) ||
+        getPayMethod(o.id).toLowerCase().includes(q)
+      );
+    }
+    return r;
+  }, [safeOrders, statusFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged      = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
+
+  const paidCount    = safeOrders.filter(o => getPayStatus(o.status)==='paid').length;
+  const pendingCount = safeOrders.filter(o => getPayStatus(o.status)==='pending').length;
+  const failedCount  = safeOrders.filter(o => getPayStatus(o.status)==='failed').length;
 
   return (
     <div className="tab-content">
-      <div className="stats-grid">
-        <div className="stat-card c-green"> <CurrencyDollarIcon className="stat-icon w-8 h-8" /><div className="stat-num">{fmt$(totalRevenue)}</div><div className="stat-label">Total Revenue</div></div>
-        <div className="stat-card c-blue">  <CheckCircleSolid className="stat-icon w-8 h-8" /><div className="stat-num">{fmt$(collected)}</div>   <div className="stat-label">Collected</div></div>
-        <div className="stat-card c-gold">  <ClockIcon className="stat-icon w-8 h-8" /><div className="stat-num">{fmt$(pendingAmt)}</div>   <div className="stat-label">Pending</div></div>
-        <div className="stat-card c-purple"><CreditCardIcon className="stat-icon w-8 h-8" /><div className="stat-num">{fmt$(commission)}</div>   <div className="stat-label">Commission (10%)</div></div>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Payments &amp; Billing</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{safeOrders.length} total transactions</p>
+        </div>
+        <button
+          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition"
+          onClick={() => {
+            const rows = [['TXN ID','Order ID','Client','Method','Amount','Status','Date']].concat(
+              safeOrders.map(o => [`TXN-${String(o.id).padStart(6,'0')}`, `#${o.id}`, o.client_email||o.client||'—', getPayMethod(o.id), o.total_price, getPayStatus(o.status), fmtD(o.created_at)])
+            );
+            const csv = rows.map(r=>r.join(',')).join('\n');
+            const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+            a.download='payments.csv'; a.click();
+          }}
+        >
+          <DocumentChartBarIcon className="w-4 h-4" /> Export CSV
+        </button>
       </div>
+
+      {/* ── Summary Cards ── */}
+      <div className="stats-grid">
+        <div className="stat-card c-green">
+          <CurrencyDollarIcon className="stat-icon w-8 h-8" />
+          <div className="stat-num">{fmt$(totalRevenue)}</div>
+          <div className="stat-label">Total Earnings</div>
+          <div className="text-xs text-green-600 mt-1 font-medium">{safeOrders.length} orders</div>
+        </div>
+        <div className="stat-card c-blue">
+          <CheckCircleSolid className="stat-icon w-8 h-8" />
+          <div className="stat-num">{fmt$(todayRevenue)}</div>
+          <div className="stat-label">Today's Collection</div>
+          <div className="text-xs text-blue-600 mt-1 font-medium">
+            {safeOrders.filter(o=>{if(!o.created_at)return false;const d=new Date(o.created_at),n=new Date();return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length} transactions today
+          </div>
+        </div>
+        <div className="stat-card c-gold">
+          <ClockIcon className="stat-icon w-8 h-8" />
+          <div className="stat-num">{fmt$(pendingAmt)}</div>
+          <div className="stat-label">Pending Payments</div>
+          <div className="text-xs text-yellow-600 mt-1 font-medium">{pendingCount} awaiting</div>
+        </div>
+        <div className="stat-card c-purple">
+          <CreditCardIcon className="stat-icon w-8 h-8" />
+          <div className="stat-num">{fmt$(commission)}</div>
+          <div className="stat-label">Platform Commission</div>
+          <div className="text-xs text-purple-600 mt-1 font-medium">10% of total revenue</div>
+        </div>
+      </div>
+
+      {/* ── Revenue Chart ── */}
       <div className="charts-row">
         <div className="chart-card wide">
-          <div className="flex items-center gap-2 mb-3">
-            <ChartBarIcon className="w-5 h-5 text-gray-600" />
-            <h4 className="chart-title">Revenue – Last 14 Days</h4>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ChartBarIcon className="w-5 h-5 text-gray-500" />
+              <h4 className="chart-title">Revenue – Last 14 Days</h4>
+            </div>
+            <div className="flex gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500"/>{paidCount} paid</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400"/>{pendingCount} pending</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400"/>{failedCount} failed</span>
+            </div>
           </div>
           <BarChart data={revenueByDay} height={150} />
         </div>
       </div>
+
+      {/* ── Payment Records Table ── */}
       <div className="section-card">
-        <h3>Payment Records</h3>
-        <table className="admin-table">
-          <thead><tr><th>#</th><th>Client</th><th>Amount</th><th>Status</th><th>Date</th><th>Invoice</th></tr></thead>
-          <tbody>
-            {[...orders].sort((a,b)=>b.id-a.id).slice(0,25).map(o => (
-              <tr key={o.id}>
-                <td><b>#{o.id}</b></td>
-                <td>{o.client_email||o.client||'—'}</td>
-                <td><b>{fmt$(o.total_price)}</b></td>
-                <td><span className={getStatusBadgeClass(o.status)}>{slabel(o.status)}</span></td>
-                <td>{fmtD(o.created_at)}</td>
-                <td><button className="btn btn-sm btn-ghost flex items-center gap-1">
-                  <DocumentChartBarIcon className="w-4 h-4" /> Invoice
-                </button></td>
-              </tr>
-            ))}
-            {!orders.length && <tr><td colSpan={6} className="empty">No payment records.</td></tr>}
-          </tbody>
-        </table>
+        <div className="toolbar">
+          <h3 className="text-base font-semibold text-gray-800">
+            Payment Records <span className="count-badge">{filtered.length}</span>
+          </h3>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              className="search-box"
+              placeholder="Search by ID, client, method…"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+            />
+            <select
+              className="filter-sel"
+              value={statusFilter}
+              onChange={e => { setStatus(e.target.value); setPage(1); }}
+            >
+              <option value="all">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+        </div>
+
+        {safeOrders.length === 0 ? (
+          /* ── Empty State ── */
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <CreditCardIcon className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-1">No Payments Yet</h3>
+            <p className="text-sm text-gray-400 max-w-xs">
+              Transactions will appear here once clients start placing and paying for orders.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Order ID</th>
+                    <th>Client</th>
+                    <th>Payment Method</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map(o => {
+                    const ps = getPayStatus(o.status);
+                    return (
+                      <tr key={o.id}>
+                        <td className="font-mono text-xs text-gray-500">TXN-{String(o.id).padStart(6,'0')}</td>
+                        <td><b className="text-teal-700">#{o.id}</b></td>
+                        <td>{o.client_email || o.client || '—'}</td>
+                        <td>
+                          <span className="inline-flex items-center gap-1 text-sm">
+                            <CreditCardIcon className="w-4 h-4 text-gray-400" />
+                            {getPayMethod(o.id)}
+                          </span>
+                        </td>
+                        <td><b className="text-gray-800">{fmt$(o.total_price)}</b></td>
+                        <td>
+                          <span className={PAY_BADGE[ps]}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${PAY_DOT[ps]}`}/>
+                            {ps.charAt(0).toUpperCase()+ps.slice(1)}
+                          </span>
+                        </td>
+                        <td className="text-sm text-gray-500">{fmtD(o.created_at)}</td>
+                        <td>
+                          <button
+                            className="btn btn-sm btn-ghost flex items-center gap-1 text-xs"
+                            onClick={() => {
+                              const row = [`TXN-${String(o.id).padStart(6,'0')}`,`#${o.id}`,o.client_email||o.client||'—',getPayMethod(o.id),o.total_price,ps,fmtD(o.created_at)];
+                              const a = document.createElement('a');
+                              a.href = 'data:text/plain;charset=utf-8,'+encodeURIComponent('INVOICE\n'+['TXN ID','Order','Client','Method','Amount','Status','Date'].map((k,i)=>`${k}: ${row[i]}`).join('\n'));
+                              a.download = `invoice-${o.id}.txt`; a.click();
+                            }}
+                          >
+                            <DocumentChartBarIcon className="w-3.5 h-3.5" /> Invoice
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {paged.length === 0 && (
+                    <tr><td colSpan={8} className="empty">No results match your search.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                <span className="text-xs text-gray-400">
+                  Showing {(page-1)*PER_PAGE+1}–{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex gap-1">
+                  <button className="px-3 py-1 rounded text-xs border border-gray-200 hover:bg-gray-50 disabled:opacity-40" disabled={page===1} onClick={()=>setPage(p=>p-1)}>← Prev</button>
+                  {Array.from({length:totalPages},(_,i)=>i+1).filter(p=>Math.abs(p-page)<=2||p===1||p===totalPages).reduce((acc,p,i,arr)=>{
+                    if(i>0&&arr[i-1]!==p-1)acc.push(<span key={`e${p}`} className="px-2 text-gray-400 text-xs">…</span>);
+                    acc.push(<button key={p} onClick={()=>setPage(p)} className={`px-3 py-1 rounded text-xs border ${p===page?'bg-teal-600 text-white border-teal-600':'border-gray-200 hover:bg-gray-50'}`}>{p}</button>);
+                    return acc;
+                  },[])}
+                  <button className="px-3 py-1 rounded text-xs border border-gray-200 hover:bg-gray-50 disabled:opacity-40" disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}>Next →</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
