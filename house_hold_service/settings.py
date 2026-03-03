@@ -101,8 +101,7 @@ ROOT_URLCONF = "house_hold_service.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        # Include React build output so the catch-all view can serve index.html
-        "DIRS": [BASE_DIR / 'homecrew-client' / 'dist'],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -192,11 +191,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # WhiteNoise settings
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Serve React build's assets directory via WhiteNoise at root level
-# (Only effective in production after 'npm run build' is run)
-_REACT_DIST = BASE_DIR / 'homecrew-client' / 'dist'
-if _REACT_DIST.exists():
-    WHITENOISE_ROOT = str(_REACT_DIST)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -231,10 +225,10 @@ SIMPLE_JWT = {
 }
 
 # DJOSER settings
-# Auto-detect the frontend domain: on Render, frontend = backend (Django serves React)
-_RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
-FRONTEND_DOMAIN = config('FRONTEND_DOMAIN', default=_RENDER_HOST if _RENDER_HOST else 'localhost:5173')
-FRONTEND_PROTOCOL = config('FRONTEND_PROTOCOL', default='https' if _RENDER_HOST else 'http')
+# Frontend domain is configured via FRONTEND_DOMAIN env var in Render dashboard
+# (points to the separate React static site on Render)
+FRONTEND_DOMAIN = config('FRONTEND_DOMAIN', default='localhost:5173')
+FRONTEND_PROTOCOL = config('FRONTEND_PROTOCOL', default='http')
 
 DJOSER = {
     'PROTOCOL': FRONTEND_PROTOCOL,

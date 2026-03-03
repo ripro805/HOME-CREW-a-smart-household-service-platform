@@ -25,7 +25,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -38,20 +38,14 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    # url='http://127.0.0.1:8000/api/v1/',
-    # urlconf='api.urls',
 )
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/api/v1/", permanent=False)),
     path("admin/", admin.site.urls),
     path("api/v1/", include("api.urls")),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    # SPA catch-all — serves React's index.html for every non-API route
-    # This makes payment/success/39, activate/uid/token, etc. all work
-    # because React Router handles them client-side.
-    path('', TemplateView.as_view(template_name='index.html')),
-    path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]
 
 # Only enable debug toolbar in development
