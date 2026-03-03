@@ -14,8 +14,8 @@ from django.http import HttpResponseRedirect
 
 # Helper function to get frontend URL
 def get_frontend_url():
-    protocol = django_settings.DJOSER.get('EMAIL_FRONTEND_PROTOCOL', 'http')
-    domain = django_settings.DJOSER.get('EMAIL_FRONTEND_DOMAIN', 'localhost:5173')
+    protocol = django_settings.DJOSER.get('PROTOCOL', 'http')
+    domain = django_settings.DJOSER.get('DOMAIN', 'localhost:5173')
     return f'{protocol}://{domain}'
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -223,9 +223,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             'total_amount': float(order.total_price),
             'currency': "BDT",
             'tran_id': f"ORDER-{order.id}-{int(order.created_at.timestamp())}",
-            'success_url': f"http://127.0.0.1:8000/api/v1/orders/payment/success/",
-            'fail_url': f"http://127.0.0.1:8000/api/v1/orders/payment/fail/",
-            'cancel_url': f"http://127.0.0.1:8000/api/v1/orders/payment/cancel/",
+            'success_url': request.build_absolute_uri('/api/v1/orders/payment/success/'),
+            'fail_url': request.build_absolute_uri('/api/v1/orders/payment/fail/'),
+            'cancel_url': request.build_absolute_uri('/api/v1/orders/payment/cancel/'),
             'emi_option': 0,
             'cus_name': request.user.get_full_name() or request.user.email,
             'cus_email': request.user.email,
