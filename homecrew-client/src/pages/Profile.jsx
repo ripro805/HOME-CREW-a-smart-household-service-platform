@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +46,8 @@ const Profile = () => {
   
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const ordersRef = useScrollReveal();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -201,7 +204,26 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-lg text-gray-600">Loading profile...</div></div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="skeleton h-10 w-48 mb-6 rounded-lg" />
+          <div className="skeleton h-12 rounded-xl mb-6" />
+          <div className="bg-white rounded-3xl overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-8 p-10">
+              <div className="lg:w-1/3 flex flex-col items-center gap-4">
+                <div className="skeleton w-48 h-48 rounded-full" />
+                <div className="skeleton h-7 w-36 rounded-lg" />
+                <div className="skeleton h-5 w-24 rounded-full" />
+              </div>
+              <div className="flex-1 grid grid-cols-2 gap-4">
+                {[...Array(6)].map(n => <div key={n} className="skeleton h-16 rounded-xl" />)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!profile) {
@@ -212,18 +234,18 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Profile</h1>
+        <div className="mb-8 animate-fade-in-up">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 section-heading">Profile</h1>
           <p className="text-gray-500">View all your profile details here</p>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm">
+        <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm animate-fade-in-up" style={{animationDelay:'0.1s'}}>
           <button
             onClick={() => setActiveTab('view')}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
               activeTab === 'view'
-                ? 'bg-teal-600 text-white shadow-md'
+                ? 'bg-teal-600 text-white shadow-md btn-glow'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -233,7 +255,7 @@ const Profile = () => {
             onClick={() => setActiveTab('edit')}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
               activeTab === 'edit'
-                ? 'bg-teal-600 text-white shadow-md'
+                ? 'bg-teal-600 text-white shadow-md btn-glow'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -243,7 +265,7 @@ const Profile = () => {
             onClick={() => setActiveTab('orders')}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
               activeTab === 'orders'
-                ? 'bg-teal-600 text-white shadow-md'
+                ? 'bg-teal-600 text-white shadow-md btn-glow'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -253,7 +275,7 @@ const Profile = () => {
             onClick={() => setActiveTab('security')}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
               activeTab === 'security'
-                ? 'bg-teal-600 text-white shadow-md'
+                ? 'bg-teal-600 text-white shadow-md btn-glow'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -527,9 +549,9 @@ const Profile = () => {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && (
-          <div className="bg-white rounded-3xl shadow-lg p-10">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-800">My Orders</h2>
+          <div className="bg-white rounded-3xl shadow-lg p-10 animate-fade-in-up">
+            <div className="flex items-center justify-between mb-8 reveal">
+              <h2 className="text-3xl font-bold text-gray-800 section-heading">My Orders</h2>
               <span className="text-sm text-gray-400">{orders.length} order{orders.length !== 1 ? 's' : ''} total</span>
             </div>
 
@@ -551,8 +573,8 @@ const Profile = () => {
                 </button>
               </div>
             ) : (
-              <div className="space-y-5">
-                {[...orders].sort((a, b) => b.id - a.id).map(order => {
+              <div ref={ordersRef} className="space-y-5">
+                {[...orders].sort((a, b) => b.id - a.id).map((order, oi) => {
                   const STATUS_LABEL = {
                     NOT_PAID: 'Pending Payment',
                     READY_TO_SHIP: 'Confirmed',
@@ -567,7 +589,7 @@ const Profile = () => {
                       })
                     : '—';
                   return (
-                    <div key={order.id} className="border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group">
+                    <div key={order.id} className={`reveal delay-${(oi % 5) + 1} border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group card-hover-light`}>
                       {/* Order Header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 bg-gray-50 gap-3">
                         <div className="flex items-center gap-3">

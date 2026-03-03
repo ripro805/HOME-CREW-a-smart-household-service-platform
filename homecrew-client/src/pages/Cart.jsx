@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,8 @@ const Cart = () => {
   const { isAuthenticated } = useAuth();
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
+
+  const cartRef = useScrollReveal();
 
   if (!isAuthenticated) {
     return (
@@ -78,16 +81,33 @@ const Cart = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-lg text-gray-600">Loading cart...</div></div>;
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="skeleton h-10 w-56 mb-8 rounded-lg" />
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1 space-y-4">
+              {[1,2,3].map(n => <div key={n} className="skeleton h-36 rounded-2xl" />)}
+            </div>
+            <div className="lg:w-96">
+              <div className="skeleton h-72 rounded-2xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center">
+        <div className="text-center animate-fade-in-up">
+          <div className="w-24 h-24 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShoppingBagIcon className="w-12 h-12 text-teal-400 animate-float" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
-          <p className="text-gray-600 mb-4">Add some services to get started!</p>
-          <button onClick={() => navigate('/services')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+          <p className="text-gray-500 mb-6">Add some services to get started!</p>
+          <button onClick={() => navigate('/services')} className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow">
             Browse Services
           </button>
         </div>
@@ -98,16 +118,16 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-8 animate-fade-in-up section-heading">Shopping Cart</h1>
         
         {/* Confirmation Modal */}
         {showRemoveModal && (
           <>
             <div 
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
               onClick={cancelRemove}
             ></div>
-            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 p-6 w-96">
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 p-6 w-96 animate-scale-in">
               <div className="flex items-center gap-3 mb-4">
                 <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
                 <h2 className="text-xl font-bold text-gray-800">Remove Item</h2>
@@ -134,10 +154,10 @@ const Cart = () => {
         )}
         
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1 space-y-4">
-            {cartItems.map(item => (
-              <div key={item.id} className="bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-32 h-32 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">
+          <div ref={cartRef} className="flex-1 space-y-4">
+            {cartItems.map((item, idx) => (
+              <div key={item.id} className={`reveal delay-${(idx % 5) + 1} bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row gap-4 card-hover`}>
+                <div className="w-full md:w-32 h-32 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 card-img-zoom">
                   {item.service.images && item.service.images.length > 0 ? (
                     <img src={item.service.images[0].image} alt={item.service.name} className="w-full h-full object-cover" />
                   ) : (
@@ -208,7 +228,7 @@ const Cart = () => {
                 </div>
               </div>
 
-              <button onClick={handleCheckout} className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors mb-3">
+              <button onClick={handleCheckout} className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl btn-glow mb-3">
                 Proceed to Checkout
               </button>
 

@@ -118,7 +118,7 @@ const Navbar = () => {
   return (
     <>
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DESKTOP / TABLET NAVBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+      <nav className="bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 animate-fade-in-down">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
 
           {/* Logo */}
@@ -129,11 +129,11 @@ const Navbar = () => {
 
           {/* Center links â€“ desktop only */}
           <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6">
-            <Link to="/" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50">
+            <Link to="/" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
               Home
             </Link>
             {isAuthenticated && !isAdmin && (
-              <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50">
+              <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
                 Services
               </Link>
             )}
@@ -145,7 +145,7 @@ const Navbar = () => {
               <>
                 {/* Auth buttons â€“ desktop only */}
                 <Link to="/login"    className="hidden md:inline-flex px-5 py-2 text-teal-600 hover:text-teal-700 font-semibold text-sm border-2 border-teal-600 rounded-lg transition-colors hover:bg-teal-50">Sign In</Link>
-                <Link to="/register" className="hidden md:inline-flex px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg transition-colors">Sign Up</Link>
+                <Link to="/register" className="hidden md:inline-flex px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg btn-glow">Sign Up</Link>
               </>
             ) : isAdmin ? (
               <>
@@ -176,9 +176,9 @@ const Navbar = () => {
             ) : (
               <>
                 {/* Cart */}
-                <Link to="/cart" className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50">
+                <Link to="/cart" className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50 icon-hover">
                   <ShoppingCartIcon className="w-7 h-7" />
-                  {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>}
+                  {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce-in">{cartCount}</span>}
                 </Link>
 
                 {/* Notifications */}

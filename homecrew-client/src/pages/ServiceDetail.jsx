@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
@@ -19,6 +20,8 @@ const ServiceDetail = () => {
 
   const { addToCart } = useCart();
   const { isAuthenticated, user } = useAuth();
+
+  const reviewsRef = useScrollReveal();
 
   // Buy Now state
   const [showBuyNow, setShowBuyNow] = useState(false);
@@ -175,7 +178,25 @@ const ServiceDetail = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-lg text-gray-600">Loading service details...</div></div>;
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="skeleton h-10 w-32 mb-6 rounded-lg" />
+          <div className="bg-white rounded-2xl p-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="skeleton h-96 rounded-xl" />
+              <div className="space-y-4">
+                <div className="skeleton h-8 w-3/4 rounded-lg" />
+                <div className="skeleton h-6 w-1/2 rounded-lg" />
+                <div className="skeleton h-4 w-full rounded" />
+                <div className="skeleton h-4 w-5/6 rounded" />
+                <div className="skeleton h-12 rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!service) {
@@ -186,15 +207,15 @@ const ServiceDetail = () => {
     <>
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors">
+        <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors animate-fade-in-up">
           ← Back to Services
         </button>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8 animate-fade-in-up" style={{animationDelay:'0.1s'}}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
             <div>
               {service.images && service.images.length > 0 ? (
-                <div className="w-full h-96 bg-gray-200 rounded-xl overflow-hidden mb-4">
+                <div className="w-full h-96 bg-gray-200 rounded-xl overflow-hidden mb-4 card-img-zoom shadow-md group">
                   <img src={service.images[0].image} alt={service.name} className="w-full h-full object-cover" />
                 </div>
               ) : (
@@ -204,13 +225,13 @@ const ServiceDetail = () => {
               {service.images && service.images.length > 1 && (
                 <div className="grid grid-cols-4 gap-2">
                   {service.images.slice(1).map((img, index) => (
-                    <img key={index} src={img.image} alt={`${service.name} ${index + 2}`} className="w-full h-20 object-cover rounded-lg" />
+                    <img key={index} src={img.image} alt={`${service.name} ${index + 2}`} className="w-full h-20 object-cover rounded-lg card-hover cursor-pointer" />
                   ))}
                 </div>
               )}
             </div>
 
-            <div>
+            <div className="animate-fade-in-up" style={{animationDelay:'0.2s'}}>
               <h1 className="text-3xl font-bold text-gray-800 mb-4">{service.name}</h1>
               
               <div className="flex items-center gap-4 mb-4">
@@ -233,14 +254,14 @@ const ServiceDetail = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 btn-glow"
                 >
                   <ShoppingCartIcon className="w-5 h-5" />
                   Add to Cart
                 </button>
                 <button
                   onClick={handleOpenBuyNow}
-                  className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 btn-glow-orange"
                 >
                   <BoltIcon className="w-5 h-5" />
                   Buy Now
@@ -250,13 +271,13 @@ const ServiceDetail = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Customer Reviews</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-8" ref={reviewsRef}>
+          <div className="flex justify-between items-center mb-6 reveal">
+            <h2 className="text-2xl font-bold text-gray-800 section-heading">Customer Reviews</h2>
             {isAuthenticated && (
               <button 
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
               >
                 {showReviewForm ? 'Cancel' : 'Write a Review'}
               </button>
@@ -299,8 +320,8 @@ const ServiceDetail = () => {
             {reviews.length === 0 ? (
               <p className="text-center text-gray-500 py-8">No reviews yet. Be the first to review!</p>
             ) : (
-              reviews.map(review => (
-                <div key={review.id} className="p-5 bg-gray-50 rounded-xl">
+              reviews.map((review, ri) => (
+                <div key={review.id} className={`reveal delay-${(ri % 5) + 1} p-5 bg-gray-50 rounded-xl card-hover-light`}>
                   {editingReviewId === review.id ? (
                     /* Inline edit form */
                     <div>
@@ -385,8 +406,8 @@ const ServiceDetail = () => {
 
       {/* ── Buy Now Modal ── */}
       {showBuyNow && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scale-in">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Quick Order</h2>

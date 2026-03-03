@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { 
   TruckIcon,
   ShieldCheckIcon,
@@ -32,6 +33,12 @@ const Home = () => {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const featureRef    = useScrollReveal();
+  const categoryRef   = useScrollReveal();
+  const trendingRef   = useScrollReveal();
+  const discountRef   = useScrollReveal();
+  const footerRef     = useScrollReveal();
   
   // Countdown timer state for discount section
   const [timeLeft, setTimeLeft] = useState({
@@ -169,21 +176,21 @@ const Home = () => {
                     <div className="w-full px-8 md:px-20 max-w-none">
                       <div className="max-w-2xl">
                         {service.discount && (
-                          <span className="inline-block px-4 py-1.5 bg-red-500 text-white font-bold rounded-full text-sm mb-4 tracking-widest uppercase">
+                          <span className="inline-block px-4 py-1.5 bg-red-500 text-white font-bold rounded-full text-sm mb-4 tracking-widest uppercase animate-bounce-in pulse-glow" style={{animationDelay:'0.1s'}}>
                             {service.discount}% OFF
                           </span>
                         )}
                         <h1
-                          className="text-5xl md:text-7xl font-extrabold text-white leading-none mb-4 tracking-tight"
-                          style={{ textShadow: '0 2px 24px rgba(0,0,0,0.4)' }}
+                          className="text-5xl md:text-7xl font-extrabold text-white leading-none mb-4 tracking-tight animate-fade-in-up"
+                          style={{ textShadow: '0 2px 24px rgba(0,0,0,0.4)', animationDelay: '0.2s' }}
                         >
                           {service.name}
                         </h1>
-                        <p className="text-lg md:text-xl text-white/80 mb-6 max-w-lg leading-relaxed">
+                        <p className="text-lg md:text-xl text-white/80 mb-6 max-w-lg leading-relaxed animate-fade-in-up" style={{animationDelay:'0.35s'}}>
                           {service.description?.slice(0, 100) || 'Professional household service at your doorstep'}
                           {service.description?.length > 100 ? '...' : ''}
                         </p>
-                        <div className="flex items-center gap-4 mb-8">
+                        <div className="flex items-center gap-4 mb-8 animate-fade-in-up" style={{animationDelay:'0.45s'}}>
                           <span className="text-4xl font-extrabold text-yellow-300">
                             ৳{service.price}
                           </span>
@@ -193,16 +200,16 @@ const Home = () => {
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 animate-fade-in-up" style={{animationDelay:'0.55s'}}>
                           <Link
                             to={`/services/${service.id}`}
-                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-gray-900 font-bold rounded-full hover:bg-gray-100 transition-all shadow-xl text-base"
+                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-gray-900 font-bold rounded-full transition-all shadow-xl text-base btn-glow"
                           >
                             Book Now
                           </Link>
                           <Link
                             to="/services"
-                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-full hover:bg-white/25 transition-all border border-white/30 text-base"
+                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-full transition-all border border-white/30 text-base btn-glow"
                           >
                             Browse All
                           </Link>
@@ -279,14 +286,19 @@ const Home = () => {
       </section>
 
       {/* Feature Cards */}
-      <section className="py-16 px-6">
+      <section className="py-16 px-6" ref={featureRef}>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featureCards.map((card) => {
+            {featureCards.map((card, i) => {
               const Icon = card.icon;
               return (
-                <div key={card.title} className={`${card.bg} rounded-2xl p-6 text-center hover:shadow-lg transition-shadow`}>
-                  <Icon className={`w-12 h-12 ${card.color} mx-auto mb-3`} />
+                <div
+                  key={card.title}
+                  className={`reveal delay-${i + 1} ${card.bg} rounded-2xl p-6 text-center card-hover border border-transparent hover:border-white/50 group`}
+                >
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300" style={{background: 'white'}}>
+                    <Icon className={`w-8 h-8 ${card.color}`} />
+                  </div>
                   <h3 className="font-bold text-lg text-gray-800 mb-2">{card.title}</h3>
                   <p className="text-gray-600 text-sm">{card.desc}</p>
                 </div>
@@ -297,40 +309,42 @@ const Home = () => {
       </section>
 
       {/* Browse Categories */}
-      <section className="py-16 px-6 bg-white">
+      <section className="py-16 px-6 bg-white" ref={categoryRef}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-800">Browse Categories</h2>
-            <Link 
+          <div className="flex justify-between items-center mb-8 reveal">
+            <h2 className="text-3xl font-extrabold text-gray-800 section-heading">Browse Categories</h2>
+            <Link
               to="/categories"
-              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
             >
               View All
             </Link>
           </div>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[1,2,3,4].map(n => <div key={n} className="skeleton h-40 rounded-2xl" />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-              {categories.slice(0, 4).map((category) => (
+              {categories.slice(0, 4).map((category, i) => (
                 <div
                   key={category.id}
-                  className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center hover:shadow-lg transition-all hover:-translate-y-1 border border-teal-100 flex flex-col"
+                  className={`reveal delay-${i + 1} bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center card-hover border border-teal-100 flex flex-col group overflow-hidden relative`}
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
-                    <span className="text-xl font-bold text-white">
+                  {/* background orb */}
+                  <div className="absolute -top-6 -right-6 w-20 h-20 bg-teal-200 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md group-hover:rotate-6 transition-transform duration-300">
+                    <span className="text-2xl font-bold text-white">
                       {category.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <h3 className="font-bold text-lg text-gray-800 mb-4">{category.name}</h3>
                   <Link
                     to={`/services?category=${category.id}`}
-                    className="mt-auto text-teal-600 hover:text-teal-700 text-sm font-semibold transition-colors inline-flex items-center gap-1 group"
+                    className="mt-auto text-teal-600 hover:text-teal-700 text-sm font-semibold inline-flex items-center gap-1 group/link link-underline"
                   >
                     Explore
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="group-hover/link:translate-x-1 transition-transform">→</span>
                   </Link>
                 </div>
               ))}
@@ -340,57 +354,60 @@ const Home = () => {
       </section>
 
       {/* Trending Services */}
-      <section className="py-16 px-6 bg-gray-50">
+      <section className="py-16 px-6 bg-gray-50" ref={trendingRef}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-800">Trending Services</h2>
-            <Link 
+          <div className="flex justify-between items-center mb-8 reveal">
+            <h2 className="text-3xl font-extrabold text-gray-800 section-heading">Trending Services</h2>
+            <Link
               to="/services"
-              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
             >
               View All
             </Link>
           </div>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {[1,2,3,4,5].map(n => <div key={n} className="skeleton h-72 rounded-2xl" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {trendingServices.map((service) => {
+              {trendingServices.map((service, i) => {
                 const imageUrl = service.images && service.images.length > 0 ? service.images[0].image : null;
                 return (
-                <div key={service.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
-                  <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center overflow-hidden">
+                <div
+                  key={service.id}
+                  className={`reveal delay-${i + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group`}
+                >
+                  <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center overflow-hidden relative">
                     {imageUrl ? (
                       <img src={imageUrl} alt={service.name} className="w-full h-full object-cover" />
                     ) : (
-                      <WrenchScrewdriverIcon className="w-20 h-20 text-teal-600" />
+                      <WrenchScrewdriverIcon className="w-20 h-20 text-teal-600 group-hover:scale-110 transition-transform duration-300" />
                     )}
+                    {/* hover shine overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
-                  <div className="p-6">
-                    <h3 className="font-bold text-xl text-gray-800 mb-2">{service.name}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{service.description}</p>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          i < Math.floor(service.avg_rating || 0) ? (
-                            <StarSolid key={i} className="w-4 h-4 text-yellow-500" />
-                          ) : (
-                            <StarIcon key={i} className="w-4 h-4 text-gray-300" />
-                          )
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-500">({service.review_count || 0})</span>
+                  <div className="p-5">
+                    <h3 className="font-bold text-lg text-gray-800 mb-1 truncate">{service.name}</h3>
+                    <p className="text-gray-500 text-xs mb-3 line-clamp-2">{service.description}</p>
+                    <div className="flex items-center gap-1 mb-3">
+                      {[...Array(5)].map((_, si) => (
+                        si < Math.floor(service.avg_rating || 0) ? (
+                          <StarSolid key={si} className="w-3.5 h-3.5 text-yellow-500" />
+                        ) : (
+                          <StarIcon key={si} className="w-3.5 h-3.5 text-gray-300" />
+                        )
+                      ))}
+                      <span className="text-xs text-gray-400 ml-1">({service.review_count || 0})</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-teal-600">৳{service.price}</span>
+                      <span className="text-xl font-bold text-teal-600">৳{service.price}</span>
                       <Link
                         to={`/services/${service.id}`}
-                        className="text-teal-600 hover:text-teal-700 text-sm font-semibold transition-colors inline-flex items-center gap-1 group"
+                        className="text-teal-600 hover:text-teal-700 text-sm font-semibold inline-flex items-center gap-1 group/link link-underline"
                       >
                         Explore
-                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                        <span className="group-hover/link:translate-x-1 transition-transform">→</span>
                       </Link>
                     </div>
                   </div>
@@ -402,82 +419,73 @@ const Home = () => {
       </section>
 
       {/* Discount Section */}
-      <section className="relative overflow-hidden bg-cyan-100 py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-cyan-50 via-cyan-100 to-teal-100 py-16 md:py-24" ref={discountRef}>
+        {/* Animated background orbs */}
+        <div className="bg-orb-1 top-0 right-0 w-80 h-80 bg-cyan-300 opacity-20" />
+        <div className="bg-orb-2 bottom-0 left-10 w-72 h-72 bg-rose-300 opacity-20" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Left Side - Decorative Stacked Cards (like books) */}
-            <div className="relative">
-              <div className="relative">
-                {/* Stacked cards effect */}
-                <div className="absolute -left-4 top-8 w-48 h-64 bg-rose-400 rounded-2xl transform rotate-6 opacity-80 shadow-2xl"></div>
-                <div className="absolute left-4 top-4 w-48 h-64 bg-cyan-400 rounded-2xl transform rotate-3 opacity-80 shadow-2xl"></div>
-                <div className="absolute left-12 top-0 w-48 h-64 bg-teal-400 rounded-2xl transform -rotate-6 opacity-80 shadow-2xl"></div>
-                <div className="relative z-10 w-48 h-64 bg-navy-400 rounded-2xl flex items-center justify-center shadow-2xl mx-auto lg:mx-0">
-                  <ShoppingBagIcon className="w-24 h-24 text-white" />
+
+            {/* Left Side - Animated Stacked Cards */}
+            <div className="reveal-left flex justify-center lg:justify-start">
+              <div className="relative w-56 h-72">
+                <div className="absolute -left-4 top-8 w-48 h-64 bg-rose-400 rounded-2xl rotate-6 opacity-80 shadow-2xl animate-float" style={{animationDelay:'0s'}} />
+                <div className="absolute left-4 top-4  w-48 h-64 bg-cyan-400 rounded-2xl rotate-3 opacity-80 shadow-2xl animate-float" style={{animationDelay:'0.5s'}} />
+                <div className="absolute left-10 top-0 w-48 h-64 bg-teal-400 rounded-2xl -rotate-3 opacity-80 shadow-2xl animate-float" style={{animationDelay:'1s'}} />
+                <div className="relative z-10 w-48 h-64 bg-gradient-to-br from-teal-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                  <ShoppingBagIcon className="w-24 h-24 text-white animate-heartbeat" />
                 </div>
               </div>
             </div>
 
             {/* Right Side - Discount Info */}
-            <div className="text-center lg:text-left">
+            <div className="reveal-right text-center lg:text-left">
               <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-                <span className="text-cyan-500">
+                <span className="text-cyan-500 animate-gradient bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-600 bg-clip-text text-transparent">
                   30% Discount
                 </span>
                 <br />
                 <span className="text-3xl md:text-4xl">On All Items.</span>
               </h2>
-              <p className="text-2xl md:text-3xl font-semibold text-red-500 mb-8">
+              <p className="text-2xl md:text-3xl font-semibold text-red-500 mb-8 animate-heartbeat">
                 Hurry Up !!!
               </p>
 
               {/* Countdown Timer */}
               <div className="flex justify-center lg:justify-start gap-4 mb-8">
-                <div className="text-center bg-white rounded-xl p-4 shadow-lg min-w-[80px]">
-                  <div className="text-3xl md:text-4xl font-bold text-rose-500">
-                    {String(timeLeft.days).padStart(2, '0')}
+                {[
+                  { val: timeLeft.days,    label: 'Days',  color: 'text-rose-500'  },
+                  { val: timeLeft.hours,   label: 'Hrs',   color: 'text-cyan-500'  },
+                  { val: timeLeft.minutes, label: 'Min',   color: 'text-teal-500'  },
+                  { val: timeLeft.seconds, label: 'Sec',   color: 'text-indigo-500' },
+                ].map(({ val, label, color }, i) => (
+                  <div
+                    key={label}
+                    className={`text-center bg-white rounded-2xl p-4 shadow-lg min-w-[72px] card-hover`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  >
+                    <div className={`text-3xl md:text-4xl font-bold ${color} tabular-nums`}>
+                      {String(val).padStart(2, '0')}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">{label}</div>
                   </div>
-                  <div className="text-xs md:text-sm text-gray-600 mt-1">Days</div>
-                </div>
-                <div className="text-center bg-white rounded-xl p-4 shadow-lg min-w-[80px]">
-                  <div className="text-3xl md:text-4xl font-bold text-cyan-500">
-                    {String(timeLeft.hours).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs md:text-sm text-gray-600 mt-1">Hrs</div>
-                </div>
-                <div className="text-center bg-white rounded-xl p-4 shadow-lg min-w-[80px]">
-                  <div className="text-3xl md:text-4xl font-bold text-teal-500">
-                    {String(timeLeft.minutes).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs md:text-sm text-gray-600 mt-1">Min</div>
-                </div>
-                <div className="text-center bg-white rounded-xl p-4 shadow-lg min-w-[80px]">
-                  <div className="text-3xl md:text-4xl font-bold text-navy-500">
-                    {String(timeLeft.seconds).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs md:text-sm text-gray-600 mt-1">Sec</div>
-                </div>
+                ))}
               </div>
 
-              {/* CTA Button */}
               <Link
                 to="/services"
-                className="inline-block bg-cyan-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:bg-cyan-700 hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                className="inline-block bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-bold px-10 py-4 rounded-full text-lg shadow-lg btn-glow pulse-glow transition-all duration-300"
               >
                 Shop Collection
               </Link>
             </div>
           </div>
         </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '1s' }}></div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white text-gray-700 pt-12 pb-0 border-t border-gray-200">
+      <footer className="bg-white text-gray-700 pt-12 pb-0 border-t border-gray-200" ref={footerRef}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
@@ -32,6 +33,8 @@ const Services = () => {
   
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+
+  const gridRef = useScrollReveal();
 
   // Fetch categories once on mount
   useEffect(() => {
@@ -154,16 +157,12 @@ const Services = () => {
     return 0; // default - no sorting
   });
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-lg text-gray-600">Loading services...</div></div>;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Our Services</h1>
-          <p className="text-gray-600">Find the perfect household service for your needs</p>
+        <div className="text-center mb-8 animate-fade-in-up">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 section-heading">Our Services</h1>
+          <p className="text-gray-500">Find the perfect household service for your needs</p>
         </div>
 
         {/* Search Bar and Filter Button */}
@@ -291,13 +290,17 @@ const Services = () => {
         )}
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedServices.length === 0 ? (
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            [...Array(6)].map((_, n) => (
+              <div key={n} className="skeleton rounded-2xl h-80" />
+            ))
+          ) : sortedServices.length === 0 ? (
             <p className="col-span-full text-center text-gray-500 py-12">No services found</p>
           ) : (
-            sortedServices.map(service => (
-              <div key={service.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
-                <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 overflow-hidden relative">
+            sortedServices.map((service, idx) => (
+              <div key={service.id} className={`reveal delay-${(idx % 6) + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group`}>
+                <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 overflow-hidden relative group-hover:shadow-inner">
                   {service.images && service.images.length > 0 ? (
                     <img 
                       src={service.images[0].image} 
@@ -346,7 +349,7 @@ const Services = () => {
                     </Link>
                     <button 
                       onClick={() => handleAddToCart(service.id)}
-                      className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg transition-colors"
+                      className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg btn-glow"
                     >
                       Add to Cart
                     </button>
