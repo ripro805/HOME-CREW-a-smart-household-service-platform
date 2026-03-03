@@ -24,6 +24,10 @@ api.interceptors.request.use(
   }
 );
 
+// Routes where we must NOT redirect to /login even on auth failure
+const PUBLIC_ROUTES = ['/activate/', '/password/reset/confirm/', '/forgot-password', '/login', '/register'];
+const isPublicRoute = () => PUBLIC_ROUTES.some((r) => window.location.pathname.startsWith(r));
+
 // Add response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
@@ -47,7 +51,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        // Don't redirect if we're on a public/auth page — the page itself handles its flow
+        if (!isPublicRoute()) {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }
@@ -55,7 +62,7 @@ api.interceptors.response.use(
     // Auto-logout on 403 if token is stale
     if (error.response?.status === 403) {
       const token = localStorage.getItem('access_token');
-      if (token) {
+      if (token && !isPublicRoute()) {
         // Verify the token is still valid
         try {
           await axios.post(`${API_BASE_URL}/auth/jwt/verify/`, { token });

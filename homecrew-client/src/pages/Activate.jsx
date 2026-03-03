@@ -22,8 +22,17 @@ const Activate = () => {
         navigate('/login');
       }, 3000);
     } catch (error) {
-      setStatus('error');
-      setMessage(error.response?.data?.detail || 'Activation failed. The link may be invalid or expired.');
+      const detail = error.response?.data?.detail || '';
+      const isStale = detail.toLowerCase().includes('stale') || error.response?.status === 403;
+      if (isStale) {
+        // Token already used = account was already activated
+        setStatus('already_active');
+        setMessage('Your account is already activated. You can log in directly.');
+        setTimeout(() => navigate('/login'), 3000);
+      } else {
+        setStatus('error');
+        setMessage(detail || 'Activation failed. The link may be invalid or expired.');
+      }
     }
   };
 
@@ -45,6 +54,18 @@ const Activate = () => {
               <CheckCircleIcon className="w-10 h-10" />
             </div>
             <p className="text-gray-600">{message}</p>
+          </div>
+        )}
+
+        {status === 'already_active' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+              <CheckCircleIcon className="w-10 h-10" />
+            </div>
+            <p className="text-gray-600 mb-4">{message}</p>
+            <button onClick={() => navigate('/login')} className="btn btn-primary">
+              Go to Login
+            </button>
           </div>
         )}
 
