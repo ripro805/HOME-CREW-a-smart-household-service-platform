@@ -25,8 +25,27 @@ import debug_toolbar
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-
+from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.views.generic import RedirectView
+
+
+def _frontend_url(request=None):
+    from django.conf import settings as s
+    # If the link landed on localhost (dev machine), always go to React dev server
+    if request and request.get_host().startswith('localhost'):
+        return 'http://localhost:5173'
+    protocol = s.DJOSER.get('PROTOCOL', 'http')
+    domain   = s.DJOSER.get('DOMAIN', 'localhost:5173')
+    return f'{protocol}://{domain}'
+
+
+def activate_redirect(request, uid, token):
+    return HttpResponseRedirect(f'{_frontend_url(request)}/activate/{uid}/{token}')
+
+
+def password_reset_redirect(request, uid, token):
+    return HttpResponseRedirect(f'{_frontend_url(request)}/password/reset/confirm/{uid}/{token}')
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -46,6 +65,10 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("", RedirectView.as_view(url="/api/v1/", permanent=False)),
     path("admin/", admin.site.urls),
+    # Catch activation & password-reset links that point to backend (old emails)
+    # and redirect them to the React frontend
+    path("activate/<str:uid>/<str:token>", activate_redirect),
+    path("password/reset/confirm/<str:uid>/<str:token>", password_reset_redirect),
     path("api/v1/", include("api.urls")),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

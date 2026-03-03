@@ -3,11 +3,19 @@ from django.conf import settings
 
 
 def _frontend_context(context):
-    """Override domain/protocol/site_name with frontend values from settings."""
-    djoser_conf = settings.DJOSER
-    context['domain']    = djoser_conf.get('DOMAIN', 'localhost:5173')
-    context['protocol']  = djoser_conf.get('PROTOCOL', 'http')
-    context['site_name'] = djoser_conf.get('SITE_NAME', 'HomeCrew')
+    """Override domain/protocol/site_name with frontend values."""
+    request = context.get('request')
+    host = request.get_host() if request else ''
+
+    if host.startswith('localhost'):
+        context['protocol'] = 'http'
+        context['domain']   = 'localhost:5173'
+    else:
+        djoser_conf = settings.DJOSER
+        context['protocol'] = djoser_conf.get('PROTOCOL', 'http')
+        context['domain']   = djoser_conf.get('DOMAIN', 'localhost:5173')
+
+    context['site_name'] = settings.DJOSER.get('SITE_NAME', 'HomeCrew')
     return context
 
 
