@@ -141,18 +141,21 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         order = self.get_object()
-        if order.status == order.DELIVERED:
-            return Response({'detail': 'You can not cancel an order'}, status=status.HTTP_400_BAD_REQUEST)
+        if order.status in [order.SHIPPED, order.DELIVERED]:
+            return Response({'detail': 'Cannot cancel an order that is already ongoing or delivered.'}, status=status.HTTP_400_BAD_REQUEST)
         OrderService.cancel_order(order=order, user=request.user)
         return Response({'status': 'Order canceled'})
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
         order = self.get_object()
+        new_status = request.data.get('status')
+        if new_status == order.CANCELLED and order.status in [order.SHIPPED, order.DELIVERED]:
+            return Response({'detail': 'Cannot cancel an order that is already ongoing or delivered.'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = UpdateOrderSerializer(order, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({'status': f"Order status updated to {request.data['status']}"})
+        return Response({'status': f"Order status updated to {new_status}"})
 
     def get_permissions(self):
         if self.action in ['update_status', 'destroy', 'partial_update', 'update']:

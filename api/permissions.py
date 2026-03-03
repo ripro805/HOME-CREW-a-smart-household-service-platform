@@ -1,5 +1,25 @@
 from rest_framework import permissions
 
+
+class IsReviewOwnerOrAdmin(permissions.BasePermission):
+    """
+    - Anyone authenticated can POST (create) a review.
+    - Only the review owner or admin can edit/delete.
+    - All authenticated users can read.
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        if request.user and request.user.is_authenticated and request.user.role == 'admin':
+            return True
+        return obj.client == request.user
+
+
 class IsAdminOrSelfOrReadOnly(permissions.BasePermission):
     """
     Custom permission:

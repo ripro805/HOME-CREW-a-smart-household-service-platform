@@ -42,9 +42,17 @@ class ServiceSerializer(serializers.ModelSerializer):
         
 
 class ReviewSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Review
-        fields = ["id", "service", "client", "rating", "comment", "created_at"]
+        fields = ["id", "service", "client", "client_name", "rating", "comment", "created_at"]
+        read_only_fields = ["service", "client", "client_name", "created_at"]
+
+    def get_client_name(self, obj):
+        if obj.client:
+            return obj.client.get_full_name() or obj.client.email
+        return "Anonymous"
 
 
 class AdminReviewSerializer(serializers.ModelSerializer):

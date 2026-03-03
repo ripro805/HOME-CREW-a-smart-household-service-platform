@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets, generics, filters
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from api.permissions import IsAdminOrSelfOrReadOnly
+from api.permissions import IsAdminOrSelfOrReadOnly, IsReviewOwnerOrAdmin
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, Review, ServiceCategory, ServiceImage
 from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer, AdminReviewSerializer
@@ -210,13 +210,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """
     Review Management Endpoint (nested under /services/{id}/reviews/)
     """
-    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAdminOrSelfOrReadOnly]
+    permission_classes = [IsReviewOwnerOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ReviewFilter
     search_fields = ['comment']
     ordering_fields = ['rating', 'created_at']
+
+    def get_queryset(self):
+        service_pk = self.kwargs.get('service_pk')
+        if service_pk:
+            return Review.objects.filter(service_id=service_pk).select_related('client').order_by('-created_at')
+        return Review.objects.all().select_related('client').order_by('-created_at')
 
     def perform_create(self, serializer):
         service_id = self.kwargs['service_pk']

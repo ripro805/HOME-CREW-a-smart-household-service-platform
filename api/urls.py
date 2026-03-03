@@ -35,6 +35,7 @@ urlpatterns = [
     path('', include(cart_router.urls)),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
+    path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
     # Include app-level custom endpoints under their own prefixes
     path("accounts/", include("accounts.accounts_urls")),
     path("orders/", include("orders.orders_urls")),
