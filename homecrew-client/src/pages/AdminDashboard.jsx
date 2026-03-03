@@ -1182,7 +1182,7 @@ const PaymentsTab = ({ orders }) => {
                 <td><b>#{o.id}</b></td>
                 <td>{o.client_email||o.client||'—'}</td>
                 <td><b>{fmt$(o.total_price)}</b></td>
-                <td><span className={`badge ${scls(o.status)}`}>{slabel(o.status)}</span></td>
+                <td><span className={getStatusBadgeClass(o.status)}>{slabel(o.status)}</span></td>
                 <td>{fmtD(o.created_at)}</td>
                 <td><button className="btn btn-sm btn-ghost flex items-center gap-1">
                   <DocumentChartBarIcon className="w-4 h-4" /> Invoice
