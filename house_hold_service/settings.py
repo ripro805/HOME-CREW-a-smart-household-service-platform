@@ -25,14 +25,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-4lr!q6(&f6%*y-5&odndzpfo$y8ze9j01#y0@hzm=lp=ny$nm*"
+SECRET_KEY = config('SECRET_KEY', default="django-insecure-4lr!q6(&f6%*y-5&odndzpfo$y8ze9j01#y0@hzm=lp=ny$nm*")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Set to False in production
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-# ALLOWED_HOSTS = [".vercel.app", "localhost", "127.0.0.1"]
-ALLOWED_HOSTS = ['*']  # Allow all hosts for development, restrict in production
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com','http://127.0.0.1:8000']
+# ALLOWED_HOSTS
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://localhost:5173'
+]
 
 
 # Application definition
@@ -98,21 +103,25 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Local Development: Use SQLite
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Use environment variable for database configuration
+# If DATABASE_URL is set (production), use PostgreSQL
+# Otherwise, use SQLite for local development
+if config('DATABASE_URL', default=None):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
-
-# Production: Use PostgreSQL (uncomment when deploying)
-# DATABASES = {
-#     'default': dj_database_url.parse(
-#         'postgresql://homecrew_user:wtxA7uqjZp5ATD85gKwukcYK687uiZof@dpg-d6gpp6pdrdic738k2jng-a.oregon-postgres.render.com/homecrew',
-#         conn_max_age=600
-#     )
-# }
+else:
+    # Local Development: Use SQLite
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # DATABASES = {
 #     "default": {
@@ -253,7 +262,12 @@ EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='rifatrizviofficial001@gmail.com')
 
 # CORS Configuration
+FRONTEND_DOMAIN = config('FRONTEND_DOMAIN', default='localhost:5173')
+FRONTEND_PROTOCOL = config('FRONTEND_PROTOCOL', default='http')
+
+# Build CORS allowed origins dynamically
 CORS_ALLOWED_ORIGINS = [
+    f'{FRONTEND_PROTOCOL}://{FRONTEND_DOMAIN}',
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
@@ -264,6 +278,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5176",
     "http://localhost:3000",
 ]
+
+# Add production frontend URL if different from localhost
+if FRONTEND_DOMAIN and 'localhost' not in FRONTEND_DOMAIN:
+    CORS_ALLOWED_ORIGINS.append(f'https://{FRONTEND_DOMAIN}')
 
 CORS_ALLOW_CREDENTIALS = True
 

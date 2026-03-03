@@ -10,6 +10,12 @@ from sslcommerz_lib import SSLCOMMERZ
 from .service import OrderService
 from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
+
+# Helper function to get frontend URL
+def get_frontend_url():
+    protocol = django_settings.DJOSER.get('EMAIL_FRONTEND_PROTOCOL', 'http')
+    domain = django_settings.DJOSER.get('EMAIL_FRONTEND_DOMAIN', 'localhost:5173')
+    return f'{protocol}://{domain}'
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import (
@@ -465,13 +471,14 @@ def initiate_payment(request):
     }
     
     sslcz = SSLCOMMERZ(settings)
+    frontend_url = get_frontend_url()
     post_body = {
         'total_amount': float(amount),
         'currency': "BDT",
         'tran_id': f"txn _{order_id}",
-        'success_url': "http://localhost:5173/payment/success/",
-        'fail_url': "http://localhost:5173/payment/fail/",
-        'cancel_url': "http://localhost:5173/payment/cancel/",
+        'success_url': f"{frontend_url}/payment/success/",
+        'fail_url': f"{frontend_url}/payment/fail/",
+        'cancel_url': f"{frontend_url}/payment/cancel/",
         'emi_option': 0,
         'cus_name': request.user.get_full_name() or request.user.email,
         'cus_email': request.user.email,
@@ -531,9 +538,11 @@ def payment_success_callback(request):
     # Log callback data for debugging
     print(f"Payment Success Callback - Order: {order_id}, Transaction: {transaction_id}, Status: {status_code}")
     
+    frontend_url = get_frontend_url()
+    
     if not order_id:
         print("Error: No order_id in callback data")
-        return HttpResponseRedirect(f'http://localhost:5173/payment/fail/')
+        return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
     
     try:
         order = Order.objects.get(id=order_id)
@@ -546,7 +555,7 @@ def payment_success_callback(request):
             print(f"Order {order_id} status updated to READY_TO_SHIP")
             
             # Redirect to frontend success page
-            return HttpResponseRedirect(f'http://localhost:5173/payment/success/{order_id}')
+            return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
         else:
             # If status is not valid, try validation API as fallback
             print(f"Status code '{status_code}' not in valid list, trying validation API")
@@ -565,7 +574,7 @@ def payment_success_callback(request):
                     order.status = Order.READY_TO_SHIP
                     order.save()
                     print(f"Order {order_id} validated and updated via API")
-                    return HttpResponseRedirect(f'http://localhost:5173/payment/success/{order_id}')
+                    return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
             except Exception as validation_error:
                 print(f"Validation API error: {str(validation_error)}")
                 # In sandbox mode, if validation fails but we got success callback, still update order
@@ -573,17 +582,17 @@ def payment_success_callback(request):
                     print(f"Sandbox mode: Updating order anyway")
                     order.status = Order.READY_TO_SHIP
                     order.save()
-                    return HttpResponseRedirect(f'http://localhost:5173/payment/success/{order_id}')
+                    return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
             
             print(f"Payment validation failed for order {order_id}")
-            return HttpResponseRedirect(f'http://localhost:5173/payment/fail/{order_id}')
+            return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id}')
             
     except Order.DoesNotExist:
         print(f"Error: Order {order_id} not found")
-        return HttpResponseRedirect(f'http://localhost:5173/payment/fail/')
+        return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
     except Exception as e:
         print(f"Payment callback error: {str(e)}")
-        return HttpResponseRedirect(f'http://localhost:5173/payment/fail/{order_id if order_id else ""}')
+        return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id if order_id else ""}')
 
 
 @api_view(['POST', 'GET'])
@@ -593,12 +602,13 @@ def payment_fail_callback(request):
     SSLCommerz Fail Callback
     Called by SSLCommerz after failed payment
     """
+    frontend_url = get_frontend_url()
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
     
     if order_id:
-        return HttpResponseRedirect(f'http://localhost:5173/payment/fail/{order_id}')
-    return HttpResponseRedirect(f'http://localhost:5173/payment/fail/')
+        return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id}')
+    return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
 
 
 @api_view(['POST', 'GET'])
@@ -608,12 +618,13 @@ def payment_cancel_callback(request):
     SSLCommerz Cancel Callback
     Called by SSLCommerz after user cancels payment
     """
+    frontend_url = get_frontend_url()
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
     
     if order_id:
-        return HttpResponseRedirect(f'http://localhost:5173/payment/cancel/{order_id}')
-    return HttpResponseRedirect(f'http://localhost:5173/payment/cancel/')
+        return HttpResponseRedirect(f'{frontend_url}/payment/cancel/{order_id}')
+    return HttpResponseRedirect(f'{frontend_url}/payment/cancel/')
 
 
 @api_view(['POST'])
