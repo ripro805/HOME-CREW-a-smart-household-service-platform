@@ -175,7 +175,7 @@ const Services = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
-            <button className="px-4 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors">
+            <button className="btn btn-primary btn-icon">
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
           </div>
@@ -274,7 +274,7 @@ const Services = () => {
               {/* Apply Button */}
               <button 
                 onClick={() => setShowFilterSidebar(false)}
-                className="w-full py-3 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors"
+                className="w-full btn btn-primary"
               >
                 Apply Filters
               </button>
@@ -344,12 +344,12 @@ const Services = () => {
                   )}
 
                   <div className="flex gap-2">
-                    <Link to={`/services/${service.id}`} className="flex-1 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold text-sm rounded-lg transition-colors text-center">
+                    <Link to={`/services/${service.id}`} className="flex-1 btn btn-outline btn-sm text-center">
                       View Details
                     </Link>
                     <button 
                       onClick={() => handleAddToCart(service.id)}
-                      className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg btn-glow"
+                      className="flex-1 btn btn-primary btn-sm"
                     >
                       Add to Cart
                     </button>

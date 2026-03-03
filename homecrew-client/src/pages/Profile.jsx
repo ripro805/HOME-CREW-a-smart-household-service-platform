@@ -397,14 +397,14 @@ const Profile = () => {
                 <div className="flex gap-4 mt-8">
                   <button
                     onClick={() => setActiveTab('edit')}
-                    className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 btn btn-primary justify-center"
                   >
                     <PencilIcon className="w-5 h-5" />
                     Edit Profile
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="px-6 py-3 border-2 border-red-500 text-red-600 hover:bg-red-50 font-semibold rounded-xl transition-all flex items-center gap-2"
+                    className="btn btn-outline-danger"
                   >
                     <ArrowRightOnRectangleIcon className="w-5 h-5" />
                     Logout
@@ -530,14 +530,14 @@ const Profile = () => {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button type="submit" className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                <button type="submit" className="flex-1 btn btn-primary justify-center">
                   <CheckIcon className="w-5 h-5" />
                   Save Changes
                 </button>
                 <button 
                   type="button"
                   onClick={() => setActiveTab('view')}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl transition-all flex items-center gap-2"
+                  className="btn btn-ghost"
                 >
                   <XMarkIcon className="w-5 h-5" />
                   Cancel
@@ -567,7 +567,7 @@ const Profile = () => {
                 <p className="text-gray-400 text-sm mb-6">Your order history will appear here once you place an order.</p>
                 <button
                   onClick={() => navigate('/services')}
-                  className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+                  className="btn btn-primary"
                 >
                   Browse Services
                 </button>
@@ -654,14 +654,14 @@ const Profile = () => {
                       <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap gap-3">
                         <button
                           onClick={() => navigate(`/orders/${order.id}`)}
-                          className="px-5 py-2 text-teal-600 border-2 border-teal-600 rounded-lg hover:bg-teal-50 font-semibold text-sm transition-all"
+                          className="btn btn-outline btn-sm"
                         >
                           View Details
                         </button>
                         {order.can_pay && (
                           <button
                             onClick={() => navigate(`/orders/${order.id}`)}
-                            className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm rounded-lg transition-all"
+                            className="btn btn-orange btn-sm"
                           >
                             Pay Now
                           </button>
@@ -669,7 +669,7 @@ const Profile = () => {
                         {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
                           <button
                             onClick={() => handleCancelOrder(order.id)}
-                            className="px-5 py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 font-semibold text-sm transition-all"
+                            className="btn btn-outline-danger btn-sm"
                           >
                             Cancel
                           </button>
@@ -738,7 +738,7 @@ const Profile = () => {
                     Passwords do not match
                   </div>
                 )}
-                <button type="submit" className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                <button type="submit" className="btn btn-primary">
                   <KeyIcon className="w-5 h-5" />
                   Change Password
                 </button>
@@ -768,7 +768,7 @@ const Profile = () => {
                     className={inputCls}
                   />
                 </div>
-                <button type="submit" className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                <button type="submit" className="btn btn-primary">
                   <LockClosedIcon className="w-5 h-5" />
                   Send Reset Link
                 </button>

@@ -144,8 +144,8 @@ const Navbar = () => {
             {!isAuthenticated ? (
               <>
                 {/* Auth buttons â€“ desktop only */}
-                <Link to="/login"    className="hidden md:inline-flex px-5 py-2 text-teal-600 hover:text-teal-700 font-semibold text-sm border-2 border-teal-600 rounded-lg transition-colors hover:bg-teal-50">Sign In</Link>
-                <Link to="/register" className="hidden md:inline-flex px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg btn-glow">Sign Up</Link>
+                <Link to="/login"    className="hidden md:inline-flex btn btn-outline btn-sm">Sign In</Link>
+                <Link to="/register" className="hidden md:inline-flex btn btn-primary btn-sm">Sign Up</Link>
               </>
             ) : isAdmin ? (
               <>

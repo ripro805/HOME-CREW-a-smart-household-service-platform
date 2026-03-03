@@ -686,7 +686,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </div>
               </div>
             </div>
-            <button onClick={() => { setShowDetails(false); setCreatedService(null); }} className="mt-6 w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
+            <button onClick={() => { setShowDetails(false); setCreatedService(null); }} className="btn btn-primary btn-block mt-6">
               Close
             </button>
           </div>
@@ -761,10 +761,10 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </label>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
+                <button type="submit" className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
                   {saving ? 'Saving…' : editId ? 'Update Service' : 'Create Service'}
                 </button>
-                <button type="button" className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold" onClick={() => { setShowModal(false); reset(); }}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowModal(false); reset(); }}>
                   Cancel
                 </button>
               </div>
@@ -913,7 +913,7 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
                 </span>
               </div>
             </div>
-            <button onClick={() => { setShowDetails(false); setCreatedCategory(null); }} className="mt-6 w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
+            <button onClick={() => { setShowDetails(false); setCreatedCategory(null); }} className="btn btn-primary btn-block mt-6">
               Close
             </button>
           </div>
@@ -954,10 +954,10 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
                 <textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
+                <button type="submit" className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
                   {saving ? 'Saving…' : editId ? 'Update Category' : 'Create Category'}
                 </button>
-                <button type="button" className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold" onClick={() => { setShowModal(false); reset(); }}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowModal(false); reset(); }}>
                   Cancel
                 </button>
               </div>

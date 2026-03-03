@@ -260,47 +260,317 @@
   transform: scale(1.08);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM BUTTON DESIGN SYSTEM
+   Semantic classes: .btn .btn-{variant} .btn-{size}
+═══════════════════════════════════════════════════════════ */
+
+/* ── Shared keyframes for buttons ─────────────────────────── */
+@keyframes btnShine {
+  from { left: -120%; }
+  to   { left:  120%; }
+}
+@keyframes btnPressRipple {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(3); opacity: 0;   }
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  border-radius: 0.75rem;       /* 12px */
+  padding: 0.6rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  user-select: none;
+  vertical-align: middle;
+  will-change: transform, box-shadow;
+  transition:
+    transform   0.22s cubic-bezier(.22,1,.36,1),
+    box-shadow  0.22s cubic-bezier(.22,1,.36,1),
+    background  0.22s ease,
+    border-color 0.22s ease,
+    color        0.22s ease,
+    opacity      0.18s ease;
+}
+
+/* Diagonal shine sweep on hover */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -120%;
+  width: 60%; height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255,255,255,0.28) 45%,
+    rgba(255,255,255,0.10) 55%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  z-index: 2;
+  pointer-events: none;
+  transition: none;
+}
+.btn:hover::before {
+  animation: btnShine 0.55s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+/* Inner top highlight line */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 8%; right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  border-radius: 0 0 50% 50%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Active press */
+.btn:active {
+  transform: scale(0.95) translateY(1px) !important;
+}
+
+/* Focus ring */
+.btn:focus-visible {
+  outline: 2.5px solid rgba(20,184,166,0.65);
+  outline-offset: 3px;
+}
+
+/* Disabled */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.48;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+}
+
+/* ── Size variants ─────────────────────────────────────────── */
+.btn-xs { padding: 0.3rem 0.7rem;   font-size: 0.72rem; border-radius: 0.5rem; gap: 0.3rem; }
+.btn-sm { padding: 0.42rem 0.9rem;  font-size: 0.8rem;  border-radius: 0.625rem; }
+.btn-md { padding: 0.6rem 1.25rem;  font-size: 0.875rem; }   /* default */
+.btn-lg { padding: 0.875rem 1.75rem; font-size: 1rem;   border-radius: 1rem; }
+.btn-xl { padding: 1.1rem 2.25rem;  font-size: 1.05rem; border-radius: 1.125rem; }
+
+/* Full width */
+.btn-block { width: 100%; }
+
+/* Icon-only circular */
+.btn-icon {
+  padding: 0.55rem;
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+/* ── PRIMARY — teal → cyan gradient ───────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 55%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 4px 16px -3px rgba(20,184,166,0.38),
+    0 1px 4px rgba(0,0,0,0.10);
+}
+.btn-primary:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #0891b2 100%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.18) inset,
+    0 10px 32px -4px rgba(20,184,166,0.55),
+    0 3px 8px rgba(0,0,0,0.12);
+}
+
+/* ── SECONDARY — deep slate gradient ─────────────────────── */
+.btn-secondary {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 55%, #475569 100%);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.10) inset,
+    0 4px 16px -3px rgba(51,65,85,0.35),
+    0 1px 4px rgba(0,0,0,0.15);
+}
+.btn-secondary:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #334155 100%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.12) inset,
+    0 10px 32px -4px rgba(15,23,42,0.5),
+    0 3px 8px rgba(0,0,0,0.18);
+}
+
+/* ── DANGER — crimson gradient ────────────────────────────── */
+.btn-danger {
+  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 55%, #f87171 100%);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 4px 16px -3px rgba(239,68,68,0.38),
+    0 1px 4px rgba(0,0,0,0.12);
+}
+.btn-danger:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 55%, #ef4444 100%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.18) inset,
+    0 10px 32px -4px rgba(220,38,38,0.55),
+    0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* ── ORANGE — warm amber gradient ─────────────────────────── */
+.btn-orange {
+  background: linear-gradient(135deg, #c2410c 0%, #f97316 55%, #fb923c 100%);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 4px 16px -3px rgba(249,115,22,0.38),
+    0 1px 4px rgba(0,0,0,0.10);
+}
+.btn-orange:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  background: linear-gradient(135deg, #9a3412 0%, #ea580c 55%, #f97316 100%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.18) inset,
+    0 10px 32px -4px rgba(249,115,22,0.55),
+    0 3px 8px rgba(0,0,0,0.12);
+}
+
+/* ── SUCCESS — emerald gradient ───────────────────────────── */
+.btn-success {
+  background: linear-gradient(135deg, #065f46 0%, #10b981 55%, #34d399 100%);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 4px 16px -3px rgba(16,185,129,0.38),
+    0 1px 4px rgba(0,0,0,0.10);
+}
+.btn-success:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  background: linear-gradient(135deg, #064e3b 0%, #059669 55%, #10b981 100%);
+  box-shadow:
+    0 10px 32px -4px rgba(16,185,129,0.5),
+    0 3px 8px rgba(0,0,0,0.12);
+}
+
+/* ── OUTLINE — ghost border, fills on hover ───────────────── */
+.btn-outline {
+  background: transparent;
+  color: #0d9488;
+  border: 2px solid #14b8a6;
+  box-shadow: 0 2px 8px -2px rgba(20,184,166,0.15);
+}
+.btn-outline::after { display: none; }  /* no top-highlight on outline */
+.btn-outline:hover {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 55%, #06b6d4 100%);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-2.5px) scale(1.025);
+  box-shadow: 0 10px 32px -4px rgba(20,184,166,0.48), 0 3px 8px rgba(0,0,0,0.10);
+}
+
+/* ── OUTLINE DANGER ────────────────────────────────────────── */
+.btn-outline-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 2px solid #ef4444;
+  box-shadow: 0 2px 8px -2px rgba(239,68,68,0.12);
+}
+.btn-outline-danger::after { display: none; }
+.btn-outline-danger:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-2.5px) scale(1.025);
+  box-shadow: 0 10px 32px -4px rgba(239,68,68,0.48);
+}
+
+/* ── GHOST — minimal, subtle ─────────────────────────────── */
+.btn-ghost {
+  background: rgba(255,255,255,0.0);
+  color: #374151;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.btn-ghost::after { display: none; }
+.btn-ghost:hover {
+  background: rgba(249,250,251,1);
+  border-color: #d1d5db;
+  color: #111827;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px -3px rgba(0,0,0,0.10);
+}
+
+/* ── WHITE / GLASS ────────────────────────────────────────── */
+.btn-white {
+  background: rgba(255,255,255,0.92);
+  color: #1e293b;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 4px 16px -3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.btn-white::after { display: none; }
+.btn-white:hover {
+  background: #ffffff;
+  transform: translateY(-2.5px) scale(1.025);
+  box-shadow: 0 10px 32px -4px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1);
+  color: #0d9488;
+}
+
+/* ── GRADIENT TEXT button (transparent bg, gradient text) ─── */
+.btn-gradient-text {
+  background: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(135deg, #0d9488, #06b6d4);
+  border: 2px solid transparent;
+  box-shadow: none;
+}
+.btn-gradient-text:hover {
+  transform: translateY(-1.5px);
+  filter: brightness(1.2);
+}
+
 /* ─────────────────────────────────────────────────────────────
-   PREMIUM BUTTON STYLES
+   LEGACY COMPAT — keep btn-glow classes working
 ───────────────────────────────────────────────────────────── */
 .btn-glow {
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
+  transition: transform 0.22s cubic-bezier(.22,1,.36,1), box-shadow 0.22s ease;
 }
 .btn-glow:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 30px -4px rgba(20,184,166,0.5);
+  transform: translateY(-2.5px) scale(1.025);
+  box-shadow: 0 10px 32px -4px rgba(20,184,166,0.5), 0 3px 8px rgba(0,0,0,0.1);
 }
-.btn-glow:active {
-  transform: scale(0.97);
-  box-shadow: none;
-}
-.btn-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.15);
-  opacity: 0;
-  transition: opacity 0.2s;
-  border-radius: inherit;
-}
-.btn-glow:hover::after { opacity: 1; }
+.btn-glow:active { transform: scale(0.96) !important; }
 
 .btn-glow-orange {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.btn-glow-orange:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 30px -4px rgba(249,115,22,0.5);
-}
-.btn-glow-orange:active { transform: scale(0.97); }
-
-/* Ripple click effect */
-.btn-ripple {
   position: relative;
   overflow: hidden;
+  transition: transform 0.22s cubic-bezier(.22,1,.36,1), box-shadow 0.22s ease;
 }
+.btn-glow-orange:hover {
+  transform: translateY(-2.5px) scale(1.025);
+  box-shadow: 0 10px 32px -4px rgba(249,115,22,0.5), 0 3px 8px rgba(0,0,0,0.1);
+}
+.btn-glow-orange:active { transform: scale(0.96) !important; }
+
+/* Ripple click effect */
+.btn-ripple { position: relative; overflow: hidden; }
 .btn-ripple .ripple-circle {
   position: absolute;
   border-radius: 50%;

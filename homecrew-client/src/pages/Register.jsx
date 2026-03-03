@@ -184,7 +184,7 @@ const Register = () => {
           </div>
 
           <button type="submit" disabled={loading}
-            className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors mt-2">
+            className="btn btn-primary btn-lg btn-block mt-2">
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>

@@ -107,7 +107,7 @@ const Cart = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
           <p className="text-gray-500 mb-6">Add some services to get started!</p>
-          <button onClick={() => navigate('/services')} className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow">
+          <button onClick={() => navigate('/services')} className="btn btn-primary">
             Browse Services
           </button>
         </div>
@@ -138,13 +138,13 @@ const Cart = () => {
               <div className="flex gap-3">
                 <button
                   onClick={confirmRemove}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+                  className="flex-1 btn btn-danger"
                 >
                   Remove
                 </button>
                 <button
                   onClick={cancelRemove}
-                  className="flex-1 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl transition-colors"
+                  className="flex-1 btn btn-ghost"
                 >
                   Cancel
                 </button>
@@ -176,14 +176,14 @@ const Cart = () => {
                     <button 
                       onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                       disabled={item.quantity <= 1}
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
                     >
                       <MinusIcon className="w-4 h-4" />
                     </button>
                     <span className="px-3 py-1 font-semibold text-gray-800">{item.quantity}</span>
                     <button 
                       onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                      className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                     >
                       <PlusIcon className="w-4 h-4" />
                     </button>
@@ -195,7 +195,7 @@ const Cart = () => {
 
                   <button 
                     onClick={() => handleRemove(item.id, item.service.name)} 
-                    className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm rounded-lg transition-colors"
+                    className="btn btn-outline-danger btn-sm"
                   >
                     <TrashIcon className="w-4 h-4" />
                     Remove
@@ -228,11 +228,11 @@ const Cart = () => {
                 </div>
               </div>
 
-              <button onClick={handleCheckout} className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl btn-glow mb-3">
+              <button onClick={handleCheckout} className="btn btn-primary btn-lg btn-block mb-3">
                 Proceed to Checkout
               </button>
 
-              <button onClick={() => navigate('/services')} className="w-full py-3 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-xl transition-colors">
+              <button onClick={() => navigate('/services')} className="btn btn-outline btn-lg btn-block">
                 Continue Shopping
               </button>
             </div>

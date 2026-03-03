@@ -254,14 +254,14 @@ const ServiceDetail = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 btn-glow"
+                  className="flex-1 btn btn-primary btn-lg justify-center"
                 >
                   <ShoppingCartIcon className="w-5 h-5" />
                   Add to Cart
                 </button>
                 <button
                   onClick={handleOpenBuyNow}
-                  className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 btn-glow-orange"
+                  className="flex-1 btn btn-orange btn-lg justify-center"
                 >
                   <BoltIcon className="w-5 h-5" />
                   Buy Now
@@ -277,7 +277,7 @@ const ServiceDetail = () => {
             {isAuthenticated && (
               <button 
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
+                className="btn btn-primary btn-sm"
               >
                 {showReviewForm ? 'Cancel' : 'Write a Review'}
               </button>
@@ -312,7 +312,7 @@ const ServiceDetail = () => {
                 />
               </div>
 
-              <button type="submit" className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">Submit Review</button>
+              <button type="submit" className="btn btn-primary">Submit Review</button>
             </form>
           )}
 
@@ -486,7 +486,7 @@ const ServiceDetail = () => {
               <button
                 type="submit"
                 disabled={buyNowLoading}
-                className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+                className="w-full btn btn-orange btn-lg justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {buyNowLoading ? (
                   <>

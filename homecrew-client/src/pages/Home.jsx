@@ -203,13 +203,13 @@ const Home = () => {
                         <div className="flex gap-4 animate-fade-in-up" style={{animationDelay:'0.55s'}}>
                           <Link
                             to={`/services/${service.id}`}
-                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-gray-900 font-bold rounded-full transition-all shadow-xl text-base btn-glow"
+                            className="btn btn-white btn-xl"
                           >
                             Book Now
                           </Link>
                           <Link
                             to="/services"
-                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-full transition-all border border-white/30 text-base btn-glow"
+                            className="btn btn-ghost btn-xl border border-white/30 text-white hover:text-white"
                           >
                             Browse All
                           </Link>
@@ -277,7 +277,7 @@ const Home = () => {
             <div>
               <h1 className="text-7xl font-extrabold text-white mb-6">Welcome to<br />HomeCrew</h1>
               <p className="text-xl text-white/80 mb-8">Your trusted platform for household services</p>
-              <Link to="/services" className="inline-block px-8 py-3 bg-white text-teal-700 font-bold rounded-full hover:bg-gray-100 shadow-lg">
+              <Link to="/services" className="btn btn-white btn-lg">
                 Browse Services
               </Link>
             </div>
@@ -315,7 +315,7 @@ const Home = () => {
             <h2 className="text-3xl font-extrabold text-gray-800 section-heading">Browse Categories</h2>
             <Link
               to="/categories"
-              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
+              className="btn btn-primary btn-sm"
             >
               View All
             </Link>
@@ -360,7 +360,7 @@ const Home = () => {
             <h2 className="text-3xl font-extrabold text-gray-800 section-heading">Trending Services</h2>
             <Link
               to="/services"
-              className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg btn-glow"
+              className="btn btn-primary btn-sm"
             >
               View All
             </Link>
@@ -475,7 +475,7 @@ const Home = () => {
 
               <Link
                 to="/services"
-                className="inline-block bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-bold px-10 py-4 rounded-full text-lg shadow-lg btn-glow pulse-glow transition-all duration-300"
+                className="btn btn-primary btn-xl pulse-glow"
               >
                 Shop Collection
               </Link>
