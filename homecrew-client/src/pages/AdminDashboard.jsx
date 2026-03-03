@@ -2166,7 +2166,7 @@ const AdminDashboard = () => {
     setLoading(true); setFetchErrors([]);
     const [ordersR, svcsR, usersR, catsR, revR] = await Promise.allSettled([
       fetchAllPages('/orders/'),
-      fetchAllPages('/services/?page_size=100'),
+      fetchAllPages('/services/?page_size=200'),
       fetchAllPages('/accounts/'),
       fetchAllPages('/categories/'),
       fetchAllPages('/reviews/').catch(() => []),
