@@ -33,6 +33,11 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 # ALLOWED_HOSTS
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
+# Auto-add Render hostname so Django accepts requests on the Render domain
+_RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+if _RENDER_HOST and _RENDER_HOST not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_RENDER_HOST)
+
 # Trust the reverse proxy (Render) and generate https:// URLs correctly
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
@@ -60,7 +65,6 @@ INSTALLED_APPS = [
     "accounts",
     "services",
     "orders",
-    "debug_toolbar",
     "rest_framework",
     "rest_framework_simplejwt",
     "djoser",
@@ -68,6 +72,10 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
 ]
+
+# Only load debug toolbar in development
+if DEBUG:
+    INSTALLED_APPS += ["debug_toolbar"]
 
 # Custom user model
 AUTH_USER_MODEL = "accounts.User"
@@ -78,12 +86,15 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Only load debug toolbar middleware in development
+if DEBUG:
+    MIDDLEWARE.insert(4, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = "house_hold_service.urls"
 
