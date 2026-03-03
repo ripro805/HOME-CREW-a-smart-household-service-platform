@@ -214,9 +214,9 @@ SIMPLE_JWT = {
 
 # DJOSER settings
 DJOSER = {
-    'EMAIL_FRONTEND_PROTOCOL': config('FRONTEND_PROTOCOL', default='http'),
-    'EMAIL_FRONTEND_DOMAIN': config('FRONTEND_DOMAIN', default='localhost:5173'),
-    'EMAIL_FRONTEND_SITE_NAME': 'HouseHoldService',
+    'PROTOCOL': config('FRONTEND_PROTOCOL', default='http'),
+    'DOMAIN': config('FRONTEND_DOMAIN', default='localhost:5173'),
+    'SITE_NAME': 'HomeCrew',
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
