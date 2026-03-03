@@ -19,6 +19,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFail from './pages/PaymentFail';
 import PaymentCancel from './pages/PaymentCancel';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
+import ForgotPassword from './pages/ForgotPassword';
 import './App.css';
 
 function ScrollToTop() {
@@ -76,6 +77,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/activate/:uid/:token" element={<Activate />} />
           <Route path="/password/reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
           <Route path="/categories" element={<Categories />} />
