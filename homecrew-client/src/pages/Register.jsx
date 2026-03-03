@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Auth.css';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -61,16 +61,22 @@ const Register = () => {
     setLoading(false);
   };
 
+  const inputCls = "w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition";
+  const passwordMatch = formData.password === formData.confirmPassword;
+
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Register for HomeCrew</h2>
-        {error && <div className="error-message">{error}</div>}
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Register for HomeCrew</h2>
         
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="first_name">First Name</label>
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}</div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="first_name" className="block text-sm font-semibold text-gray-700 mb-1">First Name</label>
               <input
                 type="text"
                 id="first_name"
@@ -79,11 +85,12 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 placeholder="First name"
+                className={inputCls}
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="last_name">Last Name</label>
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-semibold text-gray-700 mb-1">Last Name</label>
               <input
                 type="text"
                 id="last_name"
@@ -92,12 +99,13 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 placeholder="Last name"
+                className={inputCls}
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
             <input
               type="email"
               id="email"
@@ -106,11 +114,12 @@ const Register = () => {
               onChange={handleChange}
               required
               placeholder="Enter your email"
+              className={inputCls}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div>
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
             <input
               type="password"
               id="password"
@@ -120,11 +129,12 @@ const Register = () => {
               required
               placeholder="Create a password"
               minLength="8"
+              className={inputCls}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-1">Confirm Password</label>
             <input
               type="password"
               id="confirmPassword"
@@ -134,20 +144,21 @@ const Register = () => {
               required
               placeholder="Confirm your password"
               minLength="8"
+              className={inputCls}
             />
             {formData.confirmPassword && (
-              <div className={`password-match-indicator ${
-                formData.password === formData.confirmPassword ? 'match' : 'no-match'
-              }`}>
-                {formData.password === formData.confirmPassword 
-                  ? '✓ Passwords match' 
-                  : '✗ Passwords do not match'}
+              <div className={`mt-2 text-sm font-medium flex items-center gap-1 ${passwordMatch ? 'text-green-600' : 'text-red-600'}`}>
+                {passwordMatch ? (
+                  <><CheckCircleIcon className="w-4 h-4" /> Passwords match</>
+                ) : (
+                  <><XCircleIcon className="w-4 h-4" /> Passwords do not match</>
+                )}
               </div>
             )}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="phone_number">Phone Number</label>
+          <div>
+            <label htmlFor="phone_number" className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
             <input
               type="tel"
               id="phone_number"
@@ -155,11 +166,12 @@ const Register = () => {
               value={formData.phone_number}
               onChange={handleChange}
               placeholder="Phone number (optional)"
+              className={inputCls}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="address">Address</label>
+          <div>
+            <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">Address</label>
             <textarea
               id="address"
               name="address"
@@ -167,16 +179,19 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Your address (optional)"
               rows="3"
+              className={inputCls}
             />
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" disabled={loading}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors mt-2">
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
 
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Login here</Link>
+        <p className="text-center text-sm text-gray-500 mt-5">
+          Already have an account?{' '}
+          <Link to="/login" className="text-indigo-600 font-semibold hover:underline">Login here</Link>
         </p>
       </div>
     </div>

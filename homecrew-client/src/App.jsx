@@ -41,6 +41,12 @@ function AppContent() {
             <main className="main-content"><Home /></main>
           </div>
         } />
+        <Route path="/services" element={
+          <div className="app"><Navbar /><main className="main-content"><Services /></main></div>
+        } />
+        <Route path="/services/:id" element={
+          <div className="app"><Navbar /><main className="main-content"><ServiceDetail /></main></div>
+        } />
         <Route path="*" element={<Navigate to="/admin-dashboard" replace />} />
       </Routes>
     );
