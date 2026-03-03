@@ -37,13 +37,13 @@ class CreateOrderSerializer(serializers.Serializer):
 # ADD ITEM TO CART
 # =========================
 class AddCartItemSerializer(serializers.ModelSerializer):
-    service_id = serializers.IntegerField()
+    service = serializers.IntegerField(source='service_id', write_only=True)
 
     class Meta:
         model = CartItem
-        fields = ['id', 'service_id', 'quantity']
+        fields = ['id', 'service', 'quantity']
 
-    def validate_service_id(self, value):
+    def validate_service(self, value):
         if not Service.objects.filter(id=value).exists():
             raise serializers.ValidationError("Service does not exist")
         return value
@@ -79,8 +79,27 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
 # =========================
 # CART ITEM VIEW SERIALIZER
 # =========================
+class SimpleServiceSerializer(serializers.ModelSerializer):
+    """Simple service serializer for cart items to avoid circular imports"""
+    images = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Service
+        fields = ['id', 'name', 'description', 'price', 'avg_rating', 'category', 'images']
+    
+    def get_images(self, obj):
+        from services.models import ServiceImage
+        images = ServiceImage.objects.filter(service=obj)[:3]
+        return [{'id': img.id, 'image': img.image} for img in images]
+    
+    def get_category(self, obj):
+        if obj.category:
+            return {'id': obj.category.id, 'name': obj.category.name}
+        return None
+
 class CartItemSerializer(serializers.ModelSerializer):
-    service = serializers.StringRelatedField()
+    service = SimpleServiceSerializer(read_only=True)
     total_price = serializers.SerializerMethodField()
 
     class Meta:
@@ -96,6 +115,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 # =========================
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
+    client = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Cart
@@ -106,7 +126,7 @@ class CartSerializer(serializers.ModelSerializer):
 # ORDER ITEM SERIALIZER
 # =========================
 class OrderItemSerializer(serializers.ModelSerializer):
-    service = serializers.StringRelatedField()
+    service = SimpleServiceSerializer(read_only=True)
 
     class Meta:
         model = OrderItem
@@ -117,8 +137,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
 # ORDER SERIALIZER
 # =========================
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(source='orderitem_set', many=True, read_only=True)
+    items = OrderItemSerializer(many=True, read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'client', 'status', 'items', 'created_at']
+        fields = ['id', 'client', 'status', 'items', 'total_price', 'created_at']
