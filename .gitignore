@@ -54,6 +54,7 @@ staticfiles/
 # Deployment docs (keep private)
 RENDER_DEPLOYMENT.md
 DEPLOYMENT_CHECKLIST.md
+RENDER_DEPLOY_VALUES.md
 
 # Test and coverage
 .coverage
