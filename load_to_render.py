@@ -1,214 +1,59 @@
-"""
-Script to load local data directly to Render PostgreSQL
-"""
-import os
-import django
-import json
-
+﻿import os, json, django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'house_hold_service.settings')
 django.setup()
-
-from django.db import connection, transaction
-
-# Force Render DB
 from decouple import config
 db_url = config('DATABASE_URL', default=None)
-print(f"Connected to: {db_url[:40] if db_url else 'SQLite'}...")
-
+print(f"Connected to: {db_url[:50] if db_url else 'SQLite'}...")
 from accounts.models import User
 from services.models import ServiceCategory, Service, ServiceImage, Review
 from orders.models import Order
 
-print("\n========================================")
-print("Loading data to Render PostgreSQL...")
-print("========================================")
+print("=== Loading data to Render PostgreSQL ===")
 
-# === STEP 1: ServiceCategories ===
-print("\n📦 Loading ServiceCategories...")
 with open('categories_data.json', 'r', encoding='utf-8') as f:
-    categories = json.load(f)
+    cats_json = json.load(f)
+existing = set(ServiceCategory.objects.values_list('id', flat=True))
+to_create = [ServiceCategory(id=i['pk'], name=i['fields']['name'], description=i['fields'].get('description','')) for i in cats_json if i['model']=='services.servicecategory' and i['pk'] not in existing]
+ServiceCategory.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[1/6] Categories: {ServiceCategory.objects.count()} total")
 
-cat_count = 0
-for item in categories:
-    if item['model'] == 'services.servicecategory':
-        fields = item['fields']
-        try:
-            obj, created = ServiceCategory.objects.get_or_create(
-                id=item['pk'],
-                defaults={
-                    'name': fields['name'],
-                    'description': fields.get('description', ''),
-                }
-            )
-            if not created:
-                obj.name = fields['name']
-                obj.description = fields.get('description', '')
-                obj.save()
-            cat_count += 1
-        except Exception as e:
-            print(f"  ⚠️ Category {item['pk']} error: {e}")
-
-print(f"✅ Loaded {cat_count} categories")
-
-# === STEP 2: Services ===
-print("\n📦 Loading Services...")
 with open('services_main_data.json', 'r', encoding='utf-8') as f:
-    services = json.load(f)
+    svcs_json = json.load(f)
+cat_map = {c.id: c for c in ServiceCategory.objects.all()}
+existing = set(Service.objects.values_list('id', flat=True))
+to_create = [Service(id=i['pk'], name=i['fields']['name'], description=i['fields'].get('description',''), price=i['fields'].get('price',0), category=cat_map.get(i['fields'].get('category'))) for i in svcs_json if i['model']=='services.service' and i['pk'] not in existing]
+Service.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[2/6] Services: {Service.objects.count()} total")
 
-svc_count = 0
-for item in services:
-    if item['model'] == 'services.service':
-        fields = item['fields']
-        try:
-            category = ServiceCategory.objects.filter(id=fields['category']).first() if fields.get('category') else None
-            obj, created = Service.objects.get_or_create(
-                id=item['pk'],
-                defaults={
-                    'name': fields['name'],
-                    'description': fields.get('description', ''),
-                    'price': fields.get('price', 0),
-                    'category': category,
-                }
-            )
-            if not created:
-                obj.name = fields['name']
-                obj.description = fields.get('description', '')
-                obj.price = fields.get('price', 0)
-                obj.category = category
-                obj.save()
-            svc_count += 1
-        except Exception as e:
-            print(f"  ⚠️ Service {item['pk']} error: {e}")
-
-print(f"✅ Loaded {svc_count} services")
-
-# === STEP 3: ServiceImages ===
-print("\n📦 Loading ServiceImages...")
 with open('serviceimages_data.json', 'r', encoding='utf-8') as f:
-    images = json.load(f)
+    imgs_json = json.load(f)
+svc_map = {s.id: s for s in Service.objects.all()}
+existing = set(ServiceImage.objects.values_list('id', flat=True))
+to_create = [ServiceImage(id=i['pk'], service=svc_map.get(i['fields'].get('service')), image_url=i['fields'].get('image_url','') or '', image_file=i['fields'].get('image_file','') or '') for i in imgs_json if i['model']=='services.serviceimage' and i['pk'] not in existing and svc_map.get(i['fields'].get('service'))]
+ServiceImage.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[3/6] ServiceImages: {ServiceImage.objects.count()} total")
 
-img_count = 0
-for item in images:
-    if item['model'] == 'services.serviceimage':
-        fields = item['fields']
-        try:
-            service = Service.objects.filter(id=fields['service']).first()
-            if service:
-                obj, created = ServiceImage.objects.get_or_create(
-                    id=item['pk'],
-                    defaults={
-                        'service': service,
-                        'image_url': fields.get('image_url', '') or '',
-                        'image_file': fields.get('image_file', '') or '',
-                    }
-                )
-                if not created:
-                    obj.image_url = fields.get('image_url', '') or ''
-                    obj.save()
-                img_count += 1
-        except Exception as e:
-            print(f"  ⚠️ Image {item['pk']} error: {e}")
-
-print(f"✅ Loaded {img_count} service images")
-
-# === STEP 4: Users ===
-print("\n📦 Loading Users...")
 with open('accounts_data.json', 'r', encoding='utf-8') as f:
-    accounts = json.load(f)
+    acc_json = json.load(f)
+existing = set(User.objects.values_list('id', flat=True))
+to_create = [User(id=i['pk'], email=i['fields']['email'], password=i['fields']['password'], first_name=i['fields'].get('first_name',''), last_name=i['fields'].get('last_name',''), is_staff=i['fields'].get('is_staff',False), is_superuser=i['fields'].get('is_superuser',False), is_active=i['fields'].get('is_active',True), date_joined=i['fields'].get('date_joined'), phone_number=i['fields'].get('phone_number',''), address=i['fields'].get('address',''), role=i['fields'].get('role','client')) for i in acc_json if i['model']=='accounts.user' and i['pk'] not in existing]
+User.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[4/6] Users: {User.objects.count()} total")
 
-user_count = 0
-for item in accounts:
-    if item['model'] == 'accounts.user':
-        fields = item['fields']
-        try:
-            obj, created = User.objects.get_or_create(
-                id=item['pk'],
-                defaults={
-                    'email': fields['email'],
-                    'password': fields['password'],
-                    'first_name': fields.get('first_name', ''),
-                    'last_name': fields.get('last_name', ''),
-                    'is_staff': fields.get('is_staff', False),
-                    'is_superuser': fields.get('is_superuser', False),
-                    'is_active': fields.get('is_active', True),
-                    'date_joined': fields.get('date_joined'),
-                    'phone_number': fields.get('phone_number', ''),
-                    'address': fields.get('address', ''),
-                    'role': fields.get('role', 'client'),
-                }
-            )
-            user_count += 1
-        except Exception as e:
-            print(f"  ⚠️ User {item['pk']} ({fields.get('email')}) error: {e}")
-
-print(f"✅ Loaded {user_count} users")
-
-# === STEP 5: Reviews ===
-print("\n📦 Loading Reviews...")
 with open('reviews_data.json', 'r', encoding='utf-8') as f:
-    reviews = json.load(f)
+    revs_json = json.load(f)
+user_map = {u.id: u for u in User.objects.all()}
+svc_map = {s.id: s for s in Service.objects.all()}
+existing = set(Review.objects.values_list('id', flat=True))
+to_create = [Review(id=i['pk'], service=svc_map.get(i['fields'].get('service')), client=user_map.get(i['fields'].get('client')), rating=i['fields'].get('rating',5), comment=i['fields'].get('comment',''), created_at=i['fields'].get('created_at')) for i in revs_json if i['model']=='services.review' and i['pk'] not in existing and svc_map.get(i['fields'].get('service')) and user_map.get(i['fields'].get('client'))]
+Review.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[5/6] Reviews: {Review.objects.count()} total")
 
-review_count = 0
-for item in reviews:
-    if item['model'] == 'services.review':
-        fields = item['fields']
-        try:
-            service = Service.objects.filter(id=fields['service']).first()
-            client = User.objects.filter(id=fields['client']).first()
-            if service and client:
-                obj, created = Review.objects.get_or_create(
-                    id=item['pk'],
-                    defaults={
-                        'service': service,
-                        'client': client,
-                        'rating': fields.get('rating', 5),
-                        'comment': fields.get('comment', ''),
-                        'created_at': fields.get('created_at'),
-                    }
-                )
-                review_count += 1
-        except Exception as e:
-            print(f"  ⚠️ Review {item['pk']} error: {e}")
-
-print(f"✅ Loaded {review_count} reviews")
-
-# === STEP 6: Orders ===
-print("\n📦 Loading Orders...")
 with open('orders_data.json', 'r', encoding='utf-8') as f:
-    orders_data = json.load(f)
+    ords_json = json.load(f)
+existing = set(Order.objects.values_list('id', flat=True))
+to_create = [Order(id=i['pk'], client=user_map.get(i['fields'].get('client')), status=i['fields'].get('status','pending'), total_price=i['fields'].get('total_price',0), created_at=i['fields'].get('created_at')) for i in ords_json if i['model']=='orders.order' and i['pk'] not in existing and user_map.get(i['fields'].get('client'))]
+Order.objects.bulk_create(to_create, ignore_conflicts=True)
+print(f"[6/6] Orders: {Order.objects.count()} total")
 
-order_count = 0
-for item in orders_data:
-    if item['model'] == 'orders.order':
-        fields = item['fields']
-        try:
-            service = Service.objects.filter(id=fields['service']).first() if fields.get('service') else None
-            client = User.objects.filter(id=fields['client']).first()
-            if client:
-                obj, created = Order.objects.get_or_create(
-                    id=item['pk'],
-                    defaults={
-                        'service': service,
-                        'client': client,
-                        'status': fields.get('status', 'pending'),
-                        'total_price': fields.get('total_price', 0),
-                        'created_at': fields.get('created_at'),
-                    }
-                )
-                order_count += 1
-        except Exception as e:
-            print(f"  ⚠️ Order {item['pk']} error: {e}")
-
-print(f"✅ Loaded {order_count} orders")
-
-# === Final Summary ===
-print("\n========================================")
-print("📊 FINAL DATABASE COUNTS (Render):")
-print("========================================")
-print(f"  ServiceCategory: {ServiceCategory.objects.count()}")
-print(f"  Service:         {Service.objects.count()}")
-print(f"  ServiceImage:    {ServiceImage.objects.count()}")
-print(f"  Review:          {Review.objects.count()}")
-print(f"  User:            {User.objects.count()}")
-print(f"  Order:           {Order.objects.count()}")
-print("\n✅ Data migration to Render PostgreSQL COMPLETE!")
+print("=== DONE === Categories:{} Services:{} Images:{} Users:{} Reviews:{} Orders:{}".format(ServiceCategory.objects.count(), Service.objects.count(), ServiceImage.objects.count(), User.objects.count(), Review.objects.count(), Order.objects.count()))
