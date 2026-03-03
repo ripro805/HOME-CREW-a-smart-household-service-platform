@@ -243,14 +243,14 @@ def user_login(request):
 		return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 # Profile Management
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAdminOrSelfOrReadOnly])
 def profile(request):
 		"""
 		User Profile Endpoint
 		Features:
-		1. GET: Retrieve profile info (bio, profile_pic, social_links).
-		2. PUT: Update profile fields.
+		1. GET: Retrieve complete profile info (User + ClientProfile data).
+		2. PUT/PATCH: Update profile fields (User and ClientProfile).
 		3. Auto-creates profile if missing.
 		4. Returns updated profile data.
 		"""
@@ -258,21 +258,56 @@ def profile(request):
 			profile = request.user.profile
 		except ClientProfile.DoesNotExist:
 			profile = ClientProfile.objects.create(user=request.user)
+		
 		if request.method == 'GET':
 			data = {
-				'user': profile.user.id,
+				'id': request.user.id,
+				'email': request.user.email,
+				'first_name': request.user.first_name,
+				'last_name': request.user.last_name,
+				'phone_number': request.user.phone_number,
+				'address': request.user.address,
+				'role': request.user.role,
+				'date_joined': request.user.date_joined,
 				'bio': profile.bio,
 				'profile_pic': profile.profile_pic.url if profile.profile_pic else None,
 				'social_links': profile.social_links,
 			}
 			return Response(data)
-		elif request.method == 'PUT':
-			profile.bio = request.data.get('bio', profile.bio)
-			profile.profile_pic = request.data.get('profile_pic', profile.profile_pic)
-			profile.social_links = request.data.get('social_links', profile.social_links)
+		
+		elif request.method in ['PUT', 'PATCH']:
+			# Update User fields
+			user = request.user
+			if 'first_name' in request.data:
+				user.first_name = request.data['first_name']
+			if 'last_name' in request.data:
+				user.last_name = request.data['last_name']
+			if 'phone_number' in request.data:
+				user.phone_number = request.data['phone_number']
+			if 'address' in request.data:
+				user.address = request.data['address']
+			user.save()
+			
+			# Update ClientProfile fields
+			if 'bio' in request.data:
+				profile.bio = request.data['bio']
+			if 'profile_pic' in request.FILES:
+				profile.profile_pic = request.FILES['profile_pic']
+			elif 'profile_pic' in request.data and request.data['profile_pic'] is None:
+				profile.profile_pic = None
+			if 'social_links' in request.data:
+				profile.social_links = request.data['social_links']
 			profile.save()
+			
 			data = {
-				'user': profile.user.id,
+				'id': user.id,
+				'email': user.email,
+				'first_name': user.first_name,
+				'last_name': user.last_name,
+				'phone_number': user.phone_number,
+				'address': user.address,
+				'role': user.role,
+				'date_joined': user.date_joined,
 				'bio': profile.bio,
 				'profile_pic': profile.profile_pic.url if profile.profile_pic else None,
 				'social_links': profile.social_links,

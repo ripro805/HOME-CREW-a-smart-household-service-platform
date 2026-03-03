@@ -3,7 +3,7 @@ from . import views
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 from accounts.views import UserViewSet
-from services.views import ServiceViewSet, ReviewViewSet, ServiceCategoryViewSet, ServiceImageViewSet
+from services.views import ServiceViewSet, ReviewViewSet, ServiceCategoryViewSet, ServiceImageViewSet, AdminReviewViewSet
 from orders.views import OrderViewSet, OrderItemViewSet, CartItemViewSet, CartViewSet
 from django.conf import settings
 from django.conf.urls.static import static
@@ -15,6 +15,7 @@ router.register(r'services', ServiceViewSet, basename='service')
 router.register('categories', ServiceCategoryViewSet, basename='category')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'carts', CartViewSet, basename='cart')
+router.register(r'reviews', AdminReviewViewSet, basename='admin-review')
 
 # Nested routers
 orders_router = NestedDefaultRouter(router, r'orders', lookup='order')
@@ -34,6 +35,7 @@ urlpatterns = [
     path('', include(cart_router.urls)),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
+    path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
     # Include app-level custom endpoints under their own prefixes
     path("accounts/", include("accounts.accounts_urls")),
     path("orders/", include("orders.orders_urls")),

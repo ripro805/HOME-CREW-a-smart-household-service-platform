@@ -91,7 +91,22 @@ class SimpleServiceSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         from services.models import ServiceImage
         images = ServiceImage.objects.filter(service=obj)[:3]
-        return [{'id': img.id, 'image': img.image} for img in images]
+        result = []
+        for img in images:
+            raw = str(img.image) if img.image else ''
+            if raw.startswith('http://') or raw.startswith('https://'):
+                url = raw
+            elif img.image:
+                try:
+                    url = img.image.url
+                    if not url.startswith('http'):
+                        url = raw
+                except Exception:
+                    url = raw
+            else:
+                url = ''
+            result.append({'id': img.id, 'image': url})
+        return result
     
     def get_category(self, obj):
         if obj.category:
@@ -139,7 +154,17 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    client_email = serializers.SerializerMethodField()
+    client_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'client', 'status', 'items', 'total_price', 'created_at']
+        fields = ['id', 'client', 'client_email', 'client_name', 'status', 'items', 'total_price', 'created_at']
+
+    def get_client_email(self, obj):
+        return obj.client.email if obj.client else None
+
+    def get_client_name(self, obj):
+        if obj.client:
+            return obj.client.get_full_name() or obj.client.email
+        return None

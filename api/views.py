@@ -1,6 +1,14 @@
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
 from django.urls import reverse
+from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncDate
+from orders.models import Order
+from services.models import Service
+from accounts.models import User
+from datetime import timedelta
+from django.utils import timezone
 
 @api_view(['GET'])
 def api_home(request):
@@ -18,4 +26,84 @@ def api_home(request):
     return JsonResponse({
         "message": "Welcome to the HouseHoldService API!",
         "links": api_links
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def analytics_dashboard(request):
+    """Provide analytics data for admin dashboard"""
+    
+    # Get date range (last 30 days)
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=30)
+    
+    # Revenue over time (last 30 days)
+    revenue_data = Order.objects.filter(
+        created_at__gte=start_date,
+        status__in=[Order.READY_TO_SHIP, Order.SHIPPED, Order.DELIVERED]
+    ).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        revenue=Sum('total_price')
+    ).order_by('date')
+    
+    # Orders over time (last 30 days)
+    orders_data = Order.objects.filter(
+        created_at__gte=start_date
+    ).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    # Order status distribution
+    status_distribution = Order.objects.values('status').annotate(
+        count=Count('id')
+    ).order_by('status')
+    
+    # Top services by orders
+    top_services = Service.objects.annotate(
+        order_count=Count('orderitem')
+    ).order_by('-order_count')[:5].values('name', 'order_count')
+    
+    # Summary statistics
+    total_revenue = Order.objects.filter(
+        status__in=[Order.READY_TO_SHIP, Order.SHIPPED, Order.DELIVERED]
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+    
+    total_orders = Order.objects.count()
+    total_clients = User.objects.filter(role='client').count()
+    total_services = Service.objects.count()
+    
+    # Recent revenue (last 7 days)
+    recent_revenue = Order.objects.filter(
+        created_at__gte=end_date - timedelta(days=7),
+        status__in=[Order.READY_TO_SHIP, Order.SHIPPED, Order.DELIVERED]
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+    
+    # Previous period revenue (8-14 days ago)
+    previous_revenue = Order.objects.filter(
+        created_at__gte=end_date - timedelta(days=14),
+        created_at__lt=end_date - timedelta(days=7),
+        status__in=[Order.READY_TO_SHIP, Order.SHIPPED, Order.DELIVERED]
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+    
+    # Calculate revenue change percentage
+    revenue_change = 0
+    if previous_revenue > 0:
+        revenue_change = ((recent_revenue - previous_revenue) / previous_revenue) * 100
+    
+    return JsonResponse({
+        'revenue_over_time': list(revenue_data),
+        'orders_over_time': list(orders_data),
+        'status_distribution': list(status_distribution),
+        'top_services': list(top_services),
+        'summary': {
+            'total_revenue': float(total_revenue),
+            'total_orders': total_orders,
+            'total_clients': total_clients,
+            'total_services': total_services,
+            'recent_revenue': float(recent_revenue),
+            'revenue_change_percentage': round(revenue_change, 2)
+        }
     })

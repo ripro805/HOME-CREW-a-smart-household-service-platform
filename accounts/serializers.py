@@ -14,9 +14,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         validated_data['role'] = 'client'
         user = super().create(validated_data)
         return user
-class UserSerializer(BaseUserCreateSerializer):
-    ref_name = "CustomUserSerializer"
-    class Meta(BaseUserCreateSerializer.Meta):
+class UserSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'role', 'address', 'phone_number']
-        ref_name = "CustomUserSerializer"

@@ -6,8 +6,29 @@ class ServiceCategorySerializer(serializers.ModelSerializer):
         model = ServiceCategory
         fields = ["id", "name", "description"]
 
-        
+
 class ServiceImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        """Return the image URL, handling both uploaded files (Cloudinary) and
+        plain URL strings stored by populate_db / migrations."""
+        if not obj.image:
+            return None
+        raw = str(obj.image)
+        if raw.startswith('http://') or raw.startswith('https://'):
+            return raw
+        try:
+            url = obj.image.url
+            if url.startswith('http'):
+                return url
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except Exception:
+            return raw
+
     class Meta:
         model = ServiceImage
         fields = ["id", "image"]
@@ -21,6 +42,23 @@ class ServiceSerializer(serializers.ModelSerializer):
         
 
 class ReviewSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Review
-        fields = ["id", "service", "client", "rating", "comment", "created_at"]
+        fields = ["id", "service", "client", "client_name", "rating", "comment", "created_at"]
+        read_only_fields = ["service", "client", "client_name", "created_at"]
+
+    def get_client_name(self, obj):
+        if obj.client:
+            return obj.client.get_full_name() or obj.client.email
+        return "Anonymous"
+
+
+class AdminReviewSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    client_email = serializers.EmailField(source='client.email', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ["id", "service", "service_name", "client", "client_email", "rating", "comment", "created_at"]
