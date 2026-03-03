@@ -20,27 +20,51 @@ export function useScrollReveal(options = {}) {
     const container = ref.current;
     if (!container) return;
 
-    const { threshold = 0.12, rootMargin = '0px 0px -60px 0px' } = options;
+    const { threshold = 0.12, rootMargin = '0px 0px -40px 0px' } = options;
+    const SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
 
-    const observer = new IntersectionObserver(
+    // IntersectionObserver — makes elements visible when they enter viewport
+    const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('revealed');
-            // Unobserve after reveal for performance
-            observer.unobserve(entry.target);
+            io.unobserve(entry.target);
           }
         });
       },
       { threshold, rootMargin }
     );
 
-    const targets = container.querySelectorAll(
-      '.reveal, .reveal-left, .reveal-right, .reveal-scale'
-    );
-    targets.forEach((el) => observer.observe(el));
+    // Observe a single element (skip already-revealed ones)
+    const observe = (el) => {
+      if (!el.classList.contains('revealed')) {
+        io.observe(el);
+      }
+    };
 
-    return () => observer.disconnect();
+    // Observe everything already in the DOM
+    container.querySelectorAll(SELECTOR).forEach(observe);
+
+    // MutationObserver — watches for new .reveal elements added after async data loads
+    const mo = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return; // elements only
+          // The node itself
+          if (node.matches && node.matches(SELECTOR)) observe(node);
+          // Descendants of the node
+          node.querySelectorAll && node.querySelectorAll(SELECTOR).forEach(observe);
+        });
+      });
+    });
+
+    mo.observe(container, { childList: true, subtree: true });
+
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
   }, []);
 
   return ref;
