@@ -10,7 +10,8 @@ import {
   LockClosedIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  StarIcon as StarSolid
+  StarIcon as StarSolid,
+  WrenchScrewdriverIcon
 } from '@heroicons/react/24/solid';
 import { 
   StarIcon,
