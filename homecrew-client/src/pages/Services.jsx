@@ -299,7 +299,7 @@ const Services = () => {
             <p className="col-span-full text-center text-gray-500 py-12">No services found</p>
           ) : (
             sortedServices.map((service, idx) => (
-              <div key={service.id} className={`reveal delay-${(idx % 6) + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group`}>
+              <div key={service.id} className="animate-fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group" style={{ animationDelay: `${(idx % 6) * 0.08}s` }}>
                 <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 overflow-hidden relative group-hover:shadow-inner">
                   {service.images && service.images.length > 0 ? (
                     <img 

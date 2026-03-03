@@ -330,7 +330,8 @@ const Home = () => {
               {categories.slice(0, 4).map((category, i) => (
                 <div
                   key={category.id}
-                  className={`reveal delay-${i + 1} bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center card-hover border border-teal-100 flex flex-col group overflow-hidden relative`}
+                  className="animate-fade-in-up bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center card-hover border border-teal-100 flex flex-col group overflow-hidden relative"
+                  style={{ animationDelay: `${i * 0.08}s` }}
                 >
                   {/* background orb */}
                   <div className="absolute -top-6 -right-6 w-20 h-20 bg-teal-200 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500" />
@@ -377,7 +378,8 @@ const Home = () => {
                 return (
                 <div
                   key={service.id}
-                  className={`reveal delay-${i + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group`}
+                  className="animate-fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group"
+                  style={{ animationDelay: `${i * 0.08}s` }}
                 >
                   <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center overflow-hidden relative">
                     {imageUrl ? (
