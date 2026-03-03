@@ -8,6 +8,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         model = User
         fields = ['id', 'email', 'password', 'first_name', 'last_name', 'role', 'address', 'phone_number']
         read_only_fields = ['role']
+        ref_name = 'CustomUserCreate'
 
     def create(self, validated_data):
         # Always set role to 'client' on registration
@@ -18,3 +19,4 @@ class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'role', 'address', 'phone_number']
+        ref_name = 'CustomUser'

@@ -14,6 +14,9 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFail from './pages/PaymentFail';
+import PaymentCancel from './pages/PaymentCancel';
 import './App.css';
 
 function AppContent() {
@@ -73,6 +76,12 @@ function AppContent() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/payment/success/:orderId" element={<PaymentSuccess />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/fail/:orderId" element={<PaymentFail />} />
+          <Route path="/payment/fail" element={<PaymentFail />} />
+          <Route path="/payment/cancel/:orderId" element={<PaymentCancel />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
           {/* Non-admin users can't access admin dashboard */}
           <Route path="/admin-dashboard" element={<Navigate to="/" replace />} />
         </Routes>

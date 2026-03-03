@@ -9,6 +9,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -32,6 +33,29 @@ const OrderDetail = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayNow = async () => {
+    setPaymentProcessing(true);
+    try {
+      const response = await api.post(`/orders/${id}/pay/`, {
+        phone: '01700000000', // You can make this dynamic from user profile
+        address: 'Dhaka',
+        city: 'Dhaka'
+      });
+
+      if (response.data.status === 'success' && response.data.gateway_url) {
+        // Redirect to SSLCommerz payment gateway
+        window.location.href = response.data.gateway_url;
+      } else {
+        alert('Failed to initiate payment. Please try again.');
+        setPaymentProcessing(false);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert(err.response?.data?.detail || 'Failed to initiate payment. Please try again.');
+      setPaymentProcessing(false);
     }
   };
 
@@ -156,6 +180,47 @@ const OrderDetail = () => {
                 <span>Total</span>
                 <span className="text-teal-600">৳{Math.round(parseFloat(order.total_price || subtotal))}</span>
               </div>
+            </div>
+
+            {/* Payment Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              {order.can_pay ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700 font-semibold">Payment Status:</span>
+                    <span className="text-orange-600 font-semibold">{order.payment_status}</span>
+                  </div>
+                  <button
+                    onClick={handlePayNow}
+                    disabled={paymentProcessing}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-xl transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {paymentProcessing ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        💳 Pay Now
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-green-50 p-4 rounded-xl">
+                  <span className="text-gray-700 font-semibold">Payment Status:</span>
+                  <span className="text-green-600 font-bold flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Already Paid
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

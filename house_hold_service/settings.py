@@ -275,3 +275,10 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+# SSLCommerz Payment Gateway Settings
+SSLCOMMERZ_STORE_ID = config('SSLCOMMERZ_STORE_ID', default='testbox')
+SSLCOMMERZ_STORE_PASSWORD = config('SSLCOMMERZ_STORE_PASSWORD', default='qwerty')
+SSLCOMMERZ_IS_SANDBOX = config('SSLCOMMERZ_IS_SANDBOX', default=True, cast=bool)
+
+BACKEND_URL = config('BACKEND_URL')

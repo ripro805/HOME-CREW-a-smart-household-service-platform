@@ -29,17 +29,18 @@ cart_router = NestedDefaultRouter(router, r'carts', lookup='cart')
 cart_router.register(r'items', CartItemViewSet, basename='cart-items')
 
 urlpatterns = [
+    # Include app-level custom endpoints BEFORE router to avoid conflicts
+    path("orders/", include("orders.orders_urls")),
+    path("accounts/", include("accounts.accounts_urls")),
+    path("services/", include("services.services_urls")),
+    path("auth/", include("djoser.urls")),
+    path("auth/", include("djoser.urls.jwt")),
+    path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
+    # Router endpoints (catch-all patterns)
     path('', include(router.urls)),
     path('', include(orders_router.urls)),
     path('', include(services_router.urls)),
     path('', include(cart_router.urls)),
-    path("auth/", include("djoser.urls")),
-    path("auth/", include("djoser.urls.jwt")),
-    path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
-    # Include app-level custom endpoints under their own prefixes
-    path("accounts/", include("accounts.accounts_urls")),
-    path("orders/", include("orders.orders_urls")),
-    path("services/", include("services.services_urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
