@@ -119,7 +119,7 @@ const ServiceDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-semibold rounded-lg transition-colors">
+        <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors">
           ← Back to Services
         </button>
 
@@ -147,7 +147,7 @@ const ServiceDetail = () => {
               <h1 className="text-3xl font-bold text-gray-800 mb-4">{service.name}</h1>
               
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-4xl font-bold text-indigo-600">৳{parseFloat(service.price).toFixed(0)}</span>
+                <span className="text-4xl font-bold text-teal-600">৳{parseFloat(service.price).toFixed(0)}</span>
                 <span className="flex items-center gap-1 text-gray-600">
                   <StarSolid className="w-5 h-5 text-yellow-400" />
                   {service.avg_rating.toFixed(1)} ({reviews.length} reviews)
@@ -155,7 +155,7 @@ const ServiceDetail = () => {
               </div>
 
               {service.category && (
-                <span className="inline-block px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-full mb-6">{service.category.name}</span>
+                <span className="inline-block px-4 py-2 bg-teal-50 text-teal-600 font-semibold rounded-full mb-6">{service.category.name}</span>
               )}
 
               <div className="mb-6">
@@ -163,7 +163,7 @@ const ServiceDetail = () => {
                 <p className="text-gray-600 leading-relaxed">{service.description}</p>
               </div>
 
-              <button onClick={handleAddToCart} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors text-lg">
+              <button onClick={handleAddToCart} className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors text-lg">
                 Add to Cart
               </button>
             </div>
@@ -176,7 +176,7 @@ const ServiceDetail = () => {
             {isAuthenticated && (
               <button 
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
               >
                 {showReviewForm ? 'Cancel' : 'Write a Review'}
               </button>
@@ -190,7 +190,7 @@ const ServiceDetail = () => {
                 <select 
                   value={reviewForm.rating}
                   onChange={(e) => setReviewForm({...reviewForm, rating: parseInt(e.target.value)})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
                 >
                   <option value="5">5 Stars</option>
                   <option value="4">4 Stars</option>
@@ -207,11 +207,11 @@ const ServiceDetail = () => {
                   onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
                   rows="4"
                   placeholder="Share your experience..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
                 />
               </div>
 
-              <button type="submit" className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors">Submit Review</button>
+              <button type="submit" className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">Submit Review</button>
             </form>
           )}
 
@@ -229,7 +229,7 @@ const ServiceDetail = () => {
                         <select
                           value={editForm.rating}
                           onChange={(e) => setEditForm({ ...editForm, rating: parseInt(e.target.value) })}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                         >
                           {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} Star{n > 1 ? 's' : ''}</option>)}
                         </select>
@@ -239,13 +239,13 @@ const ServiceDetail = () => {
                           value={editForm.comment}
                           onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })}
                           rows="3"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditSave(review.id)}
-                          className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                          className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
                         >Save</button>
                         <button
                           onClick={() => setEditingReviewId(null)}
@@ -273,7 +273,7 @@ const ServiceDetail = () => {
                             <div className="flex gap-1 ml-2">
                               <button
                                 onClick={() => handleEditStart(review)}
-                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                                 title="Edit review"
                               >
                                 <PencilIcon className="w-4 h-4" />

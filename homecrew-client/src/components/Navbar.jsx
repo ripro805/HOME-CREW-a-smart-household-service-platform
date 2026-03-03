@@ -77,7 +77,7 @@ const Navbar = () => {
 
   const iconEl = (type, color) => {
     const cls = `w-5 h-5`;
-    const colors = { orange:'text-orange-500', blue:'text-blue-500', purple:'text-purple-500', green:'text-green-500', red:'text-red-500', indigo:'text-indigo-500', amber:'text-amber-500', gray:'text-gray-500' };
+    const colors = { orange:'text-orange-500', blue:'text-navy-500', purple:'text-cyan-500', green:'text-green-500', red:'text-red-500', indigo:'text-teal-500', amber:'text-amber-500', gray:'text-gray-500' };
     const c = colors[color] || 'text-gray-500';
     if (type === 'bag')     return <ShoppingBagIcon className={`${cls} ${c}`} />;
     if (type === 'check')   return <CheckCircleIcon className={`${cls} ${c}`} />;
@@ -88,7 +88,7 @@ const Navbar = () => {
     return <BellIcon className={`${cls} ${c}`} />;
   };
 
-  const bgColors = { orange:'bg-orange-50', blue:'bg-blue-50', purple:'bg-purple-50', green:'bg-green-50', red:'bg-red-50', indigo:'bg-indigo-50', amber:'bg-amber-50', gray:'bg-gray-50' };
+  const bgColors = { orange:'bg-orange-50', blue:'bg-navy-50', purple:'bg-cyan-50', green:'bg-green-50', red:'bg-red-50', indigo:'bg-teal-50', amber:'bg-amber-50', gray:'bg-gray-50' };
 
   const fmtTime = t => {
     if (!t) return 'Promo';
@@ -114,18 +114,18 @@ const Navbar = () => {
     <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         {/* Left: Logo & Name */}
-        <Link to={isAdmin ? '/preview-home' : '/'} className="flex items-center gap-2 text-indigo-600 font-bold text-xl no-underline">
+        <Link to={isAdmin ? '/preview-home' : '/'} className="flex items-center gap-2 text-teal-600 font-bold text-xl no-underline">
           <img src={logo} alt="HomeCrew" className="h-14 w-auto object-contain" />
-          <span>HomeCrew</span>
+          <span style={{ fontFamily: 'Eater, cursive', fontSize: '2rem' }}>HomeCrew</span>
         </Link>
 
         {/* Center: Navigation Links */}
         <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-6">
-          <Link to="/" className="px-4 py-2 text-gray-700 hover:text-indigo-600 font-semibold text-base transition-colors rounded-lg hover:bg-indigo-50">
+          <Link to="/" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50">
             Home
           </Link>
           {isAuthenticated && !isAdmin && (
-            <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-indigo-600 font-semibold text-base transition-colors rounded-lg hover:bg-indigo-50">
+            <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50">
               Services
             </Link>
           )}
@@ -135,10 +135,10 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
           {!isAuthenticated ? (
             <>
-              <Link to="/login" className="px-5 py-2 text-indigo-600 hover:text-indigo-700 font-semibold text-sm border-2 border-indigo-600 rounded-lg transition-colors hover:bg-indigo-50">
+              <Link to="/login" className="px-5 py-2 text-teal-600 hover:text-teal-700 font-semibold text-sm border-2 border-teal-600 rounded-lg transition-colors hover:bg-teal-50">
                 Sign In
               </Link>
-              <Link to="/register" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg transition-colors">
+              <Link to="/register" className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg transition-colors">
                 Sign Up
               </Link>
             </>
@@ -146,14 +146,14 @@ const Navbar = () => {
             <>
               {isAdmin ? (
                 <>
-                  <Link to="/admin-dashboard" className="px-3 py-2 text-indigo-600 hover:text-indigo-800 font-semibold text-sm transition-colors rounded-lg hover:bg-indigo-50 flex items-center gap-2">
+                  <Link to="/admin-dashboard" className="px-3 py-2 text-teal-600 hover:text-teal-800 font-semibold text-sm transition-colors rounded-lg hover:bg-teal-50 flex items-center gap-2">
                     <Cog6ToothIcon className="w-5 h-5" />
                     Admin Panel
                   </Link>
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setShowProfileDropdown(p => !p)}
-                      className="relative p-2 text-gray-600 hover:text-indigo-600 transition-colors rounded-lg hover:bg-indigo-50"
+                      className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50"
                     >
                       <UserCircleIcon className="w-7 h-7" />
                     </button>
@@ -162,14 +162,14 @@ const Navbar = () => {
                         <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-100 truncate">{user?.email}</div>
                         <button
                           onClick={() => { setShowProfileDropdown(false); navigate('/admin-dashboard', { state: { tab: 'profile' } }); }}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
                         >
                           <UserCircleIcon className="w-5 h-5" />
                           My Profile
                         </button>
                         <button
                           onClick={() => { setShowProfileDropdown(false); navigate('/admin-dashboard', { state: { tab: 'settings' } }); }}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
                         >
                           <Cog6ToothIcon className="w-5 h-5" />
                           Settings
@@ -189,7 +189,7 @@ const Navbar = () => {
               ) : (
                 <>
                   {/* Cart Icon */}
-                  <Link to="/cart" className="relative p-2 text-gray-600 hover:text-indigo-600 transition-colors rounded-lg hover:bg-indigo-50">
+                  <Link to="/cart" className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50">
                     <ShoppingCartIcon className="w-7 h-7" />
                     {cartCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -202,7 +202,7 @@ const Navbar = () => {
                   <div className="relative" ref={notifRef}>
                     <button
                       onClick={() => { setShowNotifDropdown(p => !p); setShowProfileDropdown(false); }}
-                      className="relative p-2 text-gray-600 hover:text-indigo-600 transition-colors rounded-lg hover:bg-indigo-50"
+                      className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50"
                     >
                       <BellIcon className="w-7 h-7" />
                       {unreadCount > 0 && (
@@ -217,7 +217,7 @@ const Navbar = () => {
                         {/* Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                           <div className="flex items-center gap-2">
-                            <BellIcon className="w-5 h-5 text-indigo-600" />
+                            <BellIcon className="w-5 h-5 text-teal-600" />
                             <span className="font-bold text-gray-800 text-base">Notifications</span>
                             {unreadCount > 0 && (
                               <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">{unreadCount} new</span>
@@ -225,7 +225,7 @@ const Navbar = () => {
                           </div>
                           <button
                             onClick={markAllRead}
-                            className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
+                            className="text-xs text-teal-600 hover:text-teal-700 font-semibold"
                           >
                             Mark all read
                           </button>
@@ -245,7 +245,7 @@ const Navbar = () => {
                                 <div
                                   key={n.id}
                                   onClick={() => { markRead(n.id); setShowNotifDropdown(false); navigate(n.link); }}
-                                  className={`flex items-start gap-3 px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? 'bg-indigo-50/40' : ''}`}
+                                  className={`flex items-start gap-3 px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? 'bg-teal-50/40' : ''}`}
                                 >
                                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${bgColors[n.color] || 'bg-gray-50'}`}>
                                     {iconEl(n.icon, n.color)}
@@ -254,7 +254,7 @@ const Navbar = () => {
                                     <p className={`text-sm leading-snug ${isUnread ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>{n.msg}</p>
                                     <p className="text-xs text-gray-400 mt-1">{fmtTime(n.time)}</p>
                                   </div>
-                                  {isUnread && <span className="flex-shrink-0 w-2 h-2 bg-indigo-500 rounded-full mt-2" />}
+                                  {isUnread && <span className="flex-shrink-0 w-2 h-2 bg-teal-500 rounded-full mt-2" />}
                                 </div>
                               );
                             })
@@ -265,7 +265,7 @@ const Navbar = () => {
                         <div className="border-t border-gray-100 px-5 py-3">
                           <button
                             onClick={() => { setShowNotifDropdown(false); navigate('/orders'); }}
-                            className="w-full text-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                            className="w-full text-center text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors"
                           >
                             View all orders →
                           </button>
@@ -278,7 +278,7 @@ const Navbar = () => {
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="p-2 text-gray-600 hover:text-indigo-600 transition-colors rounded-lg hover:bg-indigo-50"
+                      className="p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50"
                     >
                       <UserCircleIcon className="w-7 h-7" />
                     </button>
@@ -288,7 +288,7 @@ const Navbar = () => {
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
                         <Link 
                           to="/profile" 
-                          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
                           onClick={() => setShowProfileDropdown(false)}
                         >
                           <UserCircleIcon className="w-5 h-5" />
@@ -296,7 +296,7 @@ const Navbar = () => {
                         </Link>
                         <Link
                           to="/orders"
-                          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
                           onClick={() => setShowProfileDropdown(false)}
                         >
                           <ShoppingBagIcon className="w-5 h-5" />

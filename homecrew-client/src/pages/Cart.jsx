@@ -17,7 +17,7 @@ const Cart = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Please login to view your cart</h2>
-          <button onClick={() => navigate('/login')} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors">
+          <button onClick={() => navigate('/login')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
             Go to Login
           </button>
         </div>
@@ -87,7 +87,7 @@ const Cart = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
           <p className="text-gray-600 mb-4">Add some services to get started!</p>
-          <button onClick={() => navigate('/services')} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors">
+          <button onClick={() => navigate('/services')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
             Browse Services
           </button>
         </div>
@@ -169,7 +169,7 @@ const Cart = () => {
                     </button>
                   </div>
 
-                  <div className="text-xl font-bold text-indigo-600">
+                  <div className="text-xl font-bold text-teal-600">
                     ৳{Math.round(parseFloat(item.service.price) * item.quantity)}
                   </div>
 
@@ -204,15 +204,15 @@ const Cart = () => {
 
                 <div className="flex justify-between text-lg font-bold text-gray-800">
                   <span>Total:</span>
-                  <span className="text-indigo-600">৳{Math.round(getTotalPrice() * 1.1)}</span>
+                  <span className="text-teal-600">৳{Math.round(getTotalPrice() * 1.1)}</span>
                 </div>
               </div>
 
-              <button onClick={handleCheckout} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors mb-3">
+              <button onClick={handleCheckout} className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors mb-3">
                 Proceed to Checkout
               </button>
 
-              <button onClick={() => navigate('/services')} className="w-full py-3 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-semibold rounded-xl transition-colors">
+              <button onClick={() => navigate('/services')} className="w-full py-3 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-xl transition-colors">
                 Continue Shopping
               </button>
             </div>

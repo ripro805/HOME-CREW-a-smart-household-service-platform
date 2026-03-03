@@ -58,8 +58,8 @@ const daysAgo = n => new Date(Date.now() - n * 864e5);
 const getStatusBadgeClass = status => {
   const classes = {
     NOT_PAID: 'bg-amber-100 text-amber-700 border-amber-200',
-    READY_TO_SHIP: 'bg-blue-100 text-blue-700 border-blue-200',
-    SHIPPED: 'bg-purple-100 text-purple-700 border-purple-200',
+    READY_TO_SHIP: 'bg-navy-100 text-navy-700 border-navy-200',
+    SHIPPED: 'bg-cyan-100 text-cyan-700 border-cyan-200',
     DELIVERED: 'bg-green-100 text-green-700 border-green-200',
     CANCELLED: 'bg-red-100 text-red-700 border-red-200',
   };
@@ -67,7 +67,7 @@ const getStatusBadgeClass = status => {
 };
 
 // ─── PRIMITIVES ─────────────────────────────────────────────────────────────
-const Spinner = () => <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />;
+const Spinner = () => <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />;
 
 const ConfirmModal = ({ msg, onOk, onCancel }) => (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -164,7 +164,7 @@ const DashboardTab = ({ orders, services, users, categories }) => {
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-gray-700 font-medium">Show data for:</span>
         {[1,7,30,90].map(n => (
-          <button key={n} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${range===n?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setRange(n)}>
+          <button key={n} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${range===n?'bg-teal-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setRange(n)}>
             {n===1 ? 'Today' : `Last ${n} days`}
           </button>
         ))}
@@ -178,8 +178,8 @@ const DashboardTab = ({ orders, services, users, categories }) => {
           <div className="text-3xl font-bold text-gray-800 mb-1">{inRange.length}</div>
           <div className="text-sm text-gray-600">Total Orders</div>
         </div>
-        <div className="bg-purple-50/50 backdrop-blur-sm rounded-2xl p-6 border border-purple-100 shadow-sm">
-          <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-cyan-50/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-100 shadow-sm">
+          <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-4">
             <ClockIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{pending}</div>
@@ -192,15 +192,15 @@ const DashboardTab = ({ orders, services, users, categories }) => {
           <div className="text-3xl font-bold text-gray-800 mb-1">{cancelled}</div>
           <div className="text-sm text-gray-600">Cancelled</div>
         </div>
-        <div className="bg-pink-50/50 backdrop-blur-sm rounded-2xl p-6 border border-pink-100 shadow-sm">
-          <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-rose-50/50 backdrop-blur-sm rounded-2xl p-6 border border-rose-100 shadow-sm">
+          <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center mb-4">
             <CurrencyDollarIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{fmt$(revenue)}</div>
           <div className="text-sm text-gray-600">Total Revenue</div>
         </div>
-        <div className="bg-blue-50/50 backdrop-blur-sm rounded-2xl p-6 border border-blue-100 shadow-sm">
-          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-navy-50/50 backdrop-blur-sm rounded-2xl p-6 border border-navy-100 shadow-sm">
+          <div className="w-12 h-12 bg-navy-500 rounded-full flex items-center justify-center mb-4">
             <ArrowPathIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{ongoing}</div>
@@ -213,8 +213,8 @@ const DashboardTab = ({ orders, services, users, categories }) => {
           <div className="text-3xl font-bold text-gray-800 mb-1">{completed}</div>
           <div className="text-sm text-gray-600">Completed</div>
         </div>
-        <div className="bg-indigo-50/50 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100 shadow-sm">
-          <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-teal-50/50 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm">
+          <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center mb-4">
             <WrenchScrewdriverIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{services.length}</div>
@@ -232,7 +232,7 @@ const DashboardTab = ({ orders, services, users, categories }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
-            <ChartBarIcon className="w-5 h-5 text-indigo-600" />
+            <ChartBarIcon className="w-5 h-5 text-teal-600" />
             <h4 className="text-lg font-semibold text-gray-800">Daily Orders (Last 7 Days)</h4>
           </div>
           <ResponsiveContainer width="100%" height={200}>
@@ -335,7 +335,7 @@ const DashboardTab = ({ orders, services, users, categories }) => {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <TagIcon className="w-5 h-5 text-purple-600" />
+            <TagIcon className="w-5 h-5 text-cyan-600" />
             <h4 className="text-lg font-semibold text-gray-800">Services by Category</h4>
           </div>
           <ResponsiveContainer width="100%" height={250}>
@@ -442,14 +442,14 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
     <div className="space-y-6">
       <div className="flex gap-2 flex-wrap">
         {Object.entries(SUB_LABELS).map(([key, label]) => (
-          <button key={key} className={`px-4 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${sub===key?'bg-indigo-600 text-white shadow-md':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setSub(key)}>
+          <button key={key} className={`px-4 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${sub===key?'bg-teal-600 text-white shadow-md':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setSub(key)}>
             {label}
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${sub===key?'bg-white/20':'bg-gray-200 text-gray-600'}`}>{counts[key]||0}</span>
           </button>
         ))}
       </div>
       <div className="flex gap-3 items-center flex-wrap">
-        <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Search by order ID or client email..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="Search by order ID or client email..." value={search} onChange={e=>setSearch(e.target.value)} />
         <button className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-1" onClick={onRefresh}>
           <ArrowPathIcon className="w-4 h-4" /> Refresh
         </button>
@@ -466,7 +466,7 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
                 <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{fmt$(o.total_price)}</b></td>
                 <td className="py-3 px-4">
                   <select
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-sm font-medium"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white text-sm font-medium"
                     value={o.status}
                     onChange={e => handleStatusChange(o.id, e.target.value)}
                     style={{ borderColor: STATUS_COLORS[o.status], color: STATUS_COLORS[o.status] }}
@@ -508,7 +508,7 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
                 <div>
                   <h4 className="text-lg font-semibold text-gray-800 mb-3">Change Status</h4>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white font-medium"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white font-medium"
                     value={detail.status}
                     onChange={e => { handleStatusChange(detail.id, e.target.value); setDetail(p => ({...p, status:e.target.value})); }}
                     style={{ borderColor: STATUS_COLORS[detail.status] }}
@@ -544,13 +544,13 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
               </div>
               <div className="flex gap-2 items-center">
                 <input
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                   placeholder="Write an internal note..."
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}
                   onKeyDown={e => e.key==='Enter' && saveNote(detail.id)}
                 />
-                <button className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium" onClick={() => saveNote(detail.id)}>Add Note</button>
+                <button className="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium" onClick={() => saveNote(detail.id)}>Add Note</button>
               </div>
             </div>
           </div>
@@ -674,9 +674,9 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 <h4 className="text-xl font-bold text-gray-800 mb-2">{createdService.name}</h4>
                 <p className="text-gray-600 mb-4">{createdService.description}</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-indigo-50 rounded-lg p-4">
+                  <div className="bg-teal-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">Price</p>
-                    <p className="text-2xl font-bold text-indigo-600">{fmt$(createdService.price)}</p>
+                    <p className="text-2xl font-bold text-teal-600">{fmt$(createdService.price)}</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4">
                     <p className="text-sm text-gray-600 mb-1">Category</p>
@@ -685,7 +685,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </div>
               </div>
             </div>
-            <button onClick={() => { setShowDetails(false); setCreatedService(null); }} className="mt-6 w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+            <button onClick={() => { setShowDetails(false); setCreatedService(null); }} className="mt-6 w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
               Close
             </button>
           </div>
@@ -698,7 +698,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
           <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-xl my-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                {editId ? <PencilIcon className="w-6 h-6 text-indigo-600" /> : <PlusIcon className="w-6 h-6 text-indigo-600" />}
+                {editId ? <PencilIcon className="w-6 h-6 text-teal-600" /> : <PlusIcon className="w-6 h-6 text-teal-600" />}
                 <h3 className="text-2xl font-bold text-gray-800">{editId ? 'Edit Service' : 'Add New Service'}</h3>
               </div>
               <button onClick={() => { setShowModal(false); reset(); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -708,24 +708,24 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
             <Alert text={msg.text} ok={msg.ok} />
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Service Name *</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Base Price (৳) *</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" type="number" step="0.01" min="0" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} required /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Service Name *</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Base Price (৳) *</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" type="number" step="0.01" min="0" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} required /></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
                     <option value="">— No Category —</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" type="number" min="15" step="15" value={form.duration} placeholder="e.g. 60" onChange={e=>setForm({...form,duration:e.target.value})} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label><input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" type="number" min="15" step="15" value={form.duration} placeholder="e.g. 60" onChange={e=>setForm({...form,duration:e.target.value})} /></div>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description *</label><textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} required /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description *</label><textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} required /></div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Service Image {editId ? '(leave empty to keep current)' : '*'}</label>
                 <div className="flex items-start gap-4">
-                  <label className="flex-shrink-0 w-40 h-40 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 cursor-pointer transition-colors flex flex-col items-center justify-center bg-gray-50 hover:bg-indigo-50 overflow-hidden">
+                  <label className="flex-shrink-0 w-40 h-40 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-500 cursor-pointer transition-colors flex flex-col items-center justify-center bg-gray-50 hover:bg-teal-50 overflow-hidden">
                     {(imgPrev || currImg) ? (
                       <img src={imgPrev||currImg} alt="preview" className="w-full h-full object-cover" />
                     ) : (
@@ -749,18 +749,18 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
               </div>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" checked={form.is_popular} onChange={e=>setForm({...form,is_popular:e.target.checked})} />
+                  <input type="checkbox" className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500" checked={form.is_popular} onChange={e=>setForm({...form,is_popular:e.target.checked})} />
                   <StarIcon className="w-5 h-5 text-amber-500" />
                   <span className="text-sm font-medium text-gray-700">Mark as Popular</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" checked={form.available} onChange={e=>setForm({...form,available:e.target.checked})} />
+                  <input type="checkbox" className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500" checked={form.available} onChange={e=>setForm({...form,available:e.target.checked})} />
                   <CheckCircleSolid className="w-5 h-5 text-green-500" />
                   <span className="text-sm font-medium text-gray-700">Available</span>
                 </label>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
+                <button type="submit" className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
                   {saving ? 'Saving…' : editId ? 'Update Service' : 'Create Service'}
                 </button>
                 <button type="button" className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold" onClick={() => { setShowModal(false); reset(); }}>
@@ -774,14 +774,14 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-800">All Services <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">{filtered.length}/{services.length}</span></h3>
-          <button onClick={openAddModal} className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold flex items-center gap-2 shadow-sm">
+          <h3 className="text-xl font-semibold text-gray-800">All Services <span className="ml-2 px-2 py-1 bg-teal-100 text-teal-700 text-xs font-semibold rounded-full">{filtered.length}/{services.length}</span></h3>
+          <button onClick={openAddModal} className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold flex items-center gap-2 shadow-sm">
             <PlusIcon className="w-5 h-5" /> Add Service
           </button>
         </div>
         <div className="flex flex-wrap gap-4 items-center mb-4">
-          <input className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Search services..." value={search} onChange={e=>setSearch(e.target.value)} />
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
+          <input className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="Search services..." value={search} onChange={e=>setSearch(e.target.value)} />
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
             <option value="">All Categories</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -903,16 +903,16 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
               </button>
             </div>
             <div className="space-y-4">
-              <div className="bg-indigo-50 rounded-xl p-6 text-center">
-                <TagIcon className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+              <div className="bg-teal-50 rounded-xl p-6 text-center">
+                <TagIcon className="w-16 h-16 text-teal-600 mx-auto mb-4" />
                 <h4 className="text-2xl font-bold text-gray-800 mb-2">{createdCategory.name}</h4>
                 <p className="text-gray-600 mb-4">{createdCategory.description || 'No description'}</p>
-                <span className="inline-block px-4 py-2 rounded-full text-sm font-medium border bg-blue-100 text-blue-700 border-blue-200">
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-medium border bg-navy-100 text-navy-700 border-navy-200">
                   {svcCount(createdCategory.id)} services
                 </span>
               </div>
             </div>
-            <button onClick={() => { setShowDetails(false); setCreatedCategory(null); }} className="mt-6 w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+            <button onClick={() => { setShowDetails(false); setCreatedCategory(null); }} className="mt-6 w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
               Close
             </button>
           </div>
@@ -925,7 +925,7 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-xl my-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                {editId ? <PencilIcon className="w-6 h-6 text-indigo-600" /> : <PlusIcon className="w-6 h-6 text-indigo-600" />}
+                {editId ? <PencilIcon className="w-6 h-6 text-teal-600" /> : <PlusIcon className="w-6 h-6 text-teal-600" />}
                 <h3 className="text-2xl font-bold text-gray-800">{editId ? 'Edit Category' : 'Add New Category'}</h3>
               </div>
               <button onClick={() => { setShowModal(false); reset(); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -937,23 +937,23 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category Name *</label>
-                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required />
+                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required />
                 </div>
                 <div style={{flex:'0 0 80px'}}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
-                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} placeholder="🏠" style={{fontSize:'1.4rem',textAlign:'center'}} />
+                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} placeholder="🏠" style={{fontSize:'1.4rem',textAlign:'center'}} />
                 </div>
                 <div style={{flex:'0 0 160px'}}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Homepage Priority</label>
-                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" type="number" min="0" value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} />
+                  <input className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" type="number" min="0" value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} />
+                <textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
+                <button type="submit" className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={saving}>
                   {saving ? 'Saving…' : editId ? 'Update Category' : 'Create Category'}
                 </button>
                 <button type="button" className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold" onClick={() => { setShowModal(false); reset(); }}>
@@ -967,19 +967,19 @@ const CategoriesTab = ({ categories, services, onRefresh }) => {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-800">All Categories <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">{categories.length}</span></h3>
-          <button onClick={openAddModal} className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold flex items-center gap-2 shadow-sm">
+          <h3 className="text-xl font-semibold text-gray-800">All Categories <span className="ml-2 px-2 py-1 bg-teal-100 text-teal-700 text-xs font-semibold rounded-full">{categories.length}</span></h3>
+          <button onClick={openAddModal} className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold flex items-center gap-2 shadow-sm">
             <PlusIcon className="w-5 h-5" /> Add Category
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map(c => (
             <div key={c.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
-              <TagIcon className="w-10 h-10 text-indigo-600 mb-3" />
+              <TagIcon className="w-10 h-10 text-teal-600 mb-3" />
               <div className="mb-3">
                 <h4 className="text-lg font-semibold text-gray-800 mb-1">{c.name}</h4>
                 <p className="text-sm text-gray-600">{c.description || <em>No description</em>}</p>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-700 border-blue-200 mt-2">{svcCount(c.id)} services</span>
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium border bg-navy-100 text-navy-700 border-navy-200 mt-2">{svcCount(c.id)} services</span>
               </div>
               <div className="flex gap-2">
                 <button className="flex-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium" onClick={() => handleEdit(c)}>Edit</button>
@@ -1030,8 +1030,8 @@ const UsersTab = ({ users, onRefresh }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-blue-50/50 backdrop-blur-sm rounded-2xl p-6 border border-blue-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('all')}>
-          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-navy-50/50 backdrop-blur-sm rounded-2xl p-6 border border-navy-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter('all')}>
+          <div className="w-12 h-12 bg-navy-500 rounded-full flex items-center justify-center mb-4">
             <UsersIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{users.length}</div>
@@ -1044,8 +1044,8 @@ const UsersTab = ({ users, onRefresh }) => {
           <div className="text-3xl font-bold text-gray-800 mb-1">{roleCount('client')}</div>
           <div className="text-sm text-gray-600">Clients</div>
         </div>
-        <div className="bg-purple-50/50 backdrop-blur-sm rounded-2xl p-6 border border-purple-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter('all'); setRoleFilter('admin'); }}>
-          <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4">
+        <div className="bg-cyan-50/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter('all'); setRoleFilter('admin'); }}>
+          <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-4">
             <CogIcon className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-800 mb-1">{roleCount('admin')}</div>
@@ -1063,13 +1063,13 @@ const UsersTab = ({ users, onRefresh }) => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-wrap gap-4 items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-gray-800">User Management</h3>
-          <input className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Search by name or email..." value={search} onChange={e=>setSearch(e.target.value)} />
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}>
+          <input className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" placeholder="Search by name or email..." value={search} onChange={e=>setSearch(e.target.value)} />
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}>
             <option value="all">All Roles</option>
             <option value="client">Clients</option>
             <option value="admin">Admins</option>
           </select>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="blocked">Blocked</option>
@@ -1086,10 +1086,10 @@ const UsersTab = ({ users, onRefresh }) => {
               return (
                 <tr key={u.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${isBlocked ? 'opacity-60' : ''}`}>
                   <td className="py-3 px-4 text-sm">{u.id}</td>
-                  <td className="py-3 px-4"><div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold">{(u.first_name||'U')[0].toUpperCase()}</div></td>
+                  <td className="py-3 px-4"><div className="w-10 h-10 bg-teal-600 text-white rounded-full flex items-center justify-center font-semibold">{(u.first_name||'U')[0].toUpperCase()}</div></td>
                   <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{u.first_name} {u.last_name}</b></td>
                   <td className="py-3 px-4 text-sm text-gray-700">{u.email}</td>
-                  <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${u.role==='admin'?'bg-purple-100 text-purple-700 border-purple-200':'bg-blue-100 text-blue-700 border-blue-200'}`}>{u.role}</span></td>
+                  <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${u.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{u.role}</span></td>
                   <td className="py-3 px-4 text-sm text-gray-700">{u.phone_number || '—'}</td>
                   <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${isBlocked ? 'bg-red-100 text-red-700 border-red-200' : 'bg-green-100 text-green-700 border-green-200'}`}>{isBlocked ? 'Blocked' : 'Active'}</span></td>
                   <td className="py-3 px-4">
@@ -1119,11 +1119,11 @@ const UsersTab = ({ users, onRefresh }) => {
             </div>
             <div className="space-y-6">
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-2xl">{(selected.first_name||'U')[0].toUpperCase()}</div>
+                <div className="w-16 h-16 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold text-2xl">{(selected.first_name||'U')[0].toUpperCase()}</div>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800">{selected.first_name} {selected.last_name}</h3>
                   <p className="text-gray-600">{selected.email}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border mt-2 ${selected.role==='admin'?'bg-purple-100 text-purple-700 border-purple-200':'bg-blue-100 text-blue-700 border-blue-200'}`}>{selected.role}</span>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border mt-2 ${selected.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{selected.role}</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1530,7 +1530,7 @@ const ReportsTab = ({ orders, services, users, categories }) => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100" style={{marginBottom: '1.5rem'}}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <ChartBarIcon className="w-5 h-5 text-indigo-600" />
+            <ChartBarIcon className="w-5 h-5 text-teal-600" />
             <h4 className="text-lg font-semibold text-gray-800">Revenue</h4>
           </div>
           <div className="text-sm text-gray-500">Last 30 days</div>
@@ -1582,7 +1582,7 @@ const ReportsTab = ({ orders, services, users, categories }) => {
         {/* Orders Chart */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
-            <ShoppingBagIcon className="w-5 h-5 text-purple-600" />
+            <ShoppingBagIcon className="w-5 h-5 text-cyan-600" />
             <h4 className="text-lg font-semibold text-gray-800">Orders Over Time</h4>
           </div>
           <ResponsiveContainer width="100%" height={250}>
@@ -1642,7 +1642,7 @@ const ReportsTab = ({ orders, services, users, categories }) => {
       {topServicesData.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
-            <WrenchScrewdriverIcon className="w-5 h-5 text-blue-600" />
+            <WrenchScrewdriverIcon className="w-5 h-5 text-navy-600" />
             <h4 className="text-lg font-semibold text-gray-800">Top Services</h4>
           </div>
           <ResponsiveContainer width="100%" height={250}>
@@ -1822,7 +1822,7 @@ const AdminProfileTab = ({ user }) => {
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-gray-800">Profile Information</h3>
           {!editing
-            ? <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors" onClick={() => setEditing(true)}><PencilIcon className="w-4 h-4" /> Edit</button>
+            ? <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors" onClick={() => setEditing(true)}><PencilIcon className="w-4 h-4" /> Edit</button>
             : <div className="flex gap-2">
                 <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors" onClick={handleSave} disabled={saving}><CheckIcon className="w-4 h-4" /> Save</button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors" onClick={() => { setEditing(false); setForm({ first_name:profile.first_name||'', last_name:profile.last_name||'', phone_number:profile.phone_number||'', address:profile.address||'' }); }}><XMarkIcon className="w-4 h-4" /> Cancel</button>
@@ -1830,13 +1830,13 @@ const AdminProfileTab = ({ user }) => {
           }
         </div>
         <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-          <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-2xl">
+          <div className="w-16 h-16 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold text-2xl">
             {(profile.first_name||'A')[0].toUpperCase()}
           </div>
           <div>
             <h4 className="text-xl font-semibold text-gray-800">{profile.first_name} {profile.last_name}</h4>
             <p className="text-gray-600 text-sm">{profile.email}</p>
-            <span className="inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">Admin</span>
+            <span className="inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700 border border-cyan-200">Admin</span>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1849,7 +1849,7 @@ const AdminProfileTab = ({ user }) => {
             <div key={key}>
               <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
               {editing
-                ? <input className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" value={form[key]} onChange={e => setForm(p => ({...p, [key]: e.target.value}))} />
+                ? <input className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" value={form[key]} onChange={e => setForm(p => ({...p, [key]: e.target.value}))} />
                 : <p className="text-sm text-gray-800 px-3 py-2 bg-gray-50 rounded-lg">{profile[key] || '—'}</p>
               }
             </div>
@@ -1875,10 +1875,10 @@ const AdminProfileTab = ({ user }) => {
           ].map(({ label, key }) => (
             <div key={key}>
               <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
-              <input type="password" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" value={pwForm[key]} onChange={e => setPwForm(p => ({...p, [key]: e.target.value}))} />
+              <input type="password" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" value={pwForm[key]} onChange={e => setPwForm(p => ({...p, [key]: e.target.value}))} />
             </div>
           ))}
-          <button className="mt-2 px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-60" onClick={handlePwChange} disabled={saving}>
+          <button className="mt-2 px-5 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-60" onClick={handlePwChange} disabled={saving}>
             Update Password
           </button>
         </div>
@@ -1905,7 +1905,7 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) 
   const notifs = useMemo(() => {
     const n = [];
     orders.filter(o=>o.status==='NOT_PAID').slice(0,4)
-      .forEach(o => n.push({ id:`order-${o.id}`, icon:<CubeIcon className="w-5 h-5 text-blue-600" />, text:`New booking #${o.id} awaiting payment`, time:fmtD(o.created_at), tab:'orders' }));
+      .forEach(o => n.push({ id:`order-${o.id}`, icon:<CubeIcon className="w-5 h-5 text-navy-600" />, text:`New booking #${o.id} awaiting payment`, time:fmtD(o.created_at), tab:'orders' }));
     orders.filter(o=>o.status==='CANCELLED').slice(0,3)
       .forEach(o => n.push({ id:`cancel-${o.id}`, icon:<XCircleSolid className="w-5 h-5 text-red-600" />, text:`Order #${o.id} was cancelled`, time:fmtD(o.created_at), tab:'orders' }));
     return n.slice(0, 8);

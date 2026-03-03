@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,9 +13,14 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 const Services = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Initialize selectedCategory from URL
+  const initialCategory = searchParams.get('category') || 'all';
+  
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
@@ -28,39 +33,63 @@ const Services = () => {
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
 
+  // Fetch categories once on mount
   useEffect(() => {
-    fetchServices();
     fetchCategories();
-  }, [selectedCategory, currentPage]); // Re-fetch when category or page changes
+  }, []);
 
+  // Watch URL changes and update category
   useEffect(() => {
-    // Reset to page 1 when category changes
-    setCurrentPage(1);
-  }, [selectedCategory]);
+    const urlCategory = searchParams.get('category') || 'all';
+    console.log('URL category:', urlCategory, '| Current state:', selectedCategory);
+    
+    if (urlCategory !== selectedCategory) {
+      console.log('Syncing category from URL to state:', urlCategory);
+      setSelectedCategory(urlCategory);
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()]); // Use string representation to avoid object reference issues
 
-  const fetchServices = async () => {
+  // Fetch services when category or page changes
+  const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
+      
       // Add category filter and pagination to API call
       const params = { page: currentPage, page_size: 10 };
-      if (selectedCategory !== 'all') {
+      if (selectedCategory && selectedCategory !== 'all') {
         params.category = selectedCategory;
       }
       
+      console.log('📡 Fetching services...');
+      console.log('  Category:', selectedCategory);
+      console.log('  Page:', currentPage);
+      console.log('  API Params:', params);
+      
       const response = await api.get('/services/', { params });
+      
+      console.log('✅ Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
+      
       // Backend returns paginated data: {count, next, previous, results}
       setServices(response.data.results || response.data);
       setTotalCount(response.data.count || 0);
       setTotalPages(Math.ceil((response.data.count || 0) / 10));
     } catch (error) {
-      console.error('Failed to fetch services:', error);
+      console.error('❌ Failed to fetch services:', error);
       setServices([]);
       setTotalCount(0);
       setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, currentPage]);
+
+  // Fetch services when callback changes
+  useEffect(() => {
+    console.log('🔄 Effect triggered - fetching services');
+    fetchServices();
+  }, [fetchServices]);
 
   const fetchCategories = async () => {
     try {
@@ -71,6 +100,22 @@ const Services = () => {
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
+  };
+
+  // Handle category dropdown change
+  const handleCategoryChange = (categoryId) => {
+    console.log('🔽 Dropdown changed to category:', categoryId);
+    
+    // Create new URL params
+    const newParams = new URLSearchParams(searchParams);
+    if (categoryId === 'all') {
+      newParams.delete('category');
+    } else {
+      newParams.set('category', categoryId);
+    }
+    
+    // Update URL - this will trigger the searchParams useEffect
+    setSearchParams(newParams);
   };
 
   const handleAddToCart = async (serviceId) => {
@@ -129,9 +174,9 @@ const Services = () => {
               placeholder="Search services..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
-            <button className="px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+            <button className="px-4 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors">
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
           </div>
@@ -139,8 +184,8 @@ const Services = () => {
           <div className="md:w-64">
             <select 
               value={selectedCategory} 
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white"
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
             >
               <option value="all">All Categories</option>
               {categories.map(category => (
@@ -219,7 +264,7 @@ const Services = () => {
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
                 >
                   <option value="default">Default</option>
                   <option value="price-low-high">Price: Low to High</option>
@@ -230,7 +275,7 @@ const Services = () => {
               {/* Apply Button */}
               <button 
                 onClick={() => setShowFilterSidebar(false)}
-                className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+                className="w-full py-3 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors"
               >
                 Apply Filters
               </button>
@@ -252,7 +297,7 @@ const Services = () => {
           ) : (
             sortedServices.map(service => (
               <div key={service.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
-                <div className="h-48 bg-gradient-to-br from-indigo-100 to-purple-100 overflow-hidden relative">
+                <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 overflow-hidden relative">
                   {service.images && service.images.length > 0 ? (
                     <img 
                       src={service.images[0].image} 
@@ -271,7 +316,7 @@ const Services = () => {
                     style={{ display: service.images && service.images.length > 0 ? 'none' : 'flex' }}
                   >
                     <div className="text-center">
-                      <svg className="mx-auto h-12 w-12 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="mx-auto h-12 w-12 text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <p className="mt-2 text-sm font-medium">{service.name}</p>
@@ -284,7 +329,7 @@ const Services = () => {
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.description}</p>
                   
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold text-indigo-600">৳{parseFloat(service.price).toFixed(0)}</span>
+                    <span className="text-2xl font-bold text-teal-600">৳{parseFloat(service.price).toFixed(0)}</span>
                     <span className="flex items-center gap-1 text-sm text-gray-600">
                       <StarSolid className="w-4 h-4 text-yellow-400" />
                       {service.avg_rating.toFixed(1)}
@@ -292,16 +337,16 @@ const Services = () => {
                   </div>
 
                   {service.category && (
-                    <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-full mb-4">{service.category.name}</span>
+                    <span className="inline-block px-3 py-1 bg-teal-50 text-teal-600 text-xs font-semibold rounded-full mb-4">{service.category.name}</span>
                   )}
 
                   <div className="flex gap-2">
-                    <Link to={`/services/${service.id}`} className="flex-1 px-4 py-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-semibold text-sm rounded-lg transition-colors text-center">
+                    <Link to={`/services/${service.id}`} className="flex-1 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold text-sm rounded-lg transition-colors text-center">
                       View Details
                     </Link>
                     <button 
                       onClick={() => handleAddToCart(service.id)}
-                      className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg transition-colors"
+                      className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm rounded-lg transition-colors"
                     >
                       Add to Cart
                     </button>
@@ -338,7 +383,7 @@ const Services = () => {
                       onClick={() => setCurrentPage(pageNum)}
                       className={`w-10 h-10 rounded-lg font-semibold transition-colors ${
                         currentPage === pageNum
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-teal-600 text-white'
                           : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >

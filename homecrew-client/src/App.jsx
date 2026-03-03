@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Activate from './pages/Activate';
 import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
+import Categories from './pages/Categories';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
@@ -41,6 +42,9 @@ function AppContent() {
             <main className="main-content"><Home /></main>
           </div>
         } />
+        <Route path="/categories" element={
+          <div className="app"><Navbar /><main className="main-content"><Categories /></main></div>
+        } />
         <Route path="/services" element={
           <div className="app"><Navbar /><main className="main-content"><Services /></main></div>
         } />
@@ -62,6 +66,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/activate/:uid/:token" element={<Activate />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/cart" element={<Cart />} />
