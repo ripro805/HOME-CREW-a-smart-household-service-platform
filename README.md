@@ -1,87 +1,134 @@
-# 🚀 HOME_CREW: Smart Household Service Platform
+# HomeCrew - A Smart Household Service Platform
 
-![License](https://img.shields.io/badge/license-MIT-blue)
-![License](https://img.shields.io/badge/license-BSD-blue)
-![Django](https://img.shields.io/badge/Django-6.0.2-green)
-![DRF](https://img.shields.io/badge/DRF-3.14.0-orange)
+HomeCrew is a full-stack web application for managing household services, built with Django (backend) and React (frontend). It supports user registration, service browsing, order placement, and online payment via SSLCommerz.
 
 ---
 
-## 🏡 What is HOME_CREW?
-HOME_CREW is a modern, scalable platform for booking household services—like cleaning, shifting, and repairs. Clients can easily book, review, and manage services, while admins control everything from a powerful dashboard.
+## 🚀 Live Demo
+- **Frontend:** https://home-crew-a-smart-household-service-hv7v.onrender.com/
+- **Backend API:** https://home-crew-a-smart-household-service-b93r.onrender.com/api/v1/
+- **Admin:** https://home-crew-a-smart-household-service-b93r.onrender.com/admin/
 
 ---
 
-## ✨ Key Features
-- 🔒 **User Registration:** Default role is `client`; admin can promote users to `admin`.
-- 🛡️ **JWT Authentication:** Secure login and token management (Djoser).
-- 🛍️ **Cart & Order System:** Add services to cart, place orders, track status.
-- 🗂️ **Service Listings & Reviews:** Browse, review, and rate services.
-- 🏷️ **Categories & Images:** Rich service categorization and image support.
-- 📦 **API Versioning:** All endpoints under `/api/v1/`.
-- 📚 **Swagger UI:** Interactive API docs for developers.
-- 🛠️ **Admin Controls:** Manage users, services, orders, and roles.
+## 🏗️ Project Structure
+
+```
+HouseHoldservice/
+├── accounts/         # Django app: user accounts, registration, profile
+├── api/              # Django app: API root, versioning
+├── orders/           # Django app: order management, payment
+├── services/         # Django app: service categories, listings
+├── house_hold_service/ # Django project settings, URLs
+├── homecrew-client/  # React frontend (Vite)
+├── fixtures/         # Sample data for development
+├── staticfiles/      # Collected static files
+├── media/            # Uploaded media files
+├── build.sh          # Backend build script for Render
+├── render.yaml       # Render deployment blueprint
+├── requirements.txt  # Python dependencies
+├── README.md         # Project documentation
+└── ...
+```
 
 ---
 
-## 🚦 Quick Start
+## ✨ Features
+- User registration, login, password reset (Djoser JWT)
+- Service browsing & search
+- Order placement & order history
+- Online payment (SSLCommerz integration)
+- Email notifications
+- Admin dashboard
+- Responsive UI (React + Tailwind CSS)
+
+---
+
+## 🛠️ Tech Stack
+- **Backend:** Django, Django REST Framework, Djoser, PostgreSQL
+- **Frontend:** React, Vite, Tailwind CSS, Axios
+- **Payments:** SSLCommerz
+- **Media:** Cloudinary
+- **Deployment:** Render.com
+
+---
+
+## ⚡ Quick Start (Local)
+
+### 1. Clone the repository
 ```bash
-# 1. Install dependencies
+git clone https://github.com/ripro805/HOME-CREW-a-smart-household-service-platform.git
+cd HOME-CREW-a-smart-household-service-platform
+```
+
+### 2. Backend Setup
+```bash
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate (Windows)
 pip install -r requirements.txt
-
-# 2. Run migrations
+cp .env.example .env  # Fill in your secrets
 python manage.py migrate
-
-# 3. Create superuser
-python manage.py createsuperuser --email admin@example.com
-
-# 4. Start server
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-- Access Swagger UI: [http://127.0.0.1:8000/swagger/](http://127.0.0.1:8000/swagger/)
+### 3. Frontend Setup
+```bash
+cd homecrew-client
+cp .env.example .env  # Set VITE_API_URL=http://localhost:8000/api/v1
+npm install
+npm run dev
+```
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000/api/v1
 
 ---
 
-## 🔗 API Endpoints
-| Endpoint                | Description                |
-|------------------------|----------------------------|
-| `/api/v1/auth/users/`  | User registration          |
-| `/api/v1/auth/jwt/create/` | JWT login                |
-| `/api/v1/services/`    | Service listing            |
-| `/api/v1/orders/`      | Order management           |
-| `/api/v1/carts/`       | Cart operations            |
-| `/api/v1/accounts/`    | User account info          |
+## 🚀 Deployment (Render.com)
+See [`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md) for full step-by-step Render deployment guide.
 
 ---
 
-## 👤 User Role Logic
-- Registration = `client` role (by default)
-- Only admin can change user role to `admin` (via Django admin panel)
-- Users cannot change their own role
+## 📝 Environment Variables
+
+### Backend (.env)
+```
+SECRET_KEY=your-secret-key
+DEBUG=False
+ALLOWED_HOSTS=.onrender.com,localhost,127.0.0.1
+DATABASE_URL=your-postgres-url
+CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+EMAIL_HOST_USER=your-gmail
+EMAIL_HOST_PASSWORD=your-app-password
+FRONTEND_PROTOCOL=https
+FRONTEND_DOMAIN=your-frontend-url
+BACKEND_URL=your-backend-url
+SSLCOMMERZ_STORE_ID=your-store-id
+SSLCOMMERZ_STORE_PASSWORD=your-store-password
+SSLCOMMERZ_IS_SANDBOX=True
+```
+
+### Frontend (.env)
+```
+VITE_API_URL=https://your-backend-url/api/v1
+```
 
 ---
 
-## 📄 Documentation
-Registration always creates a user with role `client`. Only admin can change user role to `admin` via Django admin panel. Users cannot change their own role. This ensures secure, role-based access and prevents privilege escalation.
+## 🧑‍💻 Contributing
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
 ---
 
-## 🤝 Contributing
-1. Fork the repo
-2. Create a feature branch
-3. Commit your changes
-4. Submit a pull request
+## 📄 License
+This project is licensed under the MIT License.
 
 ---
 
-## 📝 License
-MIT License
-
----
-
-> For support, feature requests, or bug reports, open an issue on GitHub.
-
----
-
-![HomeCrew Banner](https://img.freepik.com/free-vector/house-cleaning-service-banner_33099-1687.jpg)
+## 🙏 Acknowledgements
+- [Django](https://www.djangoproject.com/)
+- [React](https://react.dev/)
+- [Render](https://render.com/)
+- [SSLCommerz](https://www.sslcommerz.com/)
+- [Cloudinary](https://cloudinary.com/)
