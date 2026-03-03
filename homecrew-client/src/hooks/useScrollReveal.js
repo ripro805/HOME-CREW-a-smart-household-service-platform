@@ -23,17 +23,37 @@ export function useScrollReveal(options = {}) {
     const { threshold = 0.05, rootMargin = '0px 0px 0px 0px' } = options;
     const SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
 
-    // Force-reveal any element that is still hidden (safety net for IO misses)
-    const forceReveal = (el) => {
+    const reveal = (el) => {
       if (!el.classList.contains('revealed')) el.classList.add('revealed');
     };
 
-    // IntersectionObserver — makes elements visible when they enter viewport
+    // Check if an element is already inside the visible viewport
+    const isInViewport = (el) => {
+      const r = el.getBoundingClientRect();
+      return (
+        r.bottom > 0 &&
+        r.right > 0 &&
+        r.top < (window.innerHeight || document.documentElement.clientHeight) &&
+        r.left < (window.innerWidth || document.documentElement.clientWidth)
+      );
+    };
+
+    // If already visible → reveal immediately; otherwise hand off to IO
+    const handle = (el) => {
+      if (el.classList.contains('revealed')) return;
+      if (isInViewport(el)) {
+        reveal(el);
+      } else {
+        io.observe(el);
+      }
+    };
+
+    // IntersectionObserver for elements below the fold
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
+            reveal(entry.target);
             io.unobserve(entry.target);
           }
         });
@@ -41,41 +61,34 @@ export function useScrollReveal(options = {}) {
       { threshold, rootMargin }
     );
 
-    // Observe a single element (skip already-revealed ones)
-    const observe = (el) => {
-      if (!el.classList.contains('revealed')) {
-        io.observe(el);
-      }
-    };
+    // Handle elements already in the DOM at mount
+    container.querySelectorAll(SELECTOR).forEach(handle);
 
-    // Observe everything already in the DOM
-    container.querySelectorAll(SELECTOR).forEach(observe);
-
-    // MutationObserver — watches for new .reveal elements added after async data loads
+    // MutationObserver — picks up cards added after async API data loads
     const mo = new MutationObserver((mutations) => {
       const newEls = [];
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType !== 1) return; // elements only
-          if (node.matches && node.matches(SELECTOR)) { observe(node); newEls.push(node); }
-          if (node.querySelectorAll) {
-            node.querySelectorAll(SELECTOR).forEach((el) => { observe(el); newEls.push(el); });
-          }
+          if (node.nodeType !== 1) return;
+          if (node.matches && node.matches(SELECTOR)) newEls.push(node);
+          if (node.querySelectorAll) node.querySelectorAll(SELECTOR).forEach((el) => newEls.push(el));
         });
       });
-      // Fallback: if IO never fires for a card (fast scroll / layout edge case),
-      // force-reveal it after 1.8 s so it never stays invisible forever
-      if (newEls.length) {
-        setTimeout(() => newEls.forEach(forceReveal), 1800);
-      }
+      if (!newEls.length) return;
+
+      // Small rAF delay so the browser has painted the elements and
+      // getBoundingClientRect() returns real coordinates
+      requestAnimationFrame(() => {
+        newEls.forEach(handle);
+        // Hard fallback: anything still hidden after 1 s gets force-revealed
+        setTimeout(() => newEls.forEach(reveal), 1000);
+      });
     });
 
     mo.observe(container, { childList: true, subtree: true });
 
-    // Fallback for elements already in DOM at mount time
-    setTimeout(() => {
-      container.querySelectorAll(SELECTOR).forEach(forceReveal);
-    }, 1800);
+    // Hard fallback for anything already in DOM that IO might miss
+    setTimeout(() => container.querySelectorAll(SELECTOR).forEach(reveal), 1000);
 
     return () => {
       io.disconnect();
