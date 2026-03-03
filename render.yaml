@@ -53,7 +53,7 @@ services:
       - key: FRONTEND_PROTOCOL
         value: "https"
       - key: FRONTEND_DOMAIN
-        sync: false
+        value: "home-crew-a-smart-household-service-hv7v.onrender.com"
 
   # React Frontend Static Site
   - type: web
@@ -64,7 +64,7 @@ services:
     buildCommand: "cd homecrew-client && npm install && npm run build"
     envVars:
       - key: VITE_API_URL
-        value: "https://home-crew-a-smart-household-service-hv7v.onrender.com/api/v1"
+        value: "https://home-crew-a-smart-household-service-b93r.onrender.com/api/v1"
     pullRequestPreviewsEnabled: false
 
 
