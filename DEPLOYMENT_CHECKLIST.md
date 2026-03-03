@@ -167,8 +167,10 @@ git push
 - ✅ Wait for database to be fully created
 
 ### Issue: Static Files Not Loading
-- ✅ Check STATIC_ROOT in settings
-- ✅ Manually redeploy: Dashboard → Manual Deploy
+- ✅ Check Cloudinary credentials in environment variables
+- ✅ Verify `CLOUDINARY_URL` format: `cloudinary://api_key:api_secret@cloud_name`
+- ✅ Check Cloudinary Dashboard → Media Library for uploaded static files
+- ✅ Production uses Cloudinary, Development uses WhiteNoise
 
 ### Issue: CORS Error
 - ✅ Verify FRONTEND_DOMAIN is correct

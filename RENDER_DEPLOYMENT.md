@@ -73,6 +73,9 @@ git push dash-origin main
    CLOUDINARY_API_KEY=<your-api-key>
    CLOUDINARY_API_SECRET=<your-api-secret>
    
+   # Note: Cloudinary will be used for both static and media files in production
+   # Static files will be automatically uploaded during deployment
+   
    # Email
    EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
    EMAIL_HOST=smtp.gmail.com
@@ -190,8 +193,11 @@ python manage.py createsuperuser
 ### Issue 3: Static Files লোড হচ্ছে না
 
 **Solution:**
-- `STATIC_ROOT` এবং `STATICFILES_STORAGE` settings চেক করুন
-- Reload করুন: Dashboard → Manual Deploy → Deploy Latest Commit
+- Cloudinary credentials সঠিক আছে কিনা verify করুন
+- `CLOUDINARY_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` environment variables check করুন
+- Static files Cloudinary তে upload হয়েছে কিনা check করুন: Cloudinary Dashboard → Media Library
+- Manual redeploy করুন: Dashboard → Manual Deploy → Deploy Latest Commit
+- Note: Production এ Cloudinary, Development এ WhiteNoise ব্যবহার করা হয়
 
 ### Issue 4: CORS Error
 

@@ -172,19 +172,27 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise settings
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-# Cloudinary Storage configuration
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Cloudinary Storage configuration for both static and media files
 CLOUDINARY_URL = config('CLOUDINARY_URL')
 CLOUDINARY = {
     'cloud_name': config('CLOUDINARY_CLOUD_NAME'),
     'api_key': config('CLOUDINARY_API_KEY'),
     'api_secret': config('CLOUDINARY_API_SECRET'),
 }
+
+# Use Cloudinary for static files in production (when DEBUG=False)
+# Use WhiteNoise for local development (when DEBUG=True)
+if not DEBUG:
+    # Production: Use Cloudinary for static files
+    STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+else:
+    # Development: Use WhiteNoise for static files
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Always use Cloudinary for media files
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Force DRF to return only JSON responses (disable browsable API)
 REST_FRAMEWORK = {
