@@ -672,6 +672,7 @@
 /* ─── ADMIN SIDEBAR ────────────────────────────────────────────────────── */
 .admin-sidebar {
   @apply w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto;
+  height: 100%;
 }
 
 .sidebar-brand {
@@ -728,7 +729,7 @@
 }
 
 .main-header {
-  @apply bg-white border-b border-gray-200 p-6 flex items-center justify-between;
+  @apply bg-white border-b border-gray-200 p-4 md:p-6 flex items-center justify-between;
 }
 
 .main-header-left {
@@ -740,11 +741,11 @@
 }
 
 .sidebar-toggle-btn {
-  @apply lg:hidden px-3 py-2 text-2xl text-gray-600 hover:bg-gray-100 rounded-lg border-none bg-transparent cursor-pointer;
+  @apply hidden;
 }
 
 .main-title {
-  @apply text-2xl font-bold text-gray-800;
+  @apply text-xl md:text-2xl font-bold text-gray-800;
 }
 
 .err-pill {
@@ -760,7 +761,36 @@
 }
 
 .admin-root .main-content {
-  @apply p-6;
+  @apply p-3 md:p-6;
+}
+
+/* ─── MOBILE OVERLAY ───────────────────────────────────────────────────── */
+.mobile-overlay {
+  @apply fixed inset-0 bg-black/40 z-20;
+}
+
+/* ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────── */
+.mobile-bottom-nav {
+  display: none;
+  @apply fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-40 items-stretch;
+}
+
+.mobile-nav-item {
+  @apply flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-500 text-xs font-medium border-none bg-transparent cursor-pointer transition-colors;
+  padding: 6px 2px;
+}
+
+.mobile-nav-item.active {
+  @apply text-teal-600;
+}
+
+.mobile-nav-item.active svg {
+  @apply stroke-teal-600;
+}
+
+.mobile-nav-badge {
+  @apply absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold;
+  font-size: 9px;
 }
 
 /* ─── UTILITIES ────────────────────────────────────────────────────────── */
@@ -768,17 +798,59 @@
   @apply text-gray-400 italic text-center py-4;
 }
 
-/* Sidebar collapsed state */
+/* ─── RESPONSIVE ───────────────────────────────────────────────────────── */
+
+/* Desktop: sidebar collapsed */
 .admin-root.sidebar-collapsed .admin-sidebar {
-  @apply -ml-64;
+  @apply hidden;
 }
 
-@media (max-width: 1024px) {
+/* Tablet (640px – 1023px): sidebar as slide-in drawer */
+@media (max-width: 1023px) {
   .admin-sidebar {
-    @apply fixed left-0 top-16 bottom-0 z-30 -translate-x-full transition-transform;
+    position: fixed;
+    left: 0;
+    top: 64px;
+    bottom: 0;
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.12);
   }
-  
-  .admin-root:not(.sidebar-collapsed) .admin-sidebar {
-    @apply translate-x-0;
+
+  .admin-root.mobile-sidebar-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  /* On tablet, sidebar-collapsed class has no effect (drawer controls it) */
+  .admin-root.sidebar-collapsed .admin-sidebar {
+    display: block;
+  }
+}
+
+/* Mobile (< 640px): hide sidebar drawer entirely, show bottom nav */
+@media (max-width: 639px) {
+  .admin-sidebar {
+    display: none !important;
+  }
+
+  .mobile-overlay {
+    display: none;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .admin-root .main-content {
+    padding-bottom: 72px;
+  }
+
+  .nav-search {
+    display: none;
+  }
+
+  .nav-brand .brand-text {
+    display: none;
   }
 }

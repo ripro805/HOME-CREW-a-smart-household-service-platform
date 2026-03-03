@@ -32,6 +32,7 @@ import {
   PhoneIcon,
   CheckIcon,
   XMarkIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 import {
   CubeIcon,
@@ -2148,7 +2149,7 @@ const AdminProfileTab = ({ user }) => {
 };
 
 // ─── ADMIN NAVBAR ────────────────────────────────────────────────────────────
-const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) => {
+const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user, onMenuToggle, mobileOpen }) => {
   const [search,        setSearch]        = useState('');
   const [results,       setResults]       = useState([]);
   const [showResults,   setShowResults]   = useState(false);
@@ -2219,7 +2220,18 @@ const AdminNavbar = ({ orders, services, users, setActiveTab, onLogout, user }) 
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-40">
+    <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-40">
+      {/* Hamburger – visible on tablet/mobile only */}
+      <button
+        className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 transition mr-2 border-none bg-transparent cursor-pointer"
+        onClick={onMenuToggle}
+        aria-label="Toggle sidebar"
+      >
+        {mobileOpen
+          ? <XMarkIcon className="w-6 h-6" />
+          : <Bars3Icon className="w-6 h-6" />}
+      </button>
+
       <div className="nav-brand" onClick={() => navigate('/preview-home')}>
         <img src={logo} alt="HomeCrew" className="h-10 w-auto object-contain" />
         <span className="brand-text">HomeCrew <sup>Admin</sup></span>
@@ -2329,7 +2341,7 @@ const SIDEBAR_ITEMS = [
   { key:'settings',   icon: CogIcon, label:'Settings' },
 ];
 
-const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen }) => {
+const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, onClose }) => {
   const badges = {
     orders:  orders.filter(o => o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id)).length || null,
     support: (seenIds.support ? 0 : 2) || null,
@@ -2339,10 +2351,11 @@ const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen })
   const handleClick = (key) => {
     markSeen(key);
     setActive(key);
+    onClose?.();
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto h-full">
+    <aside className="admin-sidebar">
       <nav className="sidebar-nav" style={{paddingTop:'12px'}}>
         {SIDEBAR_ITEMS.map(({ key, icon: Icon, label }) => (
           <button
@@ -2357,6 +2370,37 @@ const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen })
         ))}
       </nav>
     </aside>
+  );
+};
+
+// ─── MOBILE BOTTOM NAV ────────────────────────────────────────────────────────
+const MOBILE_NAV_ITEMS = [
+  { key:'dashboard',  icon: ChartBarIcon,          label:'Home' },
+  { key:'orders',     icon: ShoppingBagIcon,        label:'Orders' },
+  { key:'services',   icon: WrenchScrewdriverIcon,  label:'Services' },
+  { key:'payments',   icon: CreditCardIcon,         label:'Payments' },
+  { key:'users',      icon: UsersIcon,              label:'Users' },
+];
+const MobileBottomNav = ({ active, setActive, orders, seenIds, markSeen }) => {
+  const pendingOrders = orders.filter(o => o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id)).length;
+  return (
+    <nav className="mobile-bottom-nav">
+      {MOBILE_NAV_ITEMS.map(({ key, icon: Icon, label }) => (
+        <button
+          key={key}
+          className={`mobile-nav-item ${active===key ? 'active' : ''}`}
+          onClick={() => { markSeen(key); setActive(key); }}
+        >
+          <div className="relative">
+            <Icon className="w-6 h-6" />
+            {key==='orders' && pendingOrders > 0 && (
+              <span className="mobile-nav-badge">{pendingOrders}</span>
+            )}
+          </div>
+          <span>{label}</span>
+        </button>
+      ))}
+    </nav>
   );
 };
 
@@ -2382,6 +2426,7 @@ const AdminDashboard = () => {
 
   const [activeTab,      setActiveTab]      = useState(location.state?.tab || 'dashboard');
   const [sidebarOpen,    setSidebarOpen]    = useState(true);
+  const [mobileOpen,     setMobileOpen]     = useState(false);
   const [data,           setData]           = useState({ orders:[], services:[], users:[], categories:[], reviews:[] });
   const [loading,        setLoading]        = useState(true);
   const [fetchErrors,    setFetchErrors]    = useState([]);
@@ -2468,7 +2513,7 @@ const AdminDashboard = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className={`admin-root ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+    <div className={`admin-root ${sidebarOpen ? '' : 'sidebar-collapsed'} ${mobileOpen ? 'mobile-sidebar-open' : ''}`}>
       <AdminNavbar
         orders={data.orders}
         services={data.services}
@@ -2476,6 +2521,8 @@ const AdminDashboard = () => {
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
         user={user}
+        onMenuToggle={() => setMobileOpen(p => !p)}
+        mobileOpen={mobileOpen}
       />
 
       {deleteReviewId && (
@@ -2483,6 +2530,14 @@ const AdminDashboard = () => {
           msg="Delete this review permanently? This cannot be undone."
           onOk={() => handleDeleteReview(deleteReviewId)}
           onCancel={() => setDeleteReviewId(null)}
+        />
+      )}
+
+      {/* Mobile overlay backdrop */}
+      {mobileOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setMobileOpen(false)}
         />
       )}
 
@@ -2494,6 +2549,7 @@ const AdminDashboard = () => {
           reviews={data.reviews}
           seenIds={seenIds}
           markSeen={markSeen}
+          onClose={() => setMobileOpen(false)}
         />
 
         <main className="flex-1 overflow-auto">
@@ -2540,6 +2596,15 @@ const AdminDashboard = () => {
           )}
         </main>
       </div>
+
+      {/* Mobile bottom navigation — only on small screens */}
+      <MobileBottomNav
+        active={activeTab}
+        setActive={setActiveTab}
+        orders={data.orders}
+        seenIds={seenIds}
+        markSeen={markSeen}
+      />
     </div>
   );
 };
