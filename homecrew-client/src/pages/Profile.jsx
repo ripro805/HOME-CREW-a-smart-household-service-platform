@@ -25,6 +25,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('view');
   const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [formData, setFormData] = useState({
@@ -78,11 +79,16 @@ const Profile = () => {
   };
 
   const fetchOrders = async () => {
+    setOrdersLoading(true);
     try {
       const response = await api.get('/orders/');
-      setOrders(response.data.results || response.data);
+      const data = response.data.results ?? response.data;
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -165,12 +171,12 @@ const Profile = () => {
   const handleCancelOrder = async (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
       try {
-        await api.patch(`/orders/${orderId}/`, { status: 'CANCELLED' });
+        await api.post(`/orders/${orderId}/cancel/`);
         alert('Order cancelled successfully');
         fetchOrders();
       } catch (error) {
         console.error('Failed to cancel order:', error);
-        alert('Failed to cancel order');
+        alert(error.response?.data?.detail || 'Failed to cancel order');
       }
     }
   };
@@ -522,64 +528,140 @@ const Profile = () => {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="bg-white rounded-3xl shadow-lg p-10">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8">My Orders</h2>
-            {orders.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingBagIcon className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No orders found</p>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold text-gray-800">My Orders</h2>
+              <span className="text-sm text-gray-400">{orders.length} order{orders.length !== 1 ? 's' : ''} total</span>
+            </div>
+
+            {ordersLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                <p className="text-gray-500">Loading your orders...</p>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-16">
+                <ShoppingBagIcon className="w-20 h-20 text-gray-200 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium mb-2">No orders yet</p>
+                <p className="text-gray-400 text-sm mb-6">Your order history will appear here once you place an order.</p>
+                <button
+                  onClick={() => navigate('/services')}
+                  className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Browse Services
+                </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {orders.map(order => (
-                  <div key={order.id} className="border-2 border-gray-100 rounded-2xl p-6 hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-800">Order #{order.id}</h3>
-                        <span className="text-sm text-gray-500">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className={getStatusBadgeClass(order.status)}>
-                          {order.status.replace('_', ' ')}
-                        </div>
-                        <span className="text-xl font-bold text-teal-600">
-                          ৳{Math.round(parseFloat(order.total_price))}
-                        </span>
-                      </div>
-                    </div>
-
-                    {order.items && (
-                      <div className="space-y-2 mb-4 pt-4 border-t border-gray-100">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-gray-700">{item.service?.name} (x{item.quantity})</span>
-                            <span className="text-gray-600 font-semibold">৳{Math.round(parseFloat(item.service?.price || 0) * item.quantity)}</span>
+              <div className="space-y-5">
+                {[...orders].sort((a, b) => b.id - a.id).map(order => {
+                  const STATUS_LABEL = {
+                    NOT_PAID: 'Pending Payment',
+                    READY_TO_SHIP: 'Confirmed',
+                    SHIPPED: 'Ongoing',
+                    DELIVERED: 'Completed',
+                    CANCELLED: 'Cancelled',
+                  };
+                  const placedDate = order.created_at
+                    ? new Date(order.created_at).toLocaleString('en-GB', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })
+                    : '—';
+                  return (
+                    <div key={order.id} className="border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group">
+                      {/* Order Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 bg-gray-50 gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <ShoppingBagIcon className="w-5 h-5 text-teal-600" />
                           </div>
-                        ))}
+                          <div>
+                            <p className="font-bold text-gray-800">Order #{order.id}</p>
+                            <p className="text-xs text-gray-400">{placedDate}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={getStatusBadgeClass(order.status)}>
+                            {STATUS_LABEL[order.status] || order.status.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-lg font-bold text-teal-600">
+                            ৳{Math.round(parseFloat(order.total_price || 0))}
+                          </span>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => navigate(`/orders/${order.id}`)}
-                        className="px-5 py-2 text-teal-600 border-2 border-teal-600 rounded-lg hover:bg-teal-50 font-semibold text-sm transition-all"
-                      >
-                        View Details
-                      </button>
-                      {order.status === 'DELIVERED' ? (
-                        <span className="px-5 py-2 text-gray-400 text-sm italic">Cannot be cancelled</span>
-                      ) : order.status !== 'CANCELLED' && (
+                      {/* Order Items */}
+                      <div className="px-6 py-4">
+                        {order.items && order.items.length > 0 ? (
+                          <div className="space-y-3">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                  {item.service?.images?.[0]?.image ? (
+                                    <img
+                                      src={item.service.images[0].image}
+                                      alt={item.service.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-800 truncate">
+                                    {item.service?.name || 'Service'}
+                                  </p>
+                                  {item.service?.category?.name && (
+                                    <p className="text-xs text-teal-600">{item.service.category.name}</p>
+                                  )}
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-xs text-gray-400">x{item.quantity}</p>
+                                  <p className="text-sm font-bold text-gray-700">
+                                    ৳{Math.round(parseFloat(item.service?.price || 0) * item.quantity)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">No items found</p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap gap-3">
                         <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          className="px-5 py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 font-semibold text-sm transition-all"
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                          className="px-5 py-2 text-teal-600 border-2 border-teal-600 rounded-lg hover:bg-teal-50 font-semibold text-sm transition-all"
                         >
-                          Cancel Order
+                          View Details
                         </button>
-                      )}
+                        {order.can_pay && (
+                          <button
+                            onClick={() => navigate(`/orders/${order.id}`)}
+                            className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm rounded-lg transition-all"
+                          >
+                            Pay Now
+                          </button>
+                        )}
+                        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                          <button
+                            onClick={() => handleCancelOrder(order.id)}
+                            className="px-5 py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 font-semibold text-sm transition-all"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {order.status === 'DELIVERED' && (
+                          <span className="px-5 py-2 text-green-600 text-sm font-semibold flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                            Completed
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
