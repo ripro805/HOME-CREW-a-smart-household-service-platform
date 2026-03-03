@@ -90,7 +90,8 @@ ROOT_URLCONF = "house_hold_service.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Include React build output so the catch-all view can serve index.html
+        "DIRS": [BASE_DIR / 'homecrew-client' / 'dist'],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -179,6 +180,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # WhiteNoise settings
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Serve React build's assets directory via WhiteNoise at root level
+# (Only effective in production after 'npm run build' is run)
+_REACT_DIST = BASE_DIR / 'homecrew-client' / 'dist'
+if _REACT_DIST.exists():
+    WHITENOISE_ROOT = str(_REACT_DIST)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -213,9 +220,14 @@ SIMPLE_JWT = {
 }
 
 # DJOSER settings
+# Auto-detect the frontend domain: on Render, frontend = backend (Django serves React)
+_RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+FRONTEND_DOMAIN = config('FRONTEND_DOMAIN', default=_RENDER_HOST if _RENDER_HOST else 'localhost:5173')
+FRONTEND_PROTOCOL = config('FRONTEND_PROTOCOL', default='https' if _RENDER_HOST else 'http')
+
 DJOSER = {
-    'PROTOCOL': config('FRONTEND_PROTOCOL', default='http'),
-    'DOMAIN': config('FRONTEND_DOMAIN', default='localhost:5173'),
+    'PROTOCOL': FRONTEND_PROTOCOL,
+    'DOMAIN': FRONTEND_DOMAIN,
     'SITE_NAME': 'HomeCrew',
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
@@ -269,10 +281,7 @@ CORS_ALLOW_CREDENTIALS = True
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='rifatrizviofficial001@gmail.com')
 
-# CORS Configuration
-FRONTEND_DOMAIN = config('FRONTEND_DOMAIN', default='localhost:5173')
-FRONTEND_PROTOCOL = config('FRONTEND_PROTOCOL', default='http')
-
+# CORS Configuration — uses FRONTEND_DOMAIN/PROTOCOL already computed above
 # Build CORS allowed origins dynamically
 CORS_ALLOWED_ORIGINS = [
     f'{FRONTEND_PROTOCOL}://{FRONTEND_DOMAIN}',
@@ -307,4 +316,4 @@ SSLCOMMERZ_STORE_ID = config('SSLCOMMERZ_STORE_ID', default='testbox')
 SSLCOMMERZ_STORE_PASSWORD = config('SSLCOMMERZ_STORE_PASSWORD', default='qwerty')
 SSLCOMMERZ_IS_SANDBOX = config('SSLCOMMERZ_IS_SANDBOX', default=True, cast=bool)
 
-BACKEND_URL = config('BACKEND_URL')
+BACKEND_URL = config('BACKEND_URL', default=os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:8000'))

@@ -26,43 +26,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
-from django.http import HttpResponseRedirect
-from django.views.generic import RedirectView
-
-
-def _frontend_url(request=None):
-    from django.conf import settings as s
-    # If the link landed on localhost (dev machine), always go to React dev server
-    if request and request.get_host().startswith('localhost'):
-        return 'http://localhost:5173'
-    protocol = s.DJOSER.get('PROTOCOL', 'http')
-    domain   = s.DJOSER.get('DOMAIN', 'localhost:5173')
-    return f'{protocol}://{domain}'
-
-
-def activate_redirect(request, uid, token):
-    return HttpResponseRedirect(f'{_frontend_url(request)}/activate/{uid}/{token}')
-
-
-def password_reset_redirect(request, uid, token):
-    return HttpResponseRedirect(f'{_frontend_url(request)}/password/reset/confirm/{uid}/{token}')
-
-
-# Safety-net: if payment callback redirects somehow land on the backend domain,
-# forward them to the React frontend
-def payment_success_redirect(request, order_id=None):
-    base = f'{_frontend_url(request)}/payment/success'
-    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
-
-
-def payment_fail_redirect(request, order_id=None):
-    base = f'{_frontend_url(request)}/payment/fail'
-    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
-
-
-def payment_cancel_redirect(request, order_id=None):
-    base = f'{_frontend_url(request)}/payment/cancel'
-    return HttpResponseRedirect(f'{base}/{order_id}' if order_id else base)
+from django.views.generic import TemplateView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -80,22 +44,14 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("", RedirectView.as_view(url="/api/v1/", permanent=False)),
     path("admin/", admin.site.urls),
-    # Catch activation & password-reset links that point to backend (old emails)
-    # and redirect them to the React frontend
-    path("activate/<str:uid>/<str:token>", activate_redirect),
-    path("password/reset/confirm/<str:uid>/<str:token>", password_reset_redirect),
-    # Catch payment result routes that may land on the backend domain and forward to frontend
-    path("payment/success/<int:order_id>", payment_success_redirect),
-    path("payment/success/", payment_success_redirect),
-    path("payment/fail/<int:order_id>", payment_fail_redirect),
-    path("payment/fail/", payment_fail_redirect),
-    path("payment/cancel/<int:order_id>", payment_cancel_redirect),
-    path("payment/cancel/", payment_cancel_redirect),
     path("api/v1/", include("api.urls")),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-   
     path("__debug__", include(debug_toolbar.urls)),
+    # SPA catch-all — serves React's index.html for every non-API route
+    # This makes payment/success/39, activate/uid/token, etc. all work
+    # because React Router handles them client-side.
+    path('', TemplateView.as_view(template_name='index.html')),
+    path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]

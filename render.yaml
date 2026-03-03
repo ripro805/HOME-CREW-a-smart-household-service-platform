@@ -9,7 +9,7 @@ databases:
     region: oregon
 
 services:
-  # Django Backend Web Service
+  # Django Backend Web Service (also serves React frontend)
   - type: web
     name: homecrew-backend
     runtime: python
@@ -50,22 +50,7 @@ services:
         value: "True"
       - key: BACKEND_URL
         sync: false
-      - key: FRONTEND_PROTOCOL
-        value: "https"
-      - key: FRONTEND_DOMAIN
-        sync: false
-
-  # React Frontend Static Site
-  # Note: Set "Publish Directory" to "homecrew-client/dist" in Render Dashboard
-  - type: web
-    name: homecrew-frontend
-    runtime: static
-    region: oregon
-    plan: free
-    buildCommand: "cd homecrew-client && npm install && npm run build"
-    envVars:
-      - key: VITE_API_URL
-        sync: false
-    pullRequestPreviewsEnabled: true
+      # FRONTEND_DOMAIN is auto-detected from RENDER_EXTERNAL_HOSTNAME (set by Render)
+      # No need to set it manually — frontend is served from this same service
 
 
