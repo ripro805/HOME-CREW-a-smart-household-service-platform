@@ -231,7 +231,10 @@ DJOSER = {
     'PERMISSIONS': {
         'user_create': ['rest_framework.permissions.AllowAny'],
     },
-    
+    'EMAIL': {
+        'activation':       'accounts.emails.FrontendActivationEmail',
+        'password_reset':   'accounts.emails.FrontendPasswordResetEmail',
+    },
 }
 
 SWAGGER_SETTINGS = {
