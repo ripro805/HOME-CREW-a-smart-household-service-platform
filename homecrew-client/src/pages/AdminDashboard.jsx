@@ -2150,7 +2150,10 @@ const AdminDashboard = () => {
   const fetchAllPages = async url => {
     let results = []; let next = url;
     while (next) {
-      const res = await api.get(next);
+      // Force https:// on absolute URLs to avoid mixed-content browser errors
+      // when Django generates http:// next-page URLs behind Render's proxy
+      const safeNext = next.startsWith('http://') ? next.replace('http://', 'https://') : next;
+      const res = await api.get(safeNext);
       const d   = res.data;
       if (Array.isArray(d)) { results = results.concat(d); break; }
       results = results.concat(d.results ?? []);
