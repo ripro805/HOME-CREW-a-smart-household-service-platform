@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
@@ -12,6 +12,10 @@ const OrderDetail = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Buyer info passed from Buy Now flow
+  const buyerInfo = location.state?.buyerInfo || {};
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -40,9 +44,9 @@ const OrderDetail = () => {
     setPaymentProcessing(true);
     try {
       const response = await api.post(`/orders/${id}/pay/`, {
-        phone: '01700000000', // You can make this dynamic from user profile
-        address: 'Dhaka',
-        city: 'Dhaka'
+        phone: buyerInfo.phone || '01700000000',
+        address: buyerInfo.address || 'Dhaka',
+        city: 'Dhaka',
       });
 
       if (response.data.status === 'success' && response.data.gateway_url) {

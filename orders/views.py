@@ -44,10 +44,17 @@ class CartViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CartSerializer
     permission_classes = [IsAdminOrSelfOrReadOnly]
-    
+
+    def create(self, request, *args, **kwargs):
+        """Get existing cart or create a new one (safe for OneToOneField)."""
+        cart, created = Cart.objects.get_or_create(client=request.user)
+        serializer = self.get_serializer(cart)
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=status_code)
+
     def perform_create(self, serializer):
         serializer.save(client=self.request.user)
-        
+
     def get_queryset(self):
         user = self.request.user
         if getattr(user, "role", None) == "admin":

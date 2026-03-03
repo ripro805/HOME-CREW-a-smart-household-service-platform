@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { StarIcon, ShoppingCartIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { StarIcon, ShoppingCartIcon, PencilIcon, TrashIcon, BoltIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 const ServiceDetail = () => {
@@ -19,6 +19,12 @@ const ServiceDetail = () => {
 
   const { addToCart } = useCart();
   const { isAuthenticated, user } = useAuth();
+
+  // Buy Now state
+  const [showBuyNow, setShowBuyNow] = useState(false);
+  const [buyNowForm, setBuyNowForm] = useState({ name: '', address: '', phone: '' });
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
+  const [buyNowError, setBuyNowError] = useState('');
 
   useEffect(() => {
     fetchServiceDetail();
@@ -58,6 +64,66 @@ const ServiceDetail = () => {
       alert('Added to cart successfully!');
     } else {
       alert('Failed to add to cart');
+    }
+  };
+
+  const handleOpenBuyNow = () => {
+    if (!isAuthenticated) {
+      alert('Please login to place an order');
+      navigate('/login');
+      return;
+    }
+    setBuyNowError('');
+    setShowBuyNow(true);
+  };
+
+  const handleBuyNowSubmit = async (e) => {
+    e.preventDefault();
+    setBuyNowLoading(true);
+    setBuyNowError('');
+    try {
+      // 1. Get or create the user's cart (safe with OneToOneField)
+      const cartRes = await api.post('/carts/');
+      const cart = cartRes.data;
+      const cartId = cart.id;
+
+      // 2. Clear any existing items from the cart so we only buy this service
+      if (cart.items && cart.items.length > 0) {
+        await Promise.all(
+          cart.items.map((item) => api.delete(`/carts/${cartId}/items/${item.id}/`))
+        );
+      }
+
+      // 3. Add only this service to the cart
+      await api.post(`/carts/${cartId}/items/`, { service: service.id, quantity: 1 });
+
+      // 4. Create order from the cart
+      const orderRes = await api.post('/orders/', { cart_id: cartId });
+      const orderId = orderRes.data.id;
+
+      // 5. Initiate payment and redirect directly to SSLCommerz gateway
+      const payRes = await api.post(`/orders/${orderId}/pay/`, {
+        phone: buyNowForm.phone,
+        address: buyNowForm.address,
+        city: 'Dhaka',
+      });
+
+      if (payRes.data.status === 'success' && payRes.data.gateway_url) {
+        setShowBuyNow(false);
+        window.location.href = payRes.data.gateway_url;
+      } else {
+        setBuyNowError('Payment initiation failed. Please try again.');
+      }
+    } catch (err) {
+      const data = err.response?.data;
+      const msg =
+        data?.detail ||
+        data?.cart_id?.[0] ||
+        data?.non_field_errors?.[0] ||
+        'Failed to place order. Please try again.';
+      setBuyNowError(msg);
+    } finally {
+      setBuyNowLoading(false);
     }
   };
 
@@ -117,6 +183,7 @@ const ServiceDetail = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors">
@@ -163,9 +230,22 @@ const ServiceDetail = () => {
                 <p className="text-gray-600 leading-relaxed">{service.description}</p>
               </div>
 
-              <button onClick={handleAddToCart} className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors text-lg">
-                Add to Cart
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+                >
+                  <ShoppingCartIcon className="w-5 h-5" />
+                  Add to Cart
+                </button>
+                <button
+                  onClick={handleOpenBuyNow}
+                  className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+                >
+                  <BoltIcon className="w-5 h-5" />
+                  Buy Now
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -302,6 +382,108 @@ const ServiceDetail = () => {
         </div>
       </div>
     </div>
+
+      {/* ── Buy Now Modal ── */}
+      {showBuyNow && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Quick Order</h2>
+              <button
+                onClick={() => setShowBuyNow(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Service summary */}
+            <div className="mb-5 p-4 bg-teal-50 rounded-xl flex items-center gap-3">
+              {service.images?.[0]?.image ? (
+                <img src={service.images[0].image} alt={service.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-teal-200 flex-shrink-0" />
+              )}
+              <div>
+                <p className="text-sm font-semibold text-gray-800 leading-tight">{service.name}</p>
+                <p className="text-xl font-bold text-teal-600 mt-0.5">৳{parseFloat(service.price).toFixed(0)}</p>
+              </div>
+            </div>
+
+            {/* Error */}
+            {buyNowError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200">
+                {buyNowError}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleBuyNowSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={buyNowForm.name}
+                  onChange={(e) => setBuyNowForm({ ...buyNowForm, name: e.target.value })}
+                  placeholder="আপনার পূর্ণ নাম লিখুন"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows="2"
+                  value={buyNowForm.address}
+                  onChange={(e) => setBuyNowForm({ ...buyNowForm, address: e.target.value })}
+                  placeholder="আপনার সম্পূর্ণ ঠিকানা লিখুন"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={buyNowForm.phone}
+                  onChange={(e) => setBuyNowForm({ ...buyNowForm, phone: e.target.value })}
+                  placeholder="01XXXXXXXXX"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={buyNowLoading}
+                className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+              >
+                {buyNowLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <BoltIcon className="w-5 h-5" />
+                    Proceed to Pay
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
