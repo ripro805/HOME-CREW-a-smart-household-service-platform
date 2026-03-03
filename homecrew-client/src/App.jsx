@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
@@ -19,6 +20,12 @@ import PaymentFail from './pages/PaymentFail';
 import PaymentCancel from './pages/PaymentCancel';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
 import './App.css';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [pathname]);
+  return null;
+}
 
 function AppContent() {
   const { isAdmin, loading } = useAuth();
@@ -95,6 +102,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <CartProvider>
           <AppContent />
