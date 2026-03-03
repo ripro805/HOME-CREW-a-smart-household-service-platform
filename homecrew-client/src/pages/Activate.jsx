@@ -54,7 +54,7 @@ const Activate = () => {
               <XCircleIcon className="w-10 h-10" />
             </div>
             <p className="text-gray-600 mb-6">{message}</p>
-            <button onClick={() => navigate('/register')} className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
+            <button onClick={() => navigate('/register')} className="btn btn-primary">
               Try Register Again
             </button>
           </div>

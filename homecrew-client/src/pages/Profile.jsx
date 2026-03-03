@@ -163,7 +163,7 @@ const Profile = () => {
     e.preventDefault();
     
     try {
-      await api.post('/accounts/password-reset/', { email: resetEmail });
+      await api.post('/auth/users/reset_password/', { email: resetEmail });
       alert('Password reset email sent! Check your inbox.');
     } catch (error) {
       console.error('Failed to send reset email:', error);
