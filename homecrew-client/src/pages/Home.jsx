@@ -1,3 +1,13 @@
+// Helper: pick one service per category
+function pickOnePerCategory(services) {
+  const map = {};
+  services.forEach(s => {
+    if (s.category && s.category.id && !map[s.category.id]) {
+      map[s.category.id] = s;
+    }
+  });
+  return Object.values(map);
+}
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -34,6 +44,7 @@ const Home = () => {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const featureRef    = useScrollReveal();
   const categoryRef   = useScrollReveal();
@@ -55,30 +66,37 @@ const Home = () => {
 
   const fetchData = async () => {
     try {
-      const [servicesRes, categoriesRes] = await Promise.all([
-        api.get('/services/?page_size=16'),
-        api.get('/categories/?page_size=8')
-      ]);
-      const servicesData = servicesRes.data.results || servicesRes.data || [];
-      console.log('🏠 Home page services:', servicesData.slice(0, 2).map(s => ({ 
-        name: s.name, 
-        avg_rating: s.avg_rating, 
-        review_count: s.review_count 
-      })));
-      setServices(servicesData);
-      setCategories(categoriesRes.data.results || categoriesRes.data || []);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
+      // Step 1: Fetch all categories
+      const categoriesRes = await api.get('/categories/?page_size=20');
+      const cats = categoriesRes.data.results || categoriesRes.data || [];
+      setCategories(cats);
+
+      // Step 2: For each category, fetch one service (in parallel)
+      const servicePromises = cats.map(cat =>
+        api.get(`/services/?category=${cat.id}&page_size=1`).then(res => {
+          const arr = res.data.results || res.data || [];
+          return arr.length > 0 ? arr[0] : null;
+        }).catch(() => null)
+      );
+      const perCategoryServices = await Promise.all(servicePromises);
+      // Remove nulls (categories with no services)
+      const filteredServices = perCategoryServices.filter(Boolean);
+      setServices(filteredServices);
+    } catch (err) {
+      setError('Failed to load data');
+      console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Trending: one per category, limit 5
   const trendingServices = services.slice(0, 5);
 
-  // Banner services for carousel
-  const bannerServicesForEffect = services.filter(s => s.images && s.images.length > 0).slice(0, 12);
-  const bannerCount = (bannerServicesForEffect.length > 0 ? bannerServicesForEffect : services.slice(0, 12)).length;
+  // Banner: one per category with images, limit 12
+  const bannerServices = services.filter(s => s.images && s.images.length > 0).slice(0, 12);
+  const bannerList = bannerServices.length > 0 ? bannerServices : services.slice(0, 12);
+  const bannerCount = bannerList.length;
 
   // Carousel auto-rotate
   useEffect(() => {
@@ -132,9 +150,7 @@ const Home = () => {
     setCarouselIndex((prev) => (prev - 1 + bannerCount) % bannerCount);
   };
 
-  // Use all services with images for banner carousel
-  const bannerServices = services.filter(s => s.images && s.images.length > 0).slice(0, 12);
-  const bannerList = bannerServices.length > 0 ? bannerServices : services.slice(0, 12);
+  // ...existing code... (bannerServices and bannerList now declared above with new logic)
 
   return (
     <div className="min-h-screen bg-gray-50">
