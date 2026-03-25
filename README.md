@@ -11,6 +11,34 @@ HomeCrew is a full-stack household service platform built with Django (backend) 
 
 ---
 
+## Screenshots
+
+### Public Website
+
+| Home Hero - Electrical | Home Hero - Painting |
+| --- | --- |
+| ![Home hero electrical](scrennshots/home-hero-electrical.png) | ![Home hero painting](scrennshots/home-hero-painting.png) |
+
+| About Page | Services Page |
+| --- | --- |
+| ![About page](scrennshots/about-page.png) | ![Services page](scrennshots/services-page.png) |
+
+| Contact Page | Service Detail Overview |
+| --- | --- |
+| ![Contact page](scrennshots/contact-page.png) | ![Service detail overview](scrennshots/service-detail-overview.png) |
+
+| Service Detail Related Services | Admin Dashboard Overview |
+| --- | --- |
+| ![Service detail related services](scrennshots/service-detail-related-services.png) | ![Admin dashboard overview](scrennshots/admin-dashboard-overview.png) |
+
+### Admin Dashboard
+
+| Payments Overview | Payments Table |
+| --- | --- |
+| ![Admin payments overview](scrennshots/admin-payments-overview.png) | ![Admin payments table](scrennshots/admin-payments-table.png) |
+
+---
+
 ## 🏗️ Project Structure
 
 ```
