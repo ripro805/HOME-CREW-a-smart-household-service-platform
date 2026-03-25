@@ -1545,80 +1545,395 @@ const ReviewsTab = ({ reviews, onRefresh, onDelete }) => {
 
 // ─── 8. SUPPORT TAB ─────────────────────────────────────────────────────────
 const SupportTab = () => {
-  const [tickets, setTickets] = useState([
-    { id:1, type:'complaint', subject:'Service provider did not arrive on time', status:'open', priority:'high', from:'client1@example.com', created:'2026-02-20', messages:[{from:'client',text:'The provider never showed up. Very disappointed.',time:'2026-02-20 10:00'}] },
-    { id:2, type:'billing',   subject:'Charged twice for the same order #15',   status:'open', priority:'high', from:'user2@example.com',  created:'2026-02-21', messages:[{from:'client',text:'I was charged twice. Please refund.',time:'2026-02-21 14:30'}] },
-    { id:3, type:'complaint', subject:'Provider was rude and unprofessional',    status:'resolved', priority:'medium', from:'user3@example.com', created:'2026-02-10', messages:[{from:'client',text:'Very unprofessional behavior.',time:'2026-02-10 09:00'},{from:'admin',text:'We have addressed this with the provider.',time:'2026-02-11 10:00'}] },
-    { id:4, type:'support',   subject:'Cannot cancel my booking',               status:'open', priority:'low', from:'user4@example.com', created:'2026-02-22', messages:[{from:'client',text:'I cannot find the cancel button.',time:'2026-02-22 08:00'}] },
+  const [tickets, setTickets] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [reply, setReply] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [viewFilter, setViewFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState({ text:'', ok:false });
+  const [demoTickets, setDemoTickets] = useState([
+    {
+      id: 'demo-1',
+      source: 'demo',
+      type: 'complaint',
+      subject: 'Service provider did not arrive on time',
+      status: 'open',
+      priority: 'high',
+      from: 'client1@example.com',
+      client_email: 'client1@example.com',
+      client_name: 'Client One',
+      created_at: '2026-02-20T10:00:00',
+      last_message_at: '2026-02-20T10:00:00',
+      unread_count: 0,
+      last_message_preview: 'The provider never showed up. Very disappointed.',
+      messages: [
+        {
+          id: 'demo-1-message-1',
+          from: 'client',
+          text: 'The provider never showed up. Very disappointed.',
+          time: '20 Feb 10:00',
+        },
+      ],
+    },
+    {
+      id: 'demo-2',
+      source: 'demo',
+      type: 'billing',
+      subject: 'Charged twice for the same order #15',
+      status: 'open',
+      priority: 'high',
+      from: 'user2@example.com',
+      client_email: 'user2@example.com',
+      client_name: 'User Two',
+      created_at: '2026-02-21T14:30:00',
+      last_message_at: '2026-02-21T14:30:00',
+      unread_count: 0,
+      last_message_preview: 'I was charged twice. Please refund.',
+      messages: [
+        {
+          id: 'demo-2-message-1',
+          from: 'client',
+          text: 'I was charged twice. Please refund.',
+          time: '21 Feb 14:30',
+        },
+      ],
+    },
+    {
+      id: 'demo-3',
+      source: 'demo',
+      type: 'complaint',
+      subject: 'Provider was rude and unprofessional',
+      status: 'resolved',
+      priority: 'medium',
+      from: 'user3@example.com',
+      client_email: 'user3@example.com',
+      client_name: 'User Three',
+      created_at: '2026-02-10T09:00:00',
+      last_message_at: '2026-02-11T10:00:00',
+      unread_count: 0,
+      last_message_preview: 'We have addressed this with the provider.',
+      messages: [
+        {
+          id: 'demo-3-message-1',
+          from: 'client',
+          text: 'Very unprofessional behavior.',
+          time: '10 Feb 09:00',
+        },
+        {
+          id: 'demo-3-message-2',
+          from: 'admin',
+          text: 'We have addressed this with the provider.',
+          time: '11 Feb 10:00',
+        },
+      ],
+    },
+    {
+      id: 'demo-4',
+      source: 'demo',
+      type: 'support',
+      subject: 'Cannot cancel my booking',
+      status: 'open',
+      priority: 'low',
+      from: 'user4@example.com',
+      client_email: 'user4@example.com',
+      client_name: 'User Four',
+      created_at: '2026-02-22T08:00:00',
+      last_message_at: '2026-02-22T08:00:00',
+      unread_count: 0,
+      last_message_preview: 'I cannot find the cancel button.',
+      messages: [
+        {
+          id: 'demo-4-message-1',
+          from: 'client',
+          text: 'I cannot find the cancel button.',
+          time: '22 Feb 08:00',
+        },
+      ],
+    },
   ]);
-  const [selected,    setSelected]    = useState(null);
-  const [reply,       setReply]       = useState('');
-  const [filter,      setFilter]      = useState('all');
-  const [typeFilter,  setTypeFilter]  = useState('all');
 
-  const filtered = useMemo(() => {
-    let r = tickets;
-    if (filter     !== 'all') r = r.filter(t => t.status === filter);
-    if (typeFilter !== 'all') r = r.filter(t => t.type   === typeFilter);
-    return r;
-  }, [tickets, filter, typeFilter]);
+  const normalizeConversation = (conversation) => ({
+    ...conversation,
+    source: 'live',
+    from: conversation.client_email,
+    type: 'support',
+    messages: (conversation.messages || []).map(message => ({
+      ...message,
+      from: message.from_admin ? 'admin' : 'client',
+      text: message.body,
+      time: fmtDT(message.created_at),
+    })),
+  });
 
-  const sendReply = () => {
-    if (!reply.trim() || !selected) return;
-    const newMsg = { from:'admin', text:reply, time:new Date().toLocaleString() };
-    setTickets(p => p.map(t => t.id===selected.id ? {...t, messages:[...t.messages,newMsg], status:'resolved'} : t));
-    setSelected(p => p ? {...p, messages:[...p.messages,newMsg], status:'resolved'} : null);
-    setReply('');
+  const allTickets = useMemo(
+    () =>
+      [...tickets, ...demoTickets].sort((left, right) => {
+        const leftTime = new Date(left.last_message_at || left.created_at || 0).getTime();
+        const rightTime = new Date(right.last_message_at || right.created_at || 0).getTime();
+        return rightTime - leftTime;
+      }),
+    [tickets, demoTickets]
+  );
+
+  const syncSupport = async (quiet = false) => {
+    if (!quiet) {
+      setLoading(true);
+    }
+
+    try {
+      const listResponse = await api.get('/support/conversations/');
+      const safeTickets = (listResponse.data.results || listResponse.data || []).map(ticket => ({
+        ...ticket,
+        source: 'live',
+        from: ticket.client_email,
+        type: 'support',
+      }));
+      const selectedDemoTicket = demoTickets.find(ticket => ticket.id === selectedId) || null;
+      const nextSelectedId =
+        selectedId && (safeTickets.some(ticket => ticket.id === selectedId) || selectedDemoTicket)
+          ? selectedId
+          : safeTickets[0]?.id || demoTickets[0]?.id || null;
+
+      let nextSelected = selectedDemoTicket;
+      let nextTickets = safeTickets;
+
+      if (nextSelectedId && safeTickets.some(ticket => ticket.id === nextSelectedId)) {
+        const detailResponse = await api.get(`/support/conversations/${nextSelectedId}/`);
+        nextSelected = normalizeConversation(detailResponse.data);
+        nextTickets = safeTickets.map(ticket =>
+          ticket.id === nextSelected.id
+            ? { ...ticket, ...nextSelected, unread_count: 0 }
+            : ticket
+        );
+      }
+
+      setTickets(nextTickets);
+      setSelectedId(nextSelectedId);
+      setSelected(nextSelected);
+      if (!quiet) {
+        setMsg({ text:'', ok:false });
+      }
+    } catch (error) {
+      if (!selected && demoTickets[0]) {
+        setSelectedId(demoTickets[0].id);
+        setSelected(demoTickets[0]);
+      }
+      setMsg({
+        text: error.response?.data?.detail || 'Support conversations could not be loaded.',
+        ok: false,
+      });
+    } finally {
+      if (!quiet) {
+        setLoading(false);
+      }
+    }
   };
 
-  const openCount = tickets.filter(t => t.status==='open').length;
+  useEffect(() => {
+    syncSupport();
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      syncSupport(true);
+    }, 7000);
+
+    return () => window.clearInterval(intervalId);
+  }, [selectedId, demoTickets]);
+
+  const filtered = useMemo(() => {
+    let result = allTickets;
+    if (filter !== 'all') {
+      result = result.filter(ticket => ticket.status === filter);
+    }
+    if (viewFilter === 'unread') {
+      result = result.filter(ticket => (ticket.unread_count || 0) > 0);
+    }
+    return result;
+  }, [allTickets, filter, viewFilter]);
+
+  const sendReply = async () => {
+    if (!reply.trim() || !selected) return;
+
+    if (selected.source === 'demo') {
+      const replyText = reply.trim();
+      const now = new Date();
+      const demoReply = {
+        id: `${selected.id}-reply-${now.getTime()}`,
+        from: 'admin',
+        text: replyText,
+        time: fmtDT(now.toISOString()),
+      };
+      const updatedTicket = {
+        ...selected,
+        status: 'resolved',
+        last_message_at: now.toISOString(),
+        last_message_preview: replyText,
+        messages: [...selected.messages, demoReply],
+      };
+
+      setDemoTickets(prev =>
+        prev.map(ticket => (ticket.id === selected.id ? updatedTicket : ticket))
+      );
+      setSelected(updatedTicket);
+      setReply('');
+      setMsg({ text:'Reply added to the demo ticket.', ok:true });
+      return;
+    }
+
+    setSending(true);
+    try {
+      const response = await api.post(`/support/conversations/${selected.id}/messages/`, {
+        body: reply.trim(),
+      });
+      const detail = normalizeConversation(response.data);
+      setSelected(detail);
+      setReply('');
+      setMsg({ text:'Reply sent to the customer.', ok:true });
+      setTickets(prev =>
+        prev.map(ticket =>
+          ticket.id === detail.id
+            ? { ...ticket, ...detail, unread_count: 0 }
+            : ticket
+        )
+      );
+    } catch (error) {
+      setMsg({
+        text: error.response?.data?.detail || 'Reply could not be sent.',
+        ok: false,
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleStatusChange = async (nextStatus) => {
+    if (!selected) return;
+
+    if (selected.source === 'demo') {
+      const updatedTicket = {
+        ...selected,
+        status: nextStatus,
+      };
+      setDemoTickets(prev =>
+        prev.map(ticket => (ticket.id === selected.id ? updatedTicket : ticket))
+      );
+      setSelected(updatedTicket);
+      setMsg({
+        text: `Demo conversation marked as ${nextStatus}.`,
+        ok: true,
+      });
+      return;
+    }
+
+    try {
+      const response = await api.patch(`/support/conversations/${selected.id}/status/`, {
+        status: nextStatus,
+      });
+      const detail = normalizeConversation(response.data);
+      setSelected(detail);
+      setTickets(prev =>
+        prev.map(ticket =>
+          ticket.id === detail.id
+            ? { ...ticket, ...detail }
+            : ticket
+        )
+      );
+      setMsg({
+        text: `Conversation marked as ${nextStatus}.`,
+        ok: true,
+      });
+    } catch (error) {
+      setMsg({
+        text: error.response?.data?.detail || 'Status could not be updated.',
+        ok: false,
+      });
+    }
+  };
+
+  const openCount = allTickets.filter(ticket => ticket.status === 'open').length;
+  const resolvedCount = allTickets.filter(ticket => ticket.status === 'resolved').length;
+  const unreadCount = allTickets.reduce((sum, ticket) => sum + (ticket.unread_count || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center gap-4">
+        <Spinner />
+        <p className="text-gray-500">Loading support inbox...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="stat-card c-red">   <div className="stat-num">{openCount}</div>                                              <div className="stat-label">Open Tickets</div></div>
-        <div className="stat-card c-green"> <div className="stat-num">{tickets.filter(t=>t.status==='resolved').length}</div>        <div className="stat-label">Resolved</div></div>
-        <div className="stat-card c-blue">  <div className="stat-num">{tickets.length}</div>                                         <div className="stat-label">Total</div></div>
-        <div className="stat-card c-gold">  <div className="stat-num">{tickets.filter(t=>t.priority==='high').length}</div>          <div className="stat-label">High Priority</div></div>
+      <Alert text={msg.text} ok={msg.ok} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="stat-card c-red"><div className="stat-num">{openCount}</div><div className="stat-label">Open Chats</div></div>
+        <div className="stat-card c-green"><div className="stat-num">{resolvedCount}</div><div className="stat-label">Resolved</div></div>
+        <div className="stat-card c-blue"><div className="stat-num">{allTickets.length}</div><div className="stat-label">Total Conversations</div></div>
+        <div className="stat-card c-gold"><div className="stat-num">{unreadCount}</div><div className="stat-label">Unread Client Messages</div></div>
       </div>
       <div className="support-layout">
         <div className="ticket-list">
           <div className="ticket-list-header">
-            <h3>Tickets</h3>
+            <h3>Support Inbox</h3>
             <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
-              <select className="filter-sel sm" value={filter} onChange={e=>setFilter(e.target.value)}>
-                <option value="all">All</option>
+              <select className="filter-sel sm" value={filter} onChange={e => setFilter(e.target.value)}>
+                <option value="all">All Status</option>
                 <option value="open">Open</option>
                 <option value="resolved">Resolved</option>
               </select>
-              <select className="filter-sel sm" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}>
-                <option value="all">All Types</option>
-                <option value="complaint">Complaint</option>
-                <option value="billing">Billing</option>
-                <option value="support">Support</option>
+              <select className="filter-sel sm" value={viewFilter} onChange={e => setViewFilter(e.target.value)}>
+                <option value="all">All Conversations</option>
+                <option value="unread">Unread Only</option>
               </select>
+              <button className="btn btn-ghost btn-sm" onClick={() => syncSupport(true)}>
+                <ArrowPathIcon className="w-4 h-4" /> Refresh
+              </button>
             </div>
           </div>
-          {filtered.map(t => (
-            <div key={t.id} className={`ticket-item ${selected?.id===t.id?'active':''} priority-${t.priority}`} onClick={() => setSelected(t)}>
-              <div className="ticket-top">
-                <span className="ticket-id">#{t.id}</span>
-                <span className={`badge ${t.status==='open'?'st-notpaid':'st-delivered'}`}>{t.status}</span>
+          {filtered.map(ticket => {
+            const priorityClass = ticket.unread_count > 0 ? 'high' : ticket.status === 'open' ? 'medium' : 'low';
+            return (
+              <div
+                key={ticket.id}
+                className={`ticket-item ${selected?.id===ticket.id ? 'active' : ''} priority-${priorityClass}`}
+                onClick={() => {
+                  setSelectedId(ticket.id);
+                  if (ticket.source === 'demo') {
+                    setSelected(ticket);
+                  } else {
+                    syncSupport(true);
+                  }
+                }}
+              >
+                <div className="ticket-top">
+                  <span className="ticket-id">#{ticket.id}</span>
+                  <div className="flex items-center gap-2">
+                    {ticket.unread_count > 0 && <span className="badge c-red">{ticket.unread_count} new</span>}
+                    <span className={`badge ${ticket.status === 'open' ? 'st-notpaid' : 'st-delivered'}`}>{ticket.status}</span>
+                  </div>
+                </div>
+                <p className="ticket-subject">{ticket.subject || 'HomeCrew Support Chat'}</p>
+                <div className="ticket-meta">
+                  <span>{ticket.client_name || ticket.client_email}</span>
+                  <span className="ticket-type tt-support">support</span>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">{ticket.last_message_preview || 'No message preview yet.'}</p>
               </div>
-              <p className="ticket-subject">{t.subject}</p>
-              <div className="ticket-meta">
-                <span>{t.from}</span>
-                <span className={`ticket-type tt-${t.type}`}>{t.type}</span>
-              </div>
-            </div>
-          ))}
-          {!filtered.length && <p className="empty" style={{padding:'1rem'}}>No tickets.</p>}
+            );
+          })}
+          {!filtered.length && <p className="empty" style={{padding:'1rem'}}>No conversations found.</p>}
         </div>
         <div className="ticket-chat">
           {selected ? (
             <>
               <div className="chat-header">
-                <h4>{selected.subject}</h4>
+                <h4>{selected.subject || 'HomeCrew Support Chat'}</h4>
                 <p className="chat-from">
                   {selected.from} · <span className={`badge ${selected.status==='open'?'st-notpaid':'st-delivered'}`}>{selected.status}</span> ·{' '}
                   <span className={`ticket-type tt-${selected.type}`}>{selected.type}</span>
@@ -2346,7 +2661,7 @@ const AdminSidebar = ({ active, setActive, orders, reviews, seenIds, markSeen, o
 
   const badges = {
     orders:  orders.filter(o => o.status==='NOT_PAID' && !(seenIds.orders||[]).includes(o.id)).length || null,
-    support: (seenIds.support ? 0 : 2) || null,
+    support: null,
     reviews: reviews.filter(r => r.rating<=2 && !(seenIds.reviews||[]).includes(r.id)).length || null,
   };
 

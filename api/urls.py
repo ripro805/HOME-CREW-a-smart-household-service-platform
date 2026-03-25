@@ -1,5 +1,6 @@
 from django.urls import path, include
 from . import views
+from .support_views import SupportConversationViewSet
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 from accounts.views import UserViewSet
@@ -16,6 +17,7 @@ router.register('categories', ServiceCategoryViewSet, basename='category')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'carts', CartViewSet, basename='cart')
 router.register(r'reviews', AdminReviewViewSet, basename='admin-review')
+router.register(r'support/conversations', SupportConversationViewSet, basename='support-conversation')
 
 # Nested routers
 orders_router = NestedDefaultRouter(router, r'orders', lookup='order')

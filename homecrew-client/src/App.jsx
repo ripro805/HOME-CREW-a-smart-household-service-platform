@@ -12,6 +12,7 @@ import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import Categories from './pages/Categories';
 import Cart from './pages/Cart';
+import Messages from './pages/Messages';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
@@ -94,6 +95,7 @@ function AppContent() {
           <Route path="/services" element={<Services />} />
           <Route path="/services/:id" element={<ServiceDetail />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/profile" element={<Profile />} />

@@ -16,6 +16,7 @@ import {
   ShoppingBagIcon,
   TagIcon,
   SparklesIcon,
+  ChatBubbleLeftRightIcon,
   XMarkIcon,
   Bars3Icon,
   HomeIcon,
@@ -30,6 +31,7 @@ const Navbar = () => {
   const [showNotifDropdown,   setShowNotifDropdown]   = useState(false);
   const [mobileOpen,          setMobileOpen]          = useState(false);
   const [orders, setOrders] = useState([]);
+  const [supportConversations, setSupportConversations] = useState([]);
   const [readIds, setReadIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notif_read') || '[]'); } catch { return []; }
   });
@@ -40,6 +42,36 @@ const Navbar = () => {
     if (isAuthenticated && !isAdmin) {
       api.get('/orders/').then(r => setOrders(r.data.results || r.data || [])).catch(() => {});
     }
+  }, [isAuthenticated, isAdmin]);
+
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin) {
+      setSupportConversations([]);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const fetchSupportConversations = async () => {
+      try {
+        const response = await api.get('/support/conversations/');
+        if (isMounted) {
+          setSupportConversations(response.data.results || response.data || []);
+        }
+      } catch {
+        if (isMounted) {
+          setSupportConversations([]);
+        }
+      }
+    };
+
+    fetchSupportConversations();
+    const intervalId = window.setInterval(fetchSupportConversations, 12000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
   }, [isAuthenticated, isAdmin]);
 
   // Close mobile drawer on route change
@@ -70,6 +102,10 @@ const Navbar = () => {
   ];
 
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
+  const supportUnreadCount = supportConversations.reduce(
+    (sum, conversation) => sum + (conversation.unread_count || 0),
+    0
+  );
 
   const markAllRead = () => {
     const allIds = notifications.map(n => n.id);
@@ -188,6 +224,15 @@ const Navbar = () => {
                   {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce-in">{cartCount}</span>}
                 </Link>
 
+                <Link to="/messages" className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50 icon-hover">
+                  <ChatBubbleLeftRightIcon className="w-7 h-7" />
+                  {supportUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">
+                      {supportUnreadCount > 9 ? '9+' : supportUnreadCount}
+                    </span>
+                  )}
+                </Link>
+
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
                   <button onClick={() => { setShowNotifDropdown(p => !p); setShowProfileDropdown(false); }} className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50">
@@ -240,6 +285,9 @@ const Navbar = () => {
                       </Link>
                       <Link to="/orders" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors" onClick={() => setShowProfileDropdown(false)}>
                         <ShoppingBagIcon className="w-5 h-5" /> My Orders
+                      </Link>
+                      <Link to="/messages" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors" onClick={() => setShowProfileDropdown(false)}>
+                        <ChatBubbleLeftRightIcon className="w-5 h-5" /> Messages
                       </Link>
                       <div className="border-t border-gray-100 mt-1" />
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
@@ -329,6 +377,14 @@ const Navbar = () => {
               <ShoppingCartIcon className="w-5 h-5" />
               Cart
               {cartCount > 0 && <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{cartCount}</span>}
+            </Link>
+          )}
+
+          {isAuthenticated && !isAdmin && (
+            <Link to="/messages" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
+              <ChatBubbleLeftRightIcon className="w-5 h-5" />
+              Messages
+              {supportUnreadCount > 0 && <span className="ml-auto bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{supportUnreadCount}</span>}
             </Link>
           )}
 

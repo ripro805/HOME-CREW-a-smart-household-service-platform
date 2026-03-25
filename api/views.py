@@ -29,6 +29,7 @@ def api_home(request):
         "service-images": request.build_absolute_uri(reverse('service-images-list', kwargs={"service_pk": 1})),
         "carts": request.build_absolute_uri(reverse('cart-list')),
         "cart-items": request.build_absolute_uri(reverse('cart-items-list', kwargs={"cart_pk": 1})),
+        "support-conversations": request.build_absolute_uri(reverse('support-conversation-list')),
     }
     return JsonResponse({
         "message": "Welcome to the HouseHoldService API!",

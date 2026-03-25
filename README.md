@@ -1,6 +1,6 @@
 # HomeCrew - A Smart Household Service Platform
 
-HomeCrew is a full-stack web application for managing household services, built with Django (backend) and React (frontend). It supports user registration, service browsing, order placement, and online payment via SSLCommerz.
+HomeCrew is a full-stack household service platform built with Django (backend) and React (frontend). It supports user registration, service discovery, order placement, online payment via SSLCommerz, direct support messaging, and admin-side service management.
 
 ---
 
@@ -37,10 +37,21 @@ HouseHoldservice/
 - User registration, login, password reset (Djoser JWT)
 - Service browsing & search
 - Order placement & order history
+- Service detail pages with ratings and reviews
 - Online payment (SSLCommerz integration)
-- Email notifications
-- Admin dashboard
+- Contact form that sends email to the admin inbox
+- Real-time style support chat between client and admin
+- Admin dashboard with orders, reviews, users, and support inbox
 - Responsive UI (React + Tailwind CSS)
+
+---
+
+## Recent Updates
+- Added `About Us` and `Contact` pages to the frontend navigation
+- Added client-to-admin support messaging with a dedicated chat page
+- Added admin support inbox with live conversations plus demo tickets
+- Fixed support chat database migration on the production database
+- Improved service detail reviews, related services, and order page UI
 
 ---
 
@@ -48,6 +59,7 @@ HouseHoldservice/
 - **Backend:** Django, Django REST Framework, Djoser, PostgreSQL
 - **Frontend:** React, Vite, Tailwind CSS, Axios
 - **Payments:** SSLCommerz
+- **Messaging:** Django REST API + JWT-authenticated client/admin chat flow
 - **Media:** Cloudinary
 - **Deployment:** Render.com
 
@@ -83,6 +95,8 @@ npm run dev
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000/api/v1
 
+Note: run `python manage.py migrate` after pulling new backend changes so support chat and other recent features get their database tables.
+
 ---
 
 ## 🚀 Deployment (Render.com)
@@ -101,6 +115,8 @@ DATABASE_URL=your-postgres-url
 CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
 EMAIL_HOST_USER=your-gmail
 EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=your-from-email
+ADMIN_CONTACT_EMAIL=your-admin-inbox
 FRONTEND_PROTOCOL=https
 FRONTEND_DOMAIN=your-frontend-url
 BACKEND_URL=your-backend-url
@@ -113,6 +129,14 @@ SSLCOMMERZ_IS_SANDBOX=True
 ```
 VITE_API_URL=https://your-backend-url/api/v1
 ```
+
+---
+
+## Key User Flows
+- Clients can browse services, open a service detail page, read reviews, and place orders
+- Clients can use the `Contact` page to send an email directly to the admin inbox
+- Logged-in clients can open the message icon in the navbar and chat with admin from the support page
+- Admins can manage support conversations from the dashboard support tab and reply back to clients
 
 ---
 
