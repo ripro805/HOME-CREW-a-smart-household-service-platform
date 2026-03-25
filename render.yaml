@@ -1,5 +1,7 @@
 # Render Blueprint for HomeCrew Application
 # Note: This is a simplified blueprint. Some configurations need to be done manually in Render Dashboard.
+# The legacy Render Postgres block is kept as a fallback reference, but the backend
+# should use an external Supabase DATABASE_URL configured in the Render dashboard.
 
 databases:
   - name: homecrew-db
@@ -21,9 +23,7 @@ services:
       - key: PYTHON_VERSION
         value: "3.11.0"
       - key: DATABASE_URL
-        fromDatabase:
-          name: homecrew-db
-          property: connectionString
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG

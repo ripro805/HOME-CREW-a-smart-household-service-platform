@@ -120,25 +120,22 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Use environment variable for database configuration
-# If DATABASE_URL is set (production), use PostgreSQL
-# Otherwise, use SQLite for local development
-if config('DATABASE_URL', default=None):
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=config('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+# Use DATABASE_URL when available.
+# Otherwise, allow explicit PostgreSQL env vars for providers like Supabase.
+# If neither is set, fall back to local SQLite.
+DATABASES = {
+    'default': {
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', cast=int),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
-else:
-    # Local Development: Use SQLite
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 # DATABASES = {
 #     "default": {
