@@ -59,9 +59,10 @@ services:
   - type: web
     name: homecrew-frontend
     runtime: static
-    region: oregon
     plan: free
-    buildCommand: "cd homecrew-client && npm install && npm run build"
+    rootDir: homecrew-client
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: "https://home-crew-a-smart-household-service-b93r.onrender.com/api/v1"
