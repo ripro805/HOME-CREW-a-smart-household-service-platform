@@ -120,12 +120,9 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Use DATABASE_URL when available.
-# Otherwise, allow explicit PostgreSQL env vars for providers like Supabase.
-# If neither is set, fall back to local SQLite.
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
+        'ENGINE': 'django_db_geventpool.backends.postgresql_psycopg2',
         'NAME': config('DB_NAME'),
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
@@ -133,6 +130,8 @@ DATABASES = {
         'PORT': config('DB_PORT', cast=int),
         'OPTIONS': {
             'sslmode': 'require',
+            'MAX_CONNS': 20,  # Maximum number of connections in pool
+            'REUSE_CONNS': 10,  # Number of reusable connections
         },
     }
 }
