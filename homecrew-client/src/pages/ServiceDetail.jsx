@@ -1,18 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useScrollReveal } from '../hooks/useScrollReveal';
-import { useParams, useNavigate } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { StarIcon, ShoppingCartIcon, PencilIcon, TrashIcon, BoltIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
+const TAKA = '\u09F3';
+
 const ServiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [service, setService] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [relatedServices, setRelatedServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
@@ -20,8 +25,6 @@ const ServiceDetail = () => {
 
   const { addToCart } = useCart();
   const { isAuthenticated, user } = useAuth();
-
-  const reviewsRef = useScrollReveal();
 
   // Buy Now state
   const [showBuyNow, setShowBuyNow] = useState(false);
@@ -38,6 +41,10 @@ const ServiceDetail = () => {
     try {
       const response = await api.get(`/services/${id}/`);
       setService(response.data);
+      if (Array.isArray(response.data.reviews)) {
+        setReviews(response.data.reviews);
+      }
+      await fetchRelatedServices(response.data.category?.id, response.data.id);
     } catch (error) {
       console.error('Failed to fetch service:', error);
     } finally {
@@ -45,13 +52,47 @@ const ServiceDetail = () => {
     }
   };
 
+  const fetchRelatedServices = async (categoryId, currentServiceId) => {
+    if (!categoryId) {
+      setRelatedServices([]);
+      setRelatedLoading(false);
+      return;
+    }
+
+    try {
+      setRelatedLoading(true);
+      const response = await api.get('/services/', {
+        params: { category: categoryId, page_size: 8 },
+      });
+      const list = response.data.results || response.data || [];
+      const filtered = list
+        .filter((item) => Number(item.id) !== Number(currentServiceId))
+        .slice(0, 4);
+      setRelatedServices(filtered);
+    } catch (error) {
+      console.error('Failed to fetch related services:', error);
+      setRelatedServices([]);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
+
   const fetchReviews = async () => {
     try {
+      setReviewsLoading(true);
+      setReviewsError('');
       const response = await api.get(`/services/${id}/reviews/`);
-      // Backend may return paginated data
-      setReviews(response.data.results || response.data);
+      const nextReviews = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data.results)
+          ? response.data.results
+          : [];
+      setReviews(nextReviews);
     } catch (error) {
       console.error('Failed to fetch reviews:', error);
+      setReviewsError('Live review list could not be loaded. Showing available review data instead.');
+    } finally {
+      setReviewsLoading(false);
     }
   };
 
@@ -208,7 +249,7 @@ const ServiceDetail = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors animate-fade-in-up">
-          ← Back to Services
+          â† Back to Services
         </button>
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8 animate-fade-in-up" style={{animationDelay:'0.1s'}}>
@@ -235,10 +276,10 @@ const ServiceDetail = () => {
               <h1 className="text-3xl font-bold text-gray-800 mb-4">{service.name}</h1>
               
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-4xl font-bold text-teal-600">৳{parseFloat(service.price).toFixed(0)}</span>
+                <span className="text-4xl font-bold text-teal-600">{TAKA}{parseFloat(service.price).toFixed(0)}</span>
                 <span className="flex items-center gap-1 text-gray-600">
                   <StarSolid className="w-5 h-5 text-yellow-400" />
-                  {service.avg_rating.toFixed(1)} ({reviews.length} reviews)
+                  {Number(service.avg_rating || 0).toFixed(1)} ({service.review_count ?? reviews.length} reviews)
                 </span>
               </div>
 
@@ -271,8 +312,8 @@ const ServiceDetail = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8" ref={reviewsRef}>
-          <div className="flex justify-between items-center mb-6 reveal">
+        <div className="bg-white rounded-2xl shadow-sm p-8">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 section-heading">Customer Reviews</h2>
             {isAuthenticated && (
               <button 
@@ -317,11 +358,37 @@ const ServiceDetail = () => {
           )}
 
           <div className="space-y-4">
-            {reviews.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No reviews yet. Be the first to review!</p>
+            {reviewsError && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {reviewsError}
+              </div>
+            )}
+
+            {reviewsLoading ? (
+              [...Array(3)].map((_, index) => (
+                <div key={index} className="skeleton h-28 rounded-xl" />
+              ))
+            ) : reviews.length === 0 ? (
+              <div className="overflow-hidden rounded-[1.75rem] border border-dashed border-teal-200 bg-[linear-gradient(135deg,#f0fdfa_0%,#ecfeff_52%,#ffffff_100%)] px-6 py-12 text-center shadow-[0_20px_45px_-35px_rgba(13,148,136,0.45)]">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-white text-teal-500 shadow-[0_15px_35px_-20px_rgba(13,148,136,0.45)]">
+                  <StarIcon className="h-10 w-10" />
+                </div>
+                <h3 className="mt-6 text-3xl font-black tracking-tight text-slate-900">No Review Yet</h3>
+                <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-slate-600">
+                  This service has not received any customer feedback yet. The first review will appear here in this card with rating and experience details.
+                </p>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="btn btn-primary btn-md mt-6"
+                  >
+                    Be The First To Review
+                  </button>
+                )}
+              </div>
             ) : (
               reviews.map((review, ri) => (
-                <div key={review.id} className={`reveal delay-${(ri % 5) + 1} p-5 bg-gray-50 rounded-xl card-hover-light`}>
+                <div key={review.id} className="p-5 bg-gray-50 rounded-xl card-hover-light">
                   {editingReviewId === review.id ? (
                     /* Inline edit form */
                     <div>
@@ -401,10 +468,85 @@ const ServiceDetail = () => {
             )}
           </div>
         </div>
+
+        <div className="mt-8 bg-white rounded-2xl shadow-sm p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 section-heading">Related Services</h2>
+              <p className="mt-2 text-sm text-gray-500">
+                {service.category?.name
+                  ? `More services from the ${service.category.name} category`
+                  : 'Explore more services that may match this need'}
+              </p>
+            </div>
+            {service.category?.id && (
+              <Link to={`/services?category=${service.category.id}`} className="btn btn-outline btn-sm">
+                View More
+              </Link>
+            )}
+          </div>
+
+          {relatedLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="skeleton h-64 rounded-2xl" />
+              ))}
+            </div>
+          ) : relatedServices.length === 0 ? (
+            <div className="rounded-[1.5rem] border border-dashed border-cyan-200 bg-[linear-gradient(135deg,#f8fafc_0%,#ecfeff_50%,#ffffff_100%)] px-6 py-10 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-cyan-500 shadow-sm">
+                <ShoppingCartIcon className="h-8 w-8" />
+              </div>
+              <h3 className="mt-5 text-2xl font-black text-slate-900">No Related Services Found</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                There are no other services available in this category right now.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {relatedServices.map((item) => (
+                <div
+                  key={item.id}
+                  className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md"
+                >
+                  <div className="h-40 bg-gradient-to-br from-teal-100 to-cyan-100 overflow-hidden">
+                    {item.images?.[0]?.image ? (
+                      <img src={item.images[0].image} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-teal-500">
+                        <StarIcon className="w-10 h-10" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">
+                      Related Service
+                    </p>
+                    <h3 className="mt-2 text-lg font-bold text-gray-800 line-clamp-2 min-h-[3.5rem]">
+                      {item.name}
+                    </h3>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <span className="text-xl font-bold text-teal-600">
+                        {TAKA}{parseFloat(item.price).toFixed(0)}
+                      </span>
+                      <span className="flex items-center gap-1 text-sm text-gray-500">
+                        <StarSolid className="w-4 h-4 text-yellow-400" />
+                        {Number(item.avg_rating || 0).toFixed(1)}
+                      </span>
+                    </div>
+                    <Link to={`/services/${item.id}`} className="btn btn-primary btn-sm btn-block mt-4">
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
 
-      {/* ── Buy Now Modal ── */}
+      {/* â”€â”€ Buy Now Modal â”€â”€ */}
       {showBuyNow && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scale-in">
@@ -428,7 +570,7 @@ const ServiceDetail = () => {
               )}
               <div>
                 <p className="text-sm font-semibold text-gray-800 leading-tight">{service.name}</p>
-                <p className="text-xl font-bold text-teal-600 mt-0.5">৳{parseFloat(service.price).toFixed(0)}</p>
+                <p className="text-xl font-bold text-teal-600 mt-0.5">{TAKA}{parseFloat(service.price).toFixed(0)}</p>
               </div>
             </div>
 
@@ -450,7 +592,7 @@ const ServiceDetail = () => {
                   required
                   value={buyNowForm.name}
                   onChange={(e) => setBuyNowForm({ ...buyNowForm, name: e.target.value })}
-                  placeholder="আপনার পূর্ণ নাম লিখুন"
+                  placeholder="à¦†à¦ªà¦¨à¦¾à¦° à¦ªà§‚à¦°à§à¦£ à¦¨à¦¾à¦® à¦²à¦¿à¦–à§à¦¨"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
                 />
               </div>
@@ -464,7 +606,7 @@ const ServiceDetail = () => {
                   rows="2"
                   value={buyNowForm.address}
                   onChange={(e) => setBuyNowForm({ ...buyNowForm, address: e.target.value })}
-                  placeholder="আপনার সম্পূর্ণ ঠিকানা লিখুন"
+                  placeholder="à¦†à¦ªà¦¨à¦¾à¦° à¦¸à¦®à§à¦ªà§‚à¦°à§à¦£ à¦ à¦¿à¦•à¦¾à¦¨à¦¾ à¦²à¦¿à¦–à§à¦¨"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition resize-none"
                 />
               </div>
@@ -509,3 +651,4 @@ const ServiceDetail = () => {
 };
 
 export default ServiceDetail;
+

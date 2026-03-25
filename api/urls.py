@@ -33,6 +33,7 @@ urlpatterns = [
     path("orders/", include("orders.orders_urls")),
     path("accounts/", include("accounts.accounts_urls")),
     path("services/", include("services.services_urls")),
+    path("contact/", views.contact_message, name="contact-message"),
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
     path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),

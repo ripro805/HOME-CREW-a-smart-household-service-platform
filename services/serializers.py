@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from rest_framework import serializers
 from .models import Service, Review, ServiceImage, ServiceCategory
 
@@ -21,12 +22,27 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         fields = ["id", "image", "image_file", "image_url"]
         read_only_fields = ["image"]
 class ServiceSerializer(serializers.ModelSerializer):
+    avg_rating = serializers.SerializerMethodField()
     images = ServiceImageSerializer(many=True, read_only=True)
     category = ServiceCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(queryset=ServiceCategory.objects.all(), source="category", write_only=True)
     review_count = serializers.SerializerMethodField()
     
+    def get_avg_rating(self, obj):
+        annotated = getattr(obj, "calculated_avg_rating", None)
+        if annotated is not None:
+            return float(annotated)
+
+        calculated = obj.reviews.aggregate(avg=Avg("rating"))["avg"]
+        if calculated is not None:
+            return float(calculated)
+
+        return float(obj.avg_rating or 0)
+
     def get_review_count(self, obj):
+        annotated = getattr(obj, "calculated_review_count", None)
+        if annotated is not None:
+            return int(annotated)
         return obj.reviews.count()
     
     class Meta:
@@ -46,6 +62,13 @@ class ReviewSerializer(serializers.ModelSerializer):
         if obj.client:
             return obj.client.get_full_name() or obj.client.email
         return "Anonymous"
+
+
+class ServiceDetailSerializer(ServiceSerializer):
+    reviews = ReviewSerializer(many=True, read_only=True)
+
+    class Meta(ServiceSerializer.Meta):
+        fields = ServiceSerializer.Meta.fields + ["reviews"]
 
 
 class AdminReviewSerializer(serializers.ModelSerializer):

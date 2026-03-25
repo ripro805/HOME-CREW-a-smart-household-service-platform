@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
@@ -12,6 +12,8 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+
+const TAKA = '\u09F3';
 
 const Services = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,21 +67,21 @@ const Services = () => {
         params.category = selectedCategory;
       }
       
-      console.log('📡 Fetching services...');
+      console.log('ðŸ“¡ Fetching services...');
       console.log('  Category:', selectedCategory);
       console.log('  Page:', currentPage);
       console.log('  API Params:', params);
       
       const response = await api.get('/services/', { params });
       
-      console.log('✅ Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
+      console.log('âœ… Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
       
       // Backend returns paginated data: {count, next, previous, results}
       setServices(response.data.results || response.data);
       setTotalCount(response.data.count || 0);
       setTotalPages(Math.ceil((response.data.count || 0) / 10));
     } catch (error) {
-      console.error('❌ Failed to fetch services:', error);
+      console.error('âŒ Failed to fetch services:', error);
       setServices([]);
       setTotalCount(0);
       setTotalPages(1);
@@ -90,7 +92,7 @@ const Services = () => {
 
   // Fetch services when callback changes
   useEffect(() => {
-    console.log('🔄 Effect triggered - fetching services');
+    console.log('ðŸ”„ Effect triggered - fetching services');
     fetchServices();
   }, [fetchServices]);
 
@@ -107,7 +109,7 @@ const Services = () => {
 
   // Handle category dropdown change
   const handleCategoryChange = (categoryId) => {
-    console.log('🔽 Dropdown changed to category:', categoryId);
+    console.log('ðŸ”½ Dropdown changed to category:', categoryId);
     
     // Create new URL params
     const newParams = new URLSearchParams(searchParams);
@@ -231,7 +233,7 @@ const Services = () => {
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Price Range</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Min Price: ৳{priceRange.min}</label>
+                    <label className="block text-sm text-gray-600 mb-1">Min Price: {TAKA}{priceRange.min}</label>
                     <input
                       type="range"
                       min="0"
@@ -243,7 +245,7 @@ const Services = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Max Price: ৳{priceRange.max}</label>
+                    <label className="block text-sm text-gray-600 mb-1">Max Price: {TAKA}{priceRange.max}</label>
                     <input
                       type="range"
                       min="0"
@@ -332,7 +334,7 @@ const Services = () => {
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.description}</p>
                   
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold text-teal-600">৳{parseFloat(service.price).toFixed(0)}</span>
+                    <span className="text-2xl font-bold text-teal-600">{TAKA}{parseFloat(service.price).toFixed(0)}</span>
                     <span className="flex items-center gap-1 text-sm text-gray-600">
                       <StarSolid className="w-4 h-4 text-yellow-400" />
                       {service.avg_rating.toFixed(1)}
@@ -418,3 +420,4 @@ const Services = () => {
 };
 
 export default Services;
+

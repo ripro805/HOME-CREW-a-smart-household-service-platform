@@ -19,6 +19,7 @@ import {
   XMarkIcon,
   Bars3Icon,
   HomeIcon,
+  PhoneIcon,
 } from '@heroicons/react/24/outline';
 
 const Navbar = () => {
@@ -132,11 +133,17 @@ const Navbar = () => {
             <Link to="/" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
               Home
             </Link>
+            <Link to="/about" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
+              About Us
+            </Link>
             {isAuthenticated && !isAdmin && (
               <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
                 Services
               </Link>
             )}
+            <Link to="/contact" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
+              Contact
+            </Link>
           </div>
 
           {/* Right actions */}
@@ -297,11 +304,19 @@ const Navbar = () => {
             <HomeIcon className="w-5 h-5" /> Home
           </Link>
 
+          <Link to="/about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
+            <UserCircleIcon className="w-5 h-5" /> About Us
+          </Link>
+
           {isAuthenticated && !isAdmin && (
             <Link to="/services" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <WrenchScrewdriverIcon className="w-5 h-5" /> Services
             </Link>
           )}
+
+          <Link to="/contact" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
+            <PhoneIcon className="w-5 h-5" /> Contact
+          </Link>
 
           {isAuthenticated && !isAdmin && (
             <Link to="/orders" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">

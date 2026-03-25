@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { 
+import {
   UserCircleIcon, 
   PencilIcon, 
   CheckIcon, 
@@ -46,8 +45,6 @@ const Profile = () => {
   
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const ordersRef = useScrollReveal();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -550,7 +547,7 @@ const Profile = () => {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="bg-white rounded-3xl shadow-lg p-10 animate-fade-in-up">
-            <div className="flex items-center justify-between mb-8 reveal">
+            <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-gray-800 section-heading">My Orders</h2>
               <span className="text-sm text-gray-400">{orders.length} order{orders.length !== 1 ? 's' : ''} total</span>
             </div>
@@ -573,8 +570,8 @@ const Profile = () => {
                 </button>
               </div>
             ) : (
-              <div ref={ordersRef} className="space-y-5">
-                {[...orders].sort((a, b) => b.id - a.id).map((order, oi) => {
+              <div className="space-y-5">
+                {[...orders].sort((a, b) => b.id - a.id).map((order) => {
                   const STATUS_LABEL = {
                     NOT_PAID: 'Pending Payment',
                     READY_TO_SHIP: 'Confirmed',
@@ -589,7 +586,7 @@ const Profile = () => {
                       })
                     : '—';
                   return (
-                    <div key={order.id} className={`reveal delay-${(oi % 5) + 1} border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group card-hover-light`}>
+                    <div key={order.id} className="border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group card-hover-light">
                       {/* Order Header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 bg-gray-50 gap-3">
                         <div className="flex items-center gap-3">

@@ -1,14 +1,21 @@
-from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
-from django.urls import reverse
-from django.db.models import Sum, Count, Q
+from datetime import timedelta
+
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.response import Response
+
+from accounts.models import User
 from orders.models import Order
 from services.models import Service
-from accounts.models import User
-from datetime import timedelta
-from django.utils import timezone
+
+from .emails import send_contact_message_to_admin
+from .serializers import ContactMessageSerializer
 
 @api_view(['GET'])
 def api_home(request):
@@ -107,3 +114,17 @@ def analytics_dashboard(request):
             'revenue_change_percentage': round(revenue_change, 2)
         }
     })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_message(request):
+    serializer = ContactMessageSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    send_contact_message_to_admin(serializer.validated_data)
+
+    return Response(
+        {'detail': 'Your message has been sent successfully.'},
+        status=status.HTTP_200_OK,
+    )

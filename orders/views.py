@@ -291,8 +291,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            return Order.objects.prefetch_related('items__service').all()
-        return Order.objects.prefetch_related('items__service').filter(client=self.request.user)
+            return Order.objects.prefetch_related('items__service').order_by('-id')
+        return Order.objects.prefetch_related('items__service').filter(client=self.request.user).order_by('-id')
 
     def destroy(self, request, *args, **kwargs):
         if not request.user.is_staff:

@@ -1,26 +1,37 @@
+import logging
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from api.permissions import IsAdminOrSelfOrReadOnly
-from django.db.models import Avg
-import logging
+from rest_framework.response import Response
+from rest_framework import status, viewsets, generics, filters
+from api.permissions import IsAdminOrSelfOrReadOnly, IsReviewOwnerOrAdmin
+from django.db.models import Avg, Count, FloatField, Value
+from django.db.models.functions import Coalesce
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Service, Review, ServiceCategory, ServiceImage
+from .serializers import ServiceSerializer, ServiceDetailSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer, AdminReviewSerializer
+from django.db import models
+from .filters import ServiceFilter, ReviewFilter
+from .pagination import ServiceResultsSetPagination
+from drf_yasg.utils import swagger_auto_schema
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
 
-from rest_framework.response import Response
-from rest_framework import status, viewsets, generics, filters
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from api.permissions import IsAdminOrSelfOrReadOnly, IsReviewOwnerOrAdmin
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Service, Review, ServiceCategory, ServiceImage
-from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer, AdminReviewSerializer
-from django.db import models
-from .serializers import ServiceSerializer, ReviewSerializer, ServiceCategorySerializer
-from .filters import ServiceFilter, ReviewFilter
-from .pagination import ServiceResultsSetPagination
-from drf_yasg.utils import swagger_auto_schema
+def service_queryset():
+    return (
+        Service.objects.select_related('category')
+        .prefetch_related('images', 'reviews__client')
+        .annotate(
+            calculated_avg_rating=Coalesce(
+                Avg('reviews__rating'),
+                Value(0.0),
+                output_field=FloatField(),
+            ),
+            calculated_review_count=Count('reviews', distinct=True),
+        )
+        .order_by('id')
+    )
 
 class ServiceViewSet(viewsets.ModelViewSet):
 
@@ -106,7 +117,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
             logger.error("ServiceViewSet.destroy error: %s", str(e), exc_info=True)
             raise
 
-    queryset = Service.objects.select_related('category').order_by('id').all()
+    queryset = service_queryset()
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ServiceFilter
@@ -120,6 +131,11 @@ class ServiceViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ServiceDetailSerializer
+        return ServiceSerializer
 
 class ServiceCategoryViewSet(viewsets.ModelViewSet):
     """
@@ -202,7 +218,7 @@ class ServicesSortedByRatingView(generics.ListAPIView):
     1. GET: List all services sorted by average rating.
     2. Returns service details ordered by rating.
     """
-    queryset = Service.objects.all().order_by('-avg_rating')
+    queryset = service_queryset().order_by('-calculated_avg_rating', 'id')
     serializer_class = ServiceSerializer
     permission_classes = [IsAdminOrSelfOrReadOnly]
 
@@ -217,6 +233,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     search_fields = ['comment']
     ordering_fields = ['rating', 'created_at']
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        if self.action == 'create':
+            return [IsAuthenticated()]
+        return [IsReviewOwnerOrAdmin()]
+
     def get_queryset(self):
         service_pk = self.kwargs.get('service_pk')
         if service_pk:
@@ -225,7 +248,22 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         service_id = self.kwargs['service_pk']
-        serializer.save(client=self.request.user, service_id=service_id)
+        review = serializer.save(client=self.request.user, service_id=service_id)
+        service = review.service
+        service.avg_rating = service.reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+        service.save(update_fields=['avg_rating'])
+
+    def perform_update(self, serializer):
+        review = serializer.save()
+        service = review.service
+        service.avg_rating = service.reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+        service.save(update_fields=['avg_rating'])
+
+    def perform_destroy(self, instance):
+        service = instance.service
+        instance.delete()
+        service.avg_rating = service.reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+        service.save(update_fields=['avg_rating'])
 
 
 class AdminReviewViewSet(viewsets.ModelViewSet):

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import About from './pages/About';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Activate from './pages/Activate';
@@ -20,6 +21,7 @@ import PaymentFail from './pages/PaymentFail';
 import PaymentCancel from './pages/PaymentCancel';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
 import ForgotPassword from './pages/ForgotPassword';
+import Contact from './pages/Contact';
 import './App.css';
 
 function ScrollToTop() {
@@ -54,6 +56,12 @@ function AppContent() {
             <main className="main-content"><Home /></main>
           </div>
         } />
+        <Route path="/about" element={
+          <div className="app"><Navbar /><main className="main-content"><About /></main></div>
+        } />
+        <Route path="/contact" element={
+          <div className="app"><Navbar /><main className="main-content"><Contact /></main></div>
+        } />
         <Route path="/categories" element={
           <div className="app"><Navbar /><main className="main-content"><Categories /></main></div>
         } />
@@ -75,6 +83,8 @@ function AppContent() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

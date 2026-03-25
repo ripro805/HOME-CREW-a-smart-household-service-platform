@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "drf_yasg",
+    "api",
     "accounts",
     "services",
     "orders",
@@ -285,6 +286,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='rifatrizviofficial001@gmail.com')
+ADMIN_CONTACT_EMAIL = config('ADMIN_CONTACT_EMAIL', default=DEFAULT_FROM_EMAIL)
 
 # CORS Configuration — uses FRONTEND_DOMAIN/PROTOCOL already computed above
 # Build CORS allowed origins dynamically
