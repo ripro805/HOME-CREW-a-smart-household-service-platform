@@ -120,21 +120,31 @@ WSGI_APPLICATION = "house_hold_service.wsgi.app"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_db_geventpool.backends.postgresql_psycopg2',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', cast=int),
-        'OPTIONS': {
-            'sslmode': 'require',
-            'MAX_CONNS': 20,  # Maximum number of connections in pool
-            'REUSE_CONNS': 10,  # Number of reusable connections
-        },
+DATABASE_URL = config('DATABASE_URL', default=None)
+if DATABASE_URL:
+    # Use dj_database_url to parse the connection string
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
-}
+else:
+    # Fallback to manual config (for local/dev)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT', cast=int),
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
+    }
 
 # DATABASES = {
 #     "default": {
