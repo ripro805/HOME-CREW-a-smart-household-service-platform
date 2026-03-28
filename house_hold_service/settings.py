@@ -126,7 +126,7 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=600,
+            conn_max_age=0,  # Close DB connection after each request (best for session mode)
             ssl_require=True
         )
     }
