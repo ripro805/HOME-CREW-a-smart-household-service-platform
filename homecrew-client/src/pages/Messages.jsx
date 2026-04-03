@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowPathIcon,
   ChatBubbleLeftRightIcon,
   ClockIcon,
   PaperAirplaneIcon,
+  PlusIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 
 const POLL_INTERVAL = 8000;
 const STATUS_LABELS = {
@@ -36,6 +39,7 @@ const formatBubbleTime = (value) =>
 
 const Messages = () => {
   const { isAuthenticated, isAdmin } = useAuth();
+  const { showConfirm } = useDialog();
   const navigate = useNavigate();
   const messageEndRef = useRef(null);
 
@@ -47,6 +51,7 @@ const Messages = () => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [refreshTick, setRefreshTick] = useState(0);
+  const [forceNoSelection, setForceNoSelection] = useState(false);
 
   const syncChat = async (keepSpinner = false) => {
     if (!keepSpinner) {
@@ -57,9 +62,11 @@ const Messages = () => {
       const response = await api.get('/support/conversations/');
       const list = response.data.results || response.data || [];
       const nextSelectedId =
-        selectedId && list.some((conversation) => conversation.id === selectedId)
-          ? selectedId
-          : list[0]?.id || null;
+        forceNoSelection
+          ? null
+          : selectedId && list.some((conversation) => conversation.id === selectedId)
+            ? selectedId
+            : list[0]?.id || null;
 
       setConversations(Array.isArray(list) ? list : []);
       setSelectedId(nextSelectedId);
@@ -93,7 +100,7 @@ const Messages = () => {
     }
 
     syncChat();
-  }, [isAuthenticated, isAdmin, navigate, refreshTick]);
+  }, [isAuthenticated, isAdmin, navigate, refreshTick, forceNoSelection]);
 
   useEffect(() => {
     if (!isAuthenticated || isAdmin) {
@@ -105,7 +112,7 @@ const Messages = () => {
     }, POLL_INTERVAL);
 
     return () => window.clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, selectedId]);
+  }, [isAuthenticated, isAdmin, selectedId, forceNoSelection]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,23 +132,92 @@ const Messages = () => {
         const response = await api.post(`/support/conversations/${selectedConversation.id}/messages/`, {
           body: trimmedDraft,
         });
-        setSelectedConversation(response.data);
-        setSelectedId(response.data.id);
+        const detail = response.data;
+        setSelectedConversation(detail);
+        setSelectedId(detail.id);
+        setForceNoSelection(false);
+
+        const latestMessage = detail.messages?.[detail.messages.length - 1];
+        const previewText = latestMessage?.body || trimmedDraft;
+
+        setConversations((prev) => {
+          const nextItem = {
+            id: detail.id,
+            subject: detail.subject || 'HomeCrew Support Chat',
+            status: detail.status || 'open',
+            last_message_at: detail.last_message_at || latestMessage?.created_at || new Date().toISOString(),
+            last_message_preview: previewText,
+            unread_count: 0,
+          };
+
+          const others = prev.filter((conversation) => conversation.id !== detail.id);
+          return [nextItem, ...others];
+        });
       } else {
         const response = await api.post('/support/conversations/', {
           subject: 'HomeCrew Support Chat',
           message: trimmedDraft,
         });
-        setSelectedConversation(response.data);
-        setSelectedId(response.data.id);
+        const detail = response.data;
+        setSelectedConversation(detail);
+        setSelectedId(detail.id);
+        setForceNoSelection(false);
+
+        const latestMessage = detail.messages?.[detail.messages.length - 1];
+        const previewText = latestMessage?.body || trimmedDraft;
+
+        setConversations((prev) => {
+          const nextItem = {
+            id: detail.id,
+            subject: detail.subject || 'HomeCrew Support Chat',
+            status: detail.status || 'open',
+            last_message_at: detail.last_message_at || latestMessage?.created_at || new Date().toISOString(),
+            last_message_preview: previewText,
+            unread_count: 0,
+          };
+
+          const others = prev.filter((conversation) => conversation.id !== detail.id);
+          return [nextItem, ...others];
+        });
       }
 
       setDraft('');
-      setRefreshTick((tick) => tick + 1);
     } catch (err) {
       setError(err.response?.data?.detail || 'Message could not be sent. Please try again.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleNewConversation = () => {
+    setForceNoSelection(true);
+    setSelectedId(null);
+    setSelectedConversation(null);
+    setDraft('');
+    setError('');
+  };
+
+  const handleDeleteConversation = async (conversation) => {
+    const title = conversation?.subject || 'this conversation';
+    const ok = await showConfirm(`Delete "${title}"? This conversation history will be removed.`, {
+      title: 'Delete conversation',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+
+    try {
+      await api.delete(`/support/conversations/${conversation.id}/`);
+
+      setConversations((prev) => prev.filter((item) => item.id !== conversation.id));
+
+      if (selectedId === conversation.id) {
+        setSelectedId(null);
+        setSelectedConversation(null);
+        setForceNoSelection(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Conversation could not be deleted right now.');
     }
   };
 
@@ -162,7 +238,7 @@ const Messages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(45,212,191,0.18),_transparent_24%),linear-gradient(180deg,#0f172a_0%,#111827_46%,#f8fafc_46%,#f8fafc_100%)] px-4 py-10">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_34%),linear-gradient(135deg,#f8fafc_0%,#ecfeff_48%,#ffffff_100%)] px-4 py-10">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside className="overflow-hidden rounded-[28px] border border-white/10 bg-slate-900/90 text-white shadow-2xl backdrop-blur">
@@ -171,6 +247,13 @@ const Messages = () => {
                 <SparklesIcon className="h-4 w-4" />
                 Support Desk
               </div>
+              <Link
+                to="/ai-assistant"
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-teal-300/40 hover:text-teal-200"
+              >
+                <SparklesIcon className="h-4 w-4" />
+                AI Assistant
+              </Link>
               <h1 className="mt-5 text-3xl font-bold leading-tight">Message HomeCrew admin directly</h1>
               <p className="mt-3 text-sm leading-6 text-slate-300">
                 Ask about booking issues, service timing, payments, or any household support you need.
@@ -201,25 +284,30 @@ const Messages = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Conversation</p>
-                  <button
-                    type="button"
-                    onClick={() => syncChat(true)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-teal-300/40 hover:text-teal-200"
-                  >
-                    <ArrowPathIcon className="h-3.5 w-3.5" />
-                    Refresh
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleNewConversation}
+                      className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-teal-300/40 hover:text-teal-200"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => syncChat(true)}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-teal-300/40 hover:text-teal-200"
+                    >
+                      <ArrowPathIcon className="h-3.5 w-3.5" />
+                      Refresh
+                    </button>
+                  </div>
                 </div>
 
                 {conversations.length > 0 ? (
                   conversations.map((conversation) => (
-                    <button
+                    <div
                       key={conversation.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedId(conversation.id);
-                        setRefreshTick((tick) => tick + 1);
-                      }}
                       className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                         selectedId === conversation.id
                           ? 'border-teal-300/50 bg-teal-400/10 shadow-lg shadow-teal-500/10'
@@ -227,19 +315,40 @@ const Messages = () => {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="font-semibold text-white">{conversation.subject || 'HomeCrew Support Chat'}</p>
-                        {conversation.unread_count > 0 && (
-                          <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white">
-                            {conversation.unread_count}
-                          </span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForceNoSelection(false);
+                            setSelectedId(conversation.id);
+                            setRefreshTick((tick) => tick + 1);
+                          }}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <p className="truncate font-semibold text-white">{conversation.subject || 'HomeCrew Support Chat'}</p>
+                        </button>
+                        <div className="flex items-center gap-2">
+                          {conversation.unread_count > 0 && (
+                            <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white">
+                              {conversation.unread_count}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteConversation(conversation)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 text-slate-300 transition hover:border-rose-300 hover:text-rose-300"
+                            aria-label={`Delete ${conversation.subject || 'conversation'}`}
+                            title="Delete conversation"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                       <p className="mt-2 line-clamp-2 text-sm text-slate-300">{conversation.last_message_preview || 'Start your first message.'}</p>
                       <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
                         <span>{STATUS_LABELS[conversation.status] || conversation.status}</span>
                         <span>{formatPanelTime(conversation.last_message_at)}</span>
                       </div>
-                    </button>
+                    </div>
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center">
@@ -287,7 +396,7 @@ const Messages = () => {
             )}
 
             <div className="flex min-h-[620px] flex-col">
-              <div className="flex-1 space-y-4 overflow-y-auto bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-6 py-6 sm:px-8">
+              <div className="flex-1 space-y-4 overflow-y-auto bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_65%,#ecfeff_100%)] px-6 py-6 sm:px-8">
                 {selectedConversation?.messages?.length ? (
                   selectedConversation.messages.map((message) => (
                     <div

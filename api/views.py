@@ -30,6 +30,7 @@ def api_home(request):
         "carts": request.build_absolute_uri(reverse('cart-list')),
         "cart-items": request.build_absolute_uri(reverse('cart-items-list', kwargs={"cart_pk": 1})),
         "support-conversations": request.build_absolute_uri(reverse('support-conversation-list')),
+        "assistant-chat": request.build_absolute_uri(reverse('assistant-chat')),
     }
     return JsonResponse({
         "message": "Welcome to the HouseHoldService API!",

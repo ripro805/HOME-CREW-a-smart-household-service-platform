@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import './AdminDashboard.css';
@@ -1141,7 +1142,181 @@ const UsersTab = ({ users, onRefresh }) => {
   );
 };
 
-// ─── 6. PAYMENTS TAB ────────────────────────────────────────────────────────
+// ─── 6. AI ACTIVITY TAB ────────────────────────────────────────────────────
+const AIAssistantTab = () => {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [msg, setMsg] = useState({ text: '', ok: true });
+
+  const loadRows = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/assistant/admin/users/');
+      setRows(Array.isArray(response.data) ? response.data : []);
+      setMsg({ text: '', ok: true });
+    } catch (error) {
+      setRows([]);
+      setMsg({ text: error.response?.data?.detail || 'AI activity could not be loaded.', ok: false });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRows();
+  }, [loadRows]);
+
+  const openUserDetail = async (userRow) => {
+    setSelectedUser(userRow);
+    setDetailLoading(true);
+    try {
+      const response = await api.get(`/assistant/admin/users/${userRow.id}/messages/`);
+      setUserDetail(response.data || null);
+    } catch (error) {
+      setUserDetail(null);
+      setMsg({ text: error.response?.data?.detail || 'User AI history could not be loaded.', ok: false });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (row) =>
+        String(row.id).includes(q)
+        || (row.name || '').toLowerCase().includes(q)
+        || (row.email || '').toLowerCase().includes(q)
+    );
+  }, [rows, search]);
+
+  return (
+    <div className="space-y-6">
+      <Alert text={msg.text} ok={msg.ok} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="stat-card c-blue"><div className="stat-num">{rows.length}</div><div className="stat-label">AI Users</div></div>
+        <div className="stat-card c-teal"><div className="stat-num">{rows.reduce((s, r) => s + (r.session_count || 0), 0)}</div><div className="stat-label">Total Sessions</div></div>
+        <div className="stat-card c-purple"><div className="stat-num">{rows.reduce((s, r) => s + (r.message_count || 0), 0)}</div><div className="stat-label">Total Messages</div></div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-800">AI Activity Users</h3>
+          <div className="flex gap-2 items-center">
+            <input
+              className="search-box"
+              placeholder="Search by id, name, email..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <button className="btn btn-ghost btn-sm" onClick={loadRows}>
+              <ArrowPathIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-10"><Spinner /></div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">User</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Email</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Sessions</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Messages</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Last Activity</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row) => (
+                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 text-sm font-semibold text-gray-800">{row.name}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{row.email}</td>
+                  <td className="py-3 px-4 text-sm text-gray-700">{row.session_count || 0}</td>
+                  <td className="py-3 px-4 text-sm text-gray-700">{row.message_count || 0}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">{fmtDT(row.last_message_at)}</td>
+                  <td className="py-3 px-4">
+                    <button className="btn btn-sm btn-ghost" onClick={() => openUserDetail(row)}>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!filtered.length && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-gray-400 text-sm">No AI users found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setSelectedUser(null); setUserDetail(null); }}>
+          <div className="bg-white rounded-2xl p-6 max-w-5xl w-full shadow-xl max-h-[90vh] overflow-y-auto" onClick={(event) => event.stopPropagation()}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">AI Chat History</h3>
+                <p className="text-sm text-gray-500 mt-1">{selectedUser.name} • {selectedUser.email}</p>
+              </div>
+              <button className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none" onClick={() => { setSelectedUser(null); setUserDetail(null); }}>✕</button>
+            </div>
+
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-10"><Spinner /></div>
+            ) : !userDetail ? (
+              <p className="text-center text-gray-500 py-8">No detail found for this user.</p>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-500">Sessions</p><p className="text-lg font-bold text-gray-800">{userDetail.summary?.session_count || 0}</p></div>
+                  <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-500">Messages</p><p className="text-lg font-bold text-gray-800">{userDetail.summary?.message_count || 0}</p></div>
+                  <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-500">First Used</p><p className="text-sm font-medium text-gray-700">{fmtDT(userDetail.summary?.first_used_at)}</p></div>
+                  <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-500">Last Activity</p><p className="text-sm font-medium text-gray-700">{fmtDT(userDetail.summary?.last_message_at)}</p></div>
+                </div>
+
+                {(userDetail.sessions || []).map((session) => (
+                  <div key={session.id} className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{session.title || `Session #${session.id}`}</p>
+                        <p className="text-xs text-gray-500">Session #{session.id} • {session.message_count || 0} messages</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{fmtDT(session.last_message_at)}</p>
+                    </div>
+
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {(session.messages || []).map((message) => (
+                        <div key={message.id} className={`rounded-xl px-3 py-2 text-sm ${message.role === 'assistant' ? 'bg-slate-900 text-white' : 'bg-white border border-gray-200 text-gray-800'}`}>
+                          <div className="flex items-center justify-between gap-2 text-[11px] opacity-80 mb-1">
+                            <span className="font-semibold uppercase tracking-wide">{message.role}</span>
+                            <span>{fmtDT(message.created_at)}</span>
+                          </div>
+                          <p className="whitespace-pre-wrap leading-6">{message.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── 7. PAYMENTS TAB ────────────────────────────────────────────────────────
 const PAY_METHODS = ['SSLCommerz','bKash','Nagad','Card','Cash on Delivery'];
 const getPayMethod = id => PAY_METHODS[id % PAY_METHODS.length];
 const getPayStatus = status => {
@@ -1463,24 +1638,39 @@ const ReviewsTab = ({ reviews, onRefresh, onDelete }) => {
   const [ratingFilter, setRatingFilter] = useState(0);
   const [search,       setSearch]       = useState('');
 
+  const toRatingNumber = useCallback((raw) => {
+    const value = Number.parseFloat(raw);
+    return Number.isFinite(value) ? value : null;
+  }, []);
+
+  const toRatingBucket = useCallback((raw) => {
+    const num = toRatingNumber(raw);
+    if (num === null) return null;
+    return Math.max(1, Math.min(5, Math.round(num)));
+  }, [toRatingNumber]);
+
   const filtered = useMemo(() => {
     let r = reviews;
-    if (ratingFilter > 0) r = r.filter(x => x.rating === ratingFilter);
+    if (ratingFilter > 0) r = r.filter(x => toRatingBucket(x.rating) === ratingFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(x => (x.comment||'').toLowerCase().includes(q) || (x.service_name||'').toLowerCase().includes(q) || (x.client_email||'').toLowerCase().includes(q));
     }
     return [...r].sort((a,b) => b.id-a.id);
-  }, [reviews, ratingFilter, search]);
+  }, [reviews, ratingFilter, search, toRatingBucket]);
 
-  const avg = reviews.length
-    ? (reviews.reduce((s,x) => s+x.rating, 0)/reviews.length).toFixed(1)
-    : '—';
+  const validRatings = useMemo(() => reviews
+    .map(review => toRatingNumber(review.rating))
+    .filter((value) => value !== null), [reviews, toRatingNumber]);
+
+  const avg = validRatings.length
+    ? (validRatings.reduce((sum, value) => sum + value, 0) / validRatings.length).toFixed(1)
+    : '0.0';
 
   const ratingDist = [5,4,3,2,1].map(r => ({
     r,
-    count: reviews.filter(x => x.rating===r).length,
-    pct:   reviews.length ? Math.round(reviews.filter(x=>x.rating===r).length/reviews.length*100) : 0,
+    count: reviews.filter(x => toRatingBucket(x.rating) === r).length,
+    pct:   reviews.length ? Math.round(reviews.filter(x => toRatingBucket(x.rating) === r).length / reviews.length * 100) : 0,
   }));
 
   return (
@@ -2649,6 +2839,7 @@ const SIDEBAR_ITEMS = [
   { key:'services',   icon: WrenchScrewdriverIcon, label:'Services' },
   { key:'categories', icon: TagIcon, label:'Categories' },
   { key:'users',      icon: UsersIcon, label:'Users' },
+  { key:'ai_activity', icon: ChatBubbleLeftRightIcon, label:'AI Activity' },
   { key:'payments',   icon: CreditCardIcon, label:'Payments' },
   { key:'reviews',    icon: StarIcon, label:'Reviews' },
   { key:'support',    icon: ChatBubbleLeftRightIcon, label:'Support' },
@@ -2757,6 +2948,7 @@ const PAGE_TITLES = {
   services:  'Service Management',
   categories:'Category Management',
   users:     'User Management',
+  ai_activity: 'AI Activity Monitor',
   payments:  'Payments & Revenue',
   reviews:   'Reviews & Ratings',
   support:   'Complaints & Support',
@@ -2767,6 +2959,7 @@ const PAGE_TITLES = {
 
 const AdminDashboard = () => {
   const { user, isAdmin, logout } = useAuth();
+  const { showAlert } = useDialog();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -2844,7 +3037,9 @@ const AdminDashboard = () => {
       await api.patch(`/orders/${id}/update_status/`, { status });
       setData(p => ({ ...p, orders: p.orders.map(o => o.id===id ? {...o,status} : o) }));
     } catch(e) {
-      alert('Failed to update status: ' + (e.response?.data?.detail||e.message));
+      await showAlert('Failed to update status: ' + (e.response?.data?.detail||e.message), {
+        title: 'Update failed',
+      });
     }
   };
 
@@ -2937,6 +3132,7 @@ const AdminDashboard = () => {
               {activeTab === 'services'   && <ServicesTab  services={data.services} categories={data.categories} onRefresh={fetchAll} />}
               {activeTab === 'categories' && <CategoriesTab categories={data.categories} services={data.services} onRefresh={fetchAll} />}
               {activeTab === 'users'      && <UsersTab      users={data.users}     onRefresh={fetchAll} />}
+              {activeTab === 'ai_activity' && <AIAssistantTab />}
               {activeTab === 'payments'   && <PaymentsTab   orders={data.orders} />}
               {activeTab === 'reviews'    && <ReviewsTab    reviews={data.reviews} onRefresh={fetchAll} onDelete={id => setDeleteReviewId(id)} />}
               {activeTab === 'support'    && <SupportTab />}

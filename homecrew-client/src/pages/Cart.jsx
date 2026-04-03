@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { useDialog } from '../context/DialogContext';
 import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cart, cartItems, updateCartItem, removeFromCart, getTotalPrice, loading, fetchCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { showAlert } = useDialog();
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
 
@@ -32,7 +34,7 @@ const Cart = () => {
     if (newQuantity < 1) return;
     const result = await updateCartItem(itemId, newQuantity);
     if (!result.success) {
-      alert('Failed to update quantity. Please try again.');
+      await showAlert('Failed to update quantity. Please try again.', { title: 'Update failed' });
     }
   };
 
@@ -56,7 +58,7 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!cart) {
-      alert('No cart found. Please add items to cart first.');
+      await showAlert('No cart found. Please add items to cart first.', { title: 'Cart missing' });
       return;
     }
 
@@ -76,7 +78,7 @@ const Cart = () => {
         || error.response?.data?.detail 
         || error.response?.data?.non_field_errors?.[0]
         || 'Failed to place order';
-      alert(errorMsg);
+      await showAlert(errorMsg, { title: 'Checkout failed' });
     }
   };
 

@@ -11,6 +11,7 @@ from .service import OrderService
 from . import emails as order_emails
 from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
+from urllib.parse import urlencode
 
 # Helper function to get frontend URL
 def get_frontend_url(request=None):
@@ -20,6 +21,39 @@ def get_frontend_url(request=None):
     protocol = django_settings.DJOSER.get('PROTOCOL', 'http')
     domain = django_settings.DJOSER.get('DOMAIN', 'localhost:5173')
     return f'{protocol}://{domain}'
+
+
+def _normalize_source(value):
+    source = (value or '').strip().lower()
+    return source
+
+
+def _coerce_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _frontend_redirect_for_payment(frontend_url, status_name, order_id=None, source='', assistant_session_id=None):
+    source = _normalize_source(source)
+    clean_order_id = _coerce_int(order_id)
+    clean_session_id = _coerce_int(assistant_session_id)
+
+    if source == 'assistant':
+        params = {
+            'payment': status_name,
+        }
+        if clean_order_id:
+            params['order_id'] = clean_order_id
+        if clean_session_id:
+            params['session_id'] = clean_session_id
+        return f"{frontend_url}/ai-assistant?{urlencode(params)}"
+
+    if clean_order_id:
+        return f'{frontend_url}/payment/{status_name}/{clean_order_id}'
+    return f'{frontend_url}/payment/{status_name}/'
+
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import (
@@ -220,15 +254,28 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         # Calculate number of items
         num_items = sum(item.quantity for item in order.items.all())
+
+        source = _normalize_source(request.data.get('source'))
+        assistant_session_id = request.data.get('assistant_session_id')
+        frontend_url = get_frontend_url(request)
+
+        callback_params = {}
+        if source == 'assistant':
+            callback_params['source'] = 'assistant'
+            session_id_int = _coerce_int(assistant_session_id)
+            if session_id_int:
+                callback_params['session_id'] = session_id_int
+
+        callback_query = f"?{urlencode(callback_params)}" if callback_params else ""
         
         # Prepare payment data
         post_body = {
             'total_amount': float(order.total_price),
             'currency': "BDT",
             'tran_id': f"ORDER-{order.id}-{int(order.created_at.timestamp())}",
-            'success_url': request.build_absolute_uri('/api/v1/orders/payment/success/'),
-            'fail_url': request.build_absolute_uri('/api/v1/orders/payment/fail/'),
-            'cancel_url': request.build_absolute_uri('/api/v1/orders/payment/cancel/'),
+            'success_url': request.build_absolute_uri(f'/api/v1/orders/payment/success/{callback_query}'),
+            'fail_url': request.build_absolute_uri(f'/api/v1/orders/payment/fail/{callback_query}'),
+            'cancel_url': request.build_absolute_uri(f'/api/v1/orders/payment/cancel/{callback_query}'),
             'emi_option': 0,
             'cus_name': request.user.get_full_name() or request.user.email,
             'cus_email': request.user.email,
@@ -242,7 +289,10 @@ class OrderViewSet(viewsets.ModelViewSet):
             'product_name': f'Order #{order.id}',
             'product_category': "Service",
             'product_profile': "general",
-            'value_a': str(order.id)  # Store order ID for callback
+            'value_a': str(order.id),  # Store order ID for callback
+            'value_b': source if source else '',
+            'value_c': str(assistant_session_id or ''),
+            'value_d': str(frontend_url),
         }
 
         try:
@@ -552,6 +602,8 @@ def payment_success_callback(request):
     transaction_id = data.get('tran_id')
     amount = data.get('amount')
     status_code = data.get('status')  # SSLCommerz sends status in callback
+    source = _normalize_source(data.get('value_b') or request.GET.get('source'))
+    assistant_session_id = data.get('value_c') or request.GET.get('session_id')
     
     # Log callback data for debugging
     print(f"Payment Success Callback - Order: {order_id}, Transaction: {transaction_id}, Status: {status_code}")
@@ -560,7 +612,7 @@ def payment_success_callback(request):
     
     if not order_id:
         print("Error: No order_id in callback data")
-        return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
+        return HttpResponseRedirect(_frontend_redirect_for_payment(frontend_url, 'fail', None, source=source, assistant_session_id=assistant_session_id))
     
     try:
         order = Order.objects.get(id=order_id)
@@ -573,7 +625,15 @@ def payment_success_callback(request):
             print(f"Order {order_id} status updated to READY_TO_SHIP")
             order_emails.send_payment_success_email(order)
             # Redirect to frontend success page
-            return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
+            return HttpResponseRedirect(
+                _frontend_redirect_for_payment(
+                    frontend_url,
+                    'success',
+                    order_id,
+                    source=source,
+                    assistant_session_id=assistant_session_id,
+                )
+            )
         else:
             # If status is not valid, try validation API as fallback
             print(f"Status code '{status_code}' not in valid list, trying validation API")
@@ -593,7 +653,15 @@ def payment_success_callback(request):
                     order.save()
                     print(f"Order {order_id} validated and updated via API")
                     order_emails.send_payment_success_email(order)
-                    return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
+                    return HttpResponseRedirect(
+                        _frontend_redirect_for_payment(
+                            frontend_url,
+                            'success',
+                            order_id,
+                            source=source,
+                            assistant_session_id=assistant_session_id,
+                        )
+                    )
             except Exception as validation_error:
                 print(f"Validation API error: {str(validation_error)}")
                 # In sandbox mode, if validation fails but we got success callback, still update order
@@ -602,17 +670,49 @@ def payment_success_callback(request):
                     order.status = Order.READY_TO_SHIP
                     order.save()
                     order_emails.send_payment_success_email(order)
-                    return HttpResponseRedirect(f'{frontend_url}/payment/success/{order_id}')
+                    return HttpResponseRedirect(
+                        _frontend_redirect_for_payment(
+                            frontend_url,
+                            'success',
+                            order_id,
+                            source=source,
+                            assistant_session_id=assistant_session_id,
+                        )
+                    )
             
             print(f"Payment validation failed for order {order_id}")
-            return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id}')
+            return HttpResponseRedirect(
+                _frontend_redirect_for_payment(
+                    frontend_url,
+                    'fail',
+                    order_id,
+                    source=source,
+                    assistant_session_id=assistant_session_id,
+                )
+            )
             
     except Order.DoesNotExist:
         print(f"Error: Order {order_id} not found")
-        return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
+        return HttpResponseRedirect(
+            _frontend_redirect_for_payment(
+                frontend_url,
+                'fail',
+                None,
+                source=source,
+                assistant_session_id=assistant_session_id,
+            )
+        )
     except Exception as e:
         print(f"Payment callback error: {str(e)}")
-        return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id if order_id else ""}')
+        return HttpResponseRedirect(
+            _frontend_redirect_for_payment(
+                frontend_url,
+                'fail',
+                order_id if order_id else None,
+                source=source,
+                assistant_session_id=assistant_session_id,
+            )
+        )
 
 
 @api_view(['POST', 'GET'])
@@ -625,6 +725,8 @@ def payment_fail_callback(request):
     frontend_url = get_frontend_url(request)
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
+    source = _normalize_source(data.get('value_b') or request.GET.get('source'))
+    assistant_session_id = data.get('value_c') or request.GET.get('session_id')
 
     if order_id:
         try:
@@ -632,8 +734,24 @@ def payment_fail_callback(request):
             order_emails.send_payment_fail_email(order)
         except Order.DoesNotExist:
             pass
-        return HttpResponseRedirect(f'{frontend_url}/payment/fail/{order_id}')
-    return HttpResponseRedirect(f'{frontend_url}/payment/fail/')
+        return HttpResponseRedirect(
+            _frontend_redirect_for_payment(
+                frontend_url,
+                'fail',
+                order_id,
+                source=source,
+                assistant_session_id=assistant_session_id,
+            )
+        )
+    return HttpResponseRedirect(
+        _frontend_redirect_for_payment(
+            frontend_url,
+            'fail',
+            None,
+            source=source,
+            assistant_session_id=assistant_session_id,
+        )
+    )
 
 
 @api_view(['POST', 'GET'])
@@ -646,6 +764,8 @@ def payment_cancel_callback(request):
     frontend_url = get_frontend_url(request)
     data = request.POST if request.method == 'POST' else request.GET
     order_id = data.get('value_a')
+    source = _normalize_source(data.get('value_b') or request.GET.get('source'))
+    assistant_session_id = data.get('value_c') or request.GET.get('session_id')
 
     if order_id:
         try:
@@ -653,8 +773,24 @@ def payment_cancel_callback(request):
             order_emails.send_payment_fail_email(order)
         except Order.DoesNotExist:
             pass
-        return HttpResponseRedirect(f'{frontend_url}/payment/cancel/{order_id}')
-    return HttpResponseRedirect(f'{frontend_url}/payment/cancel/')
+        return HttpResponseRedirect(
+            _frontend_redirect_for_payment(
+                frontend_url,
+                'cancel',
+                order_id,
+                source=source,
+                assistant_session_id=assistant_session_id,
+            )
+        )
+    return HttpResponseRedirect(
+        _frontend_redirect_for_payment(
+            frontend_url,
+            'cancel',
+            None,
+            source=source,
+            assistant_session_id=assistant_session_id,
+        )
+    )
 
 
 @api_view(['POST'])

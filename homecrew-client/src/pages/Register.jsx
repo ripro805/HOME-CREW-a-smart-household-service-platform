@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 import { CheckCircleIcon, XCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const Register = () => {
@@ -19,6 +20,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { register } = useAuth();
+  const { showAlert } = useDialog();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -51,7 +53,9 @@ const Register = () => {
     const result = await register(registrationData);
     
     if (result.success) {
-      alert('Registration successful! Please check your email to activate your account.');
+      await showAlert('Registration successful! Please check your email to activate your account.', {
+        title: 'Registration complete',
+      });
       navigate('/login');
     } else {
       const errorMsg = typeof result.error === 'object' 

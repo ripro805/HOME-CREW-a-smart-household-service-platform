@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import SupportConversation, SupportMessage
+from .models import SupportConversation, SupportMessage, AssistantChatSession, AssistantChatMessage
 
 
 def is_admin_user(user):
@@ -145,3 +145,57 @@ class SupportConversationStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupportConversation
         fields = ["status"]
+
+
+class ChatbotContextSerializer(serializers.Serializer):
+    service_id = serializers.IntegerField(required=False, allow_null=True)
+    booking_date = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    location = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    booking_name = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    booking_phone = serializers.CharField(required=False, allow_blank=True, max_length=30)
+    confirm_booking = serializers.BooleanField(required=False, default=False)
+    order_id = serializers.IntegerField(required=False, allow_null=True)
+    awaiting_order_id = serializers.BooleanField(required=False, default=False)
+    awaiting_update_order_id = serializers.BooleanField(required=False, default=False)
+    awaiting_new_location = serializers.BooleanField(required=False, default=False)
+    pending_rating = serializers.FloatField(required=False, allow_null=True)
+
+
+class ChatbotRequestSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=2000, trim_whitespace=True)
+    session_id = serializers.IntegerField(required=False, allow_null=True)
+    context = ChatbotContextSerializer(required=False)
+
+    def validate_message(self, value):
+        if len(value.strip()) < 1:
+            raise serializers.ValidationError("Message cannot be empty.")
+        return value
+
+
+class AssistantChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssistantChatMessage
+        fields = ["id", "role", "text", "data", "created_at"]
+
+
+class AssistantChatSessionListSerializer(serializers.ModelSerializer):
+    last_message_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AssistantChatSession
+        fields = ["id", "title", "last_message_preview", "last_message_at", "created_at", "updated_at"]
+
+    def get_last_message_preview(self, obj):
+        last_message = obj.messages.order_by("-created_at").first()
+        if not last_message:
+            return ""
+        text = (last_message.text or "").strip()
+        return text if len(text) <= 88 else f"{text[:85]}..."
+
+
+class AssistantChatSessionDetailSerializer(serializers.ModelSerializer):
+    messages = AssistantChatMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AssistantChatSession
+        fields = ["id", "title", "context", "last_message_at", "created_at", "updated_at", "messages"]

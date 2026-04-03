@@ -161,12 +161,29 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'client', 'client_email', 'client_name', 'status', 'items', 'total_price', 'created_at', 'payment_status', 'can_pay']
+        fields = [
+            'id',
+            'client',
+            'client_email',
+            'client_name',
+            'contact_name',
+            'contact_phone',
+            'service_address',
+            'preferred_date',
+            'status',
+            'items',
+            'total_price',
+            'created_at',
+            'payment_status',
+            'can_pay',
+        ]
 
     def get_client_email(self, obj):
         return obj.client.email if obj.client else None
 
     def get_client_name(self, obj):
+        if obj.contact_name:
+            return obj.contact_name
         if obj.client:
             return obj.client.get_full_name() or obj.client.email
         return None

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 import {
   UserCircleIcon, 
   PencilIcon, 
@@ -44,6 +45,7 @@ const Profile = () => {
   const [resetEmail, setResetEmail] = useState('');
   
   const { isAuthenticated, user, logout } = useAuth();
+  const { showAlert, showConfirm } = useDialog();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -113,13 +115,13 @@ const Profile = () => {
         },
       });
       
-      alert('Profile updated successfully!');
+      await showAlert('Profile updated successfully!', { title: 'Profile updated' });
       setProfileImage(null);
       setActiveTab('view');
       fetchProfile();
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile');
+      await showAlert('Failed to update profile', { title: 'Update failed' });
     }
   };
 
@@ -139,7 +141,7 @@ const Profile = () => {
     e.preventDefault();
     
     if (passwordData.new_password !== passwordData.confirm_password) {
-      alert('New passwords do not match!');
+      await showAlert('New passwords do not match!', { title: 'Validation error' });
       return;
     }
 
@@ -148,11 +150,13 @@ const Profile = () => {
         old_password: passwordData.old_password,
         new_password: passwordData.new_password,
       });
-      alert('Password changed successfully!');
+      await showAlert('Password changed successfully!', { title: 'Password updated' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
     } catch (error) {
       console.error('Failed to change password:', error);
-      alert(error.response?.data?.old_password?.[0] || 'Failed to change password');
+      await showAlert(error.response?.data?.old_password?.[0] || 'Failed to change password', {
+        title: 'Password change failed',
+      });
     }
   };
 
@@ -161,23 +165,30 @@ const Profile = () => {
     
     try {
       await api.post('/auth/users/reset_password/', { email: resetEmail });
-      alert('Password reset email sent! Check your inbox.');
+      await showAlert('Password reset email sent! Check your inbox.', { title: 'Email sent' });
     } catch (error) {
       console.error('Failed to send reset email:', error);
-      alert('Failed to send password reset email');
+      await showAlert('Failed to send password reset email', { title: 'Request failed' });
     }
   };
 
   const handleCancelOrder = async (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        await api.post(`/orders/${orderId}/cancel/`);
-        alert('Order cancelled successfully');
-        fetchOrders();
-      } catch (error) {
-        console.error('Failed to cancel order:', error);
-        alert(error.response?.data?.detail || 'Failed to cancel order');
-      }
+    const ok = await showConfirm('Are you sure you want to cancel this order?', {
+      title: 'Cancel order',
+      confirmText: 'Cancel order',
+      cancelText: 'Keep order',
+    });
+    if (!ok) return;
+
+    try {
+      await api.post(`/orders/${orderId}/cancel/`);
+      await showAlert('Order cancelled successfully', { title: 'Order updated' });
+      fetchOrders();
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      await showAlert(error.response?.data?.detail || 'Failed to cancel order', {
+        title: 'Action failed',
+      });
     }
   };
 

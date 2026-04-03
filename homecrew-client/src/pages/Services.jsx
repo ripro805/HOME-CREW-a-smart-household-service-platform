@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 import { 
   StarIcon, 
   MagnifyingGlassIcon, 
@@ -35,6 +36,7 @@ const Services = () => {
   
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { showAlert } = useDialog();
 
   const gridRef = useScrollReveal();
 
@@ -67,21 +69,21 @@ const Services = () => {
         params.category = selectedCategory;
       }
       
-      console.log('ðŸ“¡ Fetching services...');
+      console.log('[INFO] Fetching services...');
       console.log('  Category:', selectedCategory);
       console.log('  Page:', currentPage);
       console.log('  API Params:', params);
       
       const response = await api.get('/services/', { params });
       
-      console.log('âœ… Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
+      console.log('[OK] Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
       
       // Backend returns paginated data: {count, next, previous, results}
       setServices(response.data.results || response.data);
       setTotalCount(response.data.count || 0);
       setTotalPages(Math.ceil((response.data.count || 0) / 10));
     } catch (error) {
-      console.error('âŒ Failed to fetch services:', error);
+      console.error('[ERROR] Failed to fetch services:', error);
       setServices([]);
       setTotalCount(0);
       setTotalPages(1);
@@ -92,7 +94,7 @@ const Services = () => {
 
   // Fetch services when callback changes
   useEffect(() => {
-    console.log('ðŸ”„ Effect triggered - fetching services');
+    console.log('[INFO] Effect triggered - fetching services');
     fetchServices();
   }, [fetchServices]);
 
@@ -109,7 +111,7 @@ const Services = () => {
 
   // Handle category dropdown change
   const handleCategoryChange = (categoryId) => {
-    console.log('ðŸ”½ Dropdown changed to category:', categoryId);
+    console.log('[INFO] Dropdown changed to category:', categoryId);
     
     // Create new URL params
     const newParams = new URLSearchParams(searchParams);
@@ -125,15 +127,15 @@ const Services = () => {
 
   const handleAddToCart = async (serviceId) => {
     if (!isAuthenticated) {
-      alert('Please login to add items to cart');
+      await showAlert('Please login to add items to cart', { title: 'Login required' });
       return;
     }
 
     const result = await addToCart(serviceId);
     if (result.success) {
-      alert('Added to cart successfully!');
+      await showAlert('Added to cart successfully!', { title: 'Cart updated' });
     } else {
-      alert('Failed to add to cart');
+      await showAlert('Failed to add to cart', { title: 'Action failed' });
     }
   };
 

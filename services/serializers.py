@@ -47,7 +47,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Service
-        fields = ["id", "name", "description", "price", "avg_rating", "review_count", "category", "category_id", "images"]
+        fields = ["id", "name", "description", "price", "avg_rating", "review_count", "category", "category_id", "available_locations", "images"]
         
 
 class ReviewSerializer(serializers.ModelSerializer):

@@ -74,6 +74,10 @@ class Order(models.Model):
         decimal_places=2,
         default=0
     )
+    contact_name = models.CharField(max_length=120, blank=True, default='')
+    contact_phone = models.CharField(max_length=30, blank=True, default='')
+    service_address = models.TextField(blank=True, default='')
+    preferred_date = models.CharField(max_length=60, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

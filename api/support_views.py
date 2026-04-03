@@ -18,7 +18,7 @@ from .serializers import (
 
 class SupportConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         message_queryset = SupportMessage.objects.select_related("sender").order_by("created_at")
@@ -64,8 +64,8 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
         subject = serializer.validated_data.get("subject", "").strip()
         message_body = serializer.validated_data["message"].strip()
 
-        conversation, created = SupportConversation.objects.get_or_create(client=request.user)
-        conversation.subject = subject or conversation.subject or message_body[:80]
+        conversation = SupportConversation.objects.create(client=request.user)
+        conversation.subject = subject or message_body[:80]
         conversation.status = SupportConversation.STATUS_OPEN
 
         message = SupportMessage.objects.create(
@@ -79,7 +79,7 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
 
         conversation = self.get_queryset().get(pk=conversation.pk)
         detail = SupportConversationDetailSerializer(conversation, context=self.get_serializer_context())
-        return Response(detail.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        return Response(detail.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs):
         conversation = self.get_object()

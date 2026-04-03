@@ -330,3 +330,7 @@ SSLCOMMERZ_STORE_PASSWORD = config('SSLCOMMERZ_STORE_PASSWORD', default='qwerty'
 SSLCOMMERZ_IS_SANDBOX = config('SSLCOMMERZ_IS_SANDBOX', default=True, cast=bool)
 
 BACKEND_URL = config('BACKEND_URL', default=os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:8000'))
+
+# Groq AI assistant settings
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+GROQ_MODEL = config('GROQ_MODEL', default='llama-3.3-70b-versatile')

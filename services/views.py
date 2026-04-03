@@ -10,6 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, Review, ServiceCategory, ServiceImage
 from .serializers import ServiceSerializer, ServiceDetailSerializer, ReviewSerializer, ServiceCategorySerializer, ServiceImageSerializer, AdminReviewSerializer
 from django.db import models
+from decimal import Decimal, InvalidOperation
 from .filters import ServiceFilter, ReviewFilter
 from .pagination import ServiceResultsSetPagination
 from drf_yasg.utils import swagger_auto_schema
@@ -192,7 +193,10 @@ class AddReviewView(APIView):
 
     def post(self, request, service_id):
         logger.info("AddReviewView.post called: user=%s, service_id=%s, data=%s", request.user, service_id, request.data)
-        rating = int(request.data.get('rating', 0))
+        try:
+            rating = Decimal(str(request.data.get('rating', 0)))
+        except (InvalidOperation, TypeError, ValueError):
+            rating = Decimal("0")
         comment = request.data.get('comment', '')
         if not (1 <= rating <= 5):
             logger.warning("Invalid rating: %s", rating)

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
+import { useDialog } from '../context/DialogContext';
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -11,6 +12,7 @@ const OrderDetail = () => {
   const [error, setError] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { showAlert } = useDialog();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,12 +55,14 @@ const OrderDetail = () => {
         // Redirect to SSLCommerz payment gateway
         window.location.href = response.data.gateway_url;
       } else {
-        alert('Failed to initiate payment. Please try again.');
+        await showAlert('Failed to initiate payment. Please try again.', { title: 'Payment failed' });
         setPaymentProcessing(false);
       }
     } catch (err) {
       console.error('Payment error:', err);
-      alert(err.response?.data?.detail || 'Failed to initiate payment. Please try again.');
+      await showAlert(err.response?.data?.detail || 'Failed to initiate payment. Please try again.', {
+        title: 'Payment failed',
+      });
       setPaymentProcessing(false);
     }
   };

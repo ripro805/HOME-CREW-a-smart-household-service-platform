@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useDialog } from '../context/DialogContext';
 import { StarIcon, ShoppingCartIcon, PencilIcon, TrashIcon, BoltIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
@@ -25,6 +26,7 @@ const ServiceDetail = () => {
 
   const { addToCart } = useCart();
   const { isAuthenticated, user } = useAuth();
+  const { showAlert, showConfirm } = useDialog();
 
   // Buy Now state
   const [showBuyNow, setShowBuyNow] = useState(false);
@@ -98,22 +100,22 @@ const ServiceDetail = () => {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert('Please login to add items to cart');
+      await showAlert('Please login to add items to cart', { title: 'Login required' });
       navigate('/login');
       return;
     }
 
     const result = await addToCart(service.id);
     if (result.success) {
-      alert('Added to cart successfully!');
+      await showAlert('Added to cart successfully!', { title: 'Cart updated' });
     } else {
-      alert('Failed to add to cart');
+      await showAlert('Failed to add to cart', { title: 'Action failed' });
     }
   };
 
   const handleOpenBuyNow = () => {
     if (!isAuthenticated) {
-      alert('Please login to place an order');
+      showAlert('Please login to place an order', { title: 'Login required' });
       navigate('/login');
       return;
     }
@@ -175,7 +177,7 @@ const ServiceDetail = () => {
     e.preventDefault();
     
     if (!isAuthenticated) {
-      alert('Please login to submit a review');
+      await showAlert('Please login to submit a review', { title: 'Login required' });
       navigate('/login');
       return;
     }
@@ -187,7 +189,9 @@ const ServiceDetail = () => {
       fetchReviews();
       fetchServiceDetail();
     } catch (error) {
-      alert('Failed to submit review: ' + (error.response?.data?.detail || 'Unknown error'));
+      await showAlert('Failed to submit review: ' + (error.response?.data?.detail || 'Unknown error'), {
+        title: 'Review failed',
+      });
     }
   };
 
@@ -203,18 +207,27 @@ const ServiceDetail = () => {
       fetchReviews();
       fetchServiceDetail();
     } catch (error) {
-      alert('Failed to update review: ' + (error.response?.data?.detail || 'Unknown error'));
+      await showAlert('Failed to update review: ' + (error.response?.data?.detail || 'Unknown error'), {
+        title: 'Update failed',
+      });
     }
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    const ok = await showConfirm('Are you sure you want to delete this review?', {
+      title: 'Delete review',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/services/${id}/reviews/${reviewId}/`);
       fetchReviews();
       fetchServiceDetail();
     } catch (error) {
-      alert('Failed to delete review: ' + (error.response?.data?.detail || 'Unknown error'));
+      await showAlert('Failed to delete review: ' + (error.response?.data?.detail || 'Unknown error'), {
+        title: 'Delete failed',
+      });
     }
   };
 
@@ -249,7 +262,7 @@ const ServiceDetail = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <button onClick={() => navigate('/services')} className="mb-6 px-4 py-2 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-lg transition-colors animate-fade-in-up">
-          â† Back to Services
+          ← Back to Services
         </button>
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8 animate-fade-in-up" style={{animationDelay:'0.1s'}}>
@@ -546,7 +559,7 @@ const ServiceDetail = () => {
       </div>
     </div>
 
-      {/* â”€â”€ Buy Now Modal â”€â”€ */}
+      {/* ── Buy Now Modal ── */}
       {showBuyNow && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-scale-in">
@@ -592,7 +605,7 @@ const ServiceDetail = () => {
                   required
                   value={buyNowForm.name}
                   onChange={(e) => setBuyNowForm({ ...buyNowForm, name: e.target.value })}
-                  placeholder="à¦†à¦ªà¦¨à¦¾à¦° à¦ªà§‚à¦°à§à¦£ à¦¨à¦¾à¦® à¦²à¦¿à¦–à§à¦¨"
+                  placeholder="আপনার পূর্ণ নাম লিখুন"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition bg-white"
                 />
               </div>
@@ -606,7 +619,7 @@ const ServiceDetail = () => {
                   rows="2"
                   value={buyNowForm.address}
                   onChange={(e) => setBuyNowForm({ ...buyNowForm, address: e.target.value })}
-                  placeholder="à¦†à¦ªà¦¨à¦¾à¦° à¦¸à¦®à§à¦ªà§‚à¦°à§à¦£ à¦ à¦¿à¦•à¦¾à¦¨à¦¾ à¦²à¦¿à¦–à§à¦¨"
+                  placeholder="আপনার সম্পূর্ণ ঠিকানা লিখুন"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition resize-none"
                 />
               </div>

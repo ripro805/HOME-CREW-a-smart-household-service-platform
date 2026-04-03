@@ -38,6 +38,10 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const notifRef    = useRef(null);
 
+  const triggerHomeLogoIntro = () => {
+    window.dispatchEvent(new CustomEvent('home-logo-intro'));
+  };
+
   useEffect(() => {
     if (isAuthenticated && !isAdmin) {
       api.get('/orders/').then(r => setOrders(r.data.results || r.data || [])).catch(() => {});
@@ -88,7 +92,7 @@ const Navbar = () => {
   const notifications = [
     ...orders.map(o => {
       const statusMap = {
-        NOT_PAID:      { icon:'bag',     color:'orange', msg:`Order #${o.id} placed â€” awaiting payment` },
+        NOT_PAID:      { icon:'bag',     color:'orange', msg:`Order #${o.id} placed - awaiting payment` },
         READY_TO_SHIP: { icon:'check',   color:'blue',   msg:`Order #${o.id} confirmed by HomeCrew` },
         SHIPPED:       { icon:'truck',   color:'purple', msg:`Order #${o.id} is now ongoing` },
         DELIVERED:     { icon:'check',   color:'green',  msg:`Order #${o.id} completed successfully` },
@@ -97,8 +101,8 @@ const Navbar = () => {
       const s = statusMap[o.status] || { icon:'bag', color:'gray', msg:`Order #${o.id} update` };
       return { id:`order-${o.id}`, icon:s.icon, color:s.color, msg:s.msg, time:o.created_at, link:`/orders/${o.id}` };
     }),
-    { id:'promo-1', icon:'tag',     color:'indigo', msg:'ðŸŽ‰ 50% off on Home Cleaning this weekend!', time:null, link:'/services' },
-    { id:'promo-2', icon:'sparkle', color:'amber',  msg:'âœ¨ New service added: Pest Control',         time:null, link:'/services' },
+    { id:'promo-1', icon:'tag',     color:'indigo', msg:'50% off on Home Cleaning this weekend!', time:null, link:'/services' },
+    { id:'promo-2', icon:'sparkle', color:'amber',  msg:'New service added: Pest Control',         time:null, link:'/services' },
   ];
 
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
@@ -154,19 +158,19 @@ const Navbar = () => {
 
   return (
     <>
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DESKTOP / TABLET NAVBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ==================== DESKTOP / TABLET NAVBAR ==================== */}
       <nav className="bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 animate-fade-in-down">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to={isAdmin ? '/preview-home' : '/'} className="flex items-center gap-2 text-teal-600 font-bold text-xl no-underline">
+          <Link to={isAdmin ? '/preview-home' : '/'} onClick={triggerHomeLogoIntro} className="flex items-center gap-2 text-teal-600 font-bold text-xl no-underline">
             <img src={logo} alt="HomeCrew" className="h-14 w-auto object-contain" />
             <span className="hidden sm:inline" style={{ fontFamily:'Eater, cursive', fontSize:'2rem' }}>HomeCrew</span>
           </Link>
 
-          {/* Center links â€“ desktop only */}
+          {/* Center links - desktop only */}
           <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6">
-            <Link to="/" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
+            <Link to="/" onClick={triggerHomeLogoIntro} className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
               Home
             </Link>
             <Link to="/about" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
@@ -186,7 +190,7 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             {!isAuthenticated ? (
               <>
-                {/* Auth buttons â€“ desktop only */}
+                {/* Auth buttons - desktop only */}
                 <Link to="/login"    className="hidden md:inline-flex btn btn-outline btn-sm">Sign In</Link>
                 <Link to="/register" className="hidden md:inline-flex btn btn-primary btn-sm">Sign Up</Link>
               </>
@@ -267,7 +271,7 @@ const Navbar = () => {
                         })}
                       </div>
                       <div className="border-t border-gray-100 px-5 py-3">
-                        <button onClick={() => { setShowNotifDropdown(false); navigate('/orders'); }} className="w-full text-center text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors">View all orders â†’</button>
+                        <button onClick={() => { setShowNotifDropdown(false); navigate('/orders'); }} className="w-full text-center text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors">View all orders →</button>
                       </div>
                     </div>
                   )}
@@ -299,7 +303,7 @@ const Navbar = () => {
               </>
             )}
 
-            {/* Hamburger â€“ mobile only */}
+            {/* Hamburger - mobile only */}
             <button
               className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-teal-50 transition border-none bg-transparent cursor-pointer ml-1"
               onClick={() => setMobileOpen(p => !p)}
@@ -311,7 +315,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MOBILE SIDEBAR DRAWER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ==================== MOBILE SIDEBAR DRAWER ==================== */}
       {/* Backdrop */}
       {mobileOpen && (
         <div
@@ -348,7 +352,7 @@ const Navbar = () => {
 
         {/* Nav Links */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
-          <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
+          <Link to="/" onClick={() => { triggerHomeLogoIntro(); setMobileOpen(false); }} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
             <HomeIcon className="w-5 h-5" /> Home
           </Link>
 

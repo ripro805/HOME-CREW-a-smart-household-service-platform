@@ -38,6 +38,9 @@ const featureCards = [
   { icon: LockClosedIcon, title: '100% Secure Payment', desc: 'Your transactions are safe with us', color: 'text-red-600', bg: 'bg-red-50' },
 ];
 
+const revealVariants = ['reveal', 'reveal-left', 'reveal-right', 'reveal-scale'];
+const premiumHoverVariants = ['card-premium-lift', 'card-premium-tilt', 'card-premium-glow', 'card-premium-sweep'];
+
 const Home = () => {
   const { isAuthenticated } = useAuth();
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -311,7 +314,7 @@ const Home = () => {
               return (
                 <div
                   key={card.title}
-                  className={`reveal delay-${i + 1} ${card.bg} rounded-2xl p-6 text-center card-hover border border-transparent hover:border-white/50 group`}
+                  className={`${revealVariants[i % revealVariants.length]} delay-${i + 1} ${card.bg} rounded-2xl p-6 text-center ${premiumHoverVariants[i % premiumHoverVariants.length]} border border-transparent hover:border-white/50 group`}
                 >
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300" style={{background: 'white'}}>
                     <Icon className={`w-8 h-8 ${card.color}`} />
@@ -346,8 +349,7 @@ const Home = () => {
               {categories.slice(0, 4).map((category, i) => (
                 <div
                   key={category.id}
-                  className="animate-fade-in-up bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center card-hover border border-teal-100 flex flex-col group overflow-hidden relative"
-                  style={{ animationDelay: `${i * 0.08}s` }}
+                  className={`${revealVariants[i % revealVariants.length]} delay-${(i % 4) + 1} bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center ${premiumHoverVariants[(i + 1) % premiumHoverVariants.length]} border border-teal-100 flex flex-col group overflow-hidden relative`}
                 >
                   {/* background orb */}
                   <div className="absolute -top-6 -right-6 w-20 h-20 bg-teal-200 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500" />
@@ -394,8 +396,7 @@ const Home = () => {
                 return (
                 <div
                   key={service.id}
-                  className="animate-fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover card-img-zoom group"
-                  style={{ animationDelay: `${i * 0.08}s` }}
+                    className={`${revealVariants[i % revealVariants.length]} delay-${(i % 5) + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${premiumHoverVariants[(i + 2) % premiumHoverVariants.length]} card-img-zoom group`}
                 >
                   <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center overflow-hidden relative">
                     {imageUrl ? (
@@ -481,8 +482,7 @@ const Home = () => {
                 ].map(({ val, label, color }, i) => (
                   <div
                     key={label}
-                    className={`text-center bg-white rounded-2xl p-4 shadow-lg min-w-[72px] card-hover`}
-                    style={{ animationDelay: `${i * 0.1}s` }}
+                    className={`${revealVariants[i % revealVariants.length]} delay-${(i % 4) + 1} text-center bg-white rounded-2xl p-4 shadow-lg min-w-[72px] ${premiumHoverVariants[(i + 3) % premiumHoverVariants.length]}`}
                   >
                     <div className={`text-3xl md:text-4xl font-bold ${color} tabular-nums`}>
                       {String(val).padStart(2, '0')}
@@ -504,7 +504,7 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white text-gray-700 pt-12 pb-0 border-t border-gray-200" ref={footerRef}>
+      <footer className="text-gray-700 pt-12 pb-0 border-t border-gray-200" style={{ background: 'rgb(125,229,222)' }} ref={footerRef}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -549,7 +549,7 @@ const Home = () => {
           </div>
         </div>
         {/* Copyright bar — separate card, flush to bottom, no margin/padding */}
-        <div style={{margin:0, padding:'10px 0', background:'#f9fafb', textAlign:'center', fontSize:'13px', color:'#6b7280', width:'100%', borderTop:'1px solid #e5e7eb'}}>
+        <div style={{margin:0, padding:'10px 0', background:'rgb(110,214,207)', textAlign:'center', fontSize:'13px', color:'#4b5563', width:'100%', borderTop:'1px solid rgba(0,0,0,0.08)'}}>
           &copy; {new Date().getFullYear()} HomeCrew. All rights reserved.
         </div>
       </footer>

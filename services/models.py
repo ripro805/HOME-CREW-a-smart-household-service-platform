@@ -18,6 +18,7 @@ class Service(models.Model):
 	description = models.TextField()
 	price = models.DecimalField(max_digits=10, decimal_places=2)
 	avg_rating = models.FloatField(default=0)
+	available_locations = models.JSONField(default=list, blank=True)
 	category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="services")
 
 	def __str__(self):
@@ -40,7 +41,7 @@ class  ServiceImage(models.Model):
 class Review(models.Model):
 	service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="reviews")
 	client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-	rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+	rating = models.DecimalField(max_digits=2, decimal_places=1, validators=[MinValueValidator(1), MaxValueValidator(5)])
 	comment = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)

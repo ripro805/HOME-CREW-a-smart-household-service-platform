@@ -1,6 +1,13 @@
 from django.urls import path, include
 from . import views
 from .support_views import SupportConversationViewSet
+from .chatbot_views import (
+    assistant_chat,
+    assistant_sessions,
+    assistant_session_detail,
+    assistant_admin_users,
+    assistant_admin_user_messages,
+)
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 from accounts.views import UserViewSet
@@ -39,6 +46,11 @@ urlpatterns = [
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
     path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
+    path("assistant/chat/", assistant_chat, name="assistant-chat"),
+    path("assistant/sessions/", assistant_sessions, name="assistant-sessions"),
+    path("assistant/sessions/<int:session_id>/", assistant_session_detail, name="assistant-session-detail"),
+    path("assistant/admin/users/", assistant_admin_users, name="assistant-admin-users"),
+    path("assistant/admin/users/<int:user_id>/messages/", assistant_admin_user_messages, name="assistant-admin-user-messages"),
     # Router endpoints (catch-all patterns)
     path('', include(router.urls)),
     path('', include(orders_router.urls)),

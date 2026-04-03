@@ -70,6 +70,14 @@ HouseHoldservice/
 - Contact form that sends email to the admin inbox
 - Real-time style support chat between client and admin
 - Admin dashboard with orders, reviews, users, and support inbox
+- AI Assistant chatbot (Groq API) for:
+  - Service info & FAQ
+  - Booking assistant (service -> date -> location -> confirm)
+  - Service recommendation based on user problem
+  - Order tracking
+  - Review & feedback (star rating)
+  - Location-based availability and time slots
+  - Problem understanding to detect required service
 - Responsive UI (React + Tailwind CSS)
 
 ---
@@ -80,6 +88,12 @@ HouseHoldservice/
 - Added admin support inbox with live conversations plus demo tickets
 - Fixed support chat database migration on the production database
 - Improved service detail reviews, related services, and order page UI
+- Added AI Assistant quick popup chat from the floating chatbot button
+- Added expand-to-details + return-to-popup flow for assistant (`/ai-assistant`)
+- Improved assistant session handling (minimize keeps session, close/reopen starts fresh session)
+- Added admin AI activity monitoring (users list + per-user assistant message history timeline)
+- Replaced browser native alerts/confirms with styled in-app dialog modals
+- Updated admin and chatbot UX polish (session history actions, delete flows, progressive lists, visual refinements)
 
 ---
 
@@ -151,6 +165,8 @@ BACKEND_URL=your-backend-url
 SSLCOMMERZ_STORE_ID=your-store-id
 SSLCOMMERZ_STORE_PASSWORD=your-store-password
 SSLCOMMERZ_IS_SANDBOX=True
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
 ### Frontend (.env)
@@ -165,6 +181,9 @@ VITE_API_URL=https://your-backend-url/api/v1
 - Clients can use the `Contact` page to send an email directly to the admin inbox
 - Logged-in clients can open the message icon in the navbar and chat with admin from the support page
 - Admins can manage support conversations from the dashboard support tab and reply back to clients
+- Users can open `/ai-assistant` and chat with AI for booking guidance, recommendations, tracking, and feedback
+- Users can also start with the floating quick-chat popup and optionally expand to full assistant details
+- Admins can review AI usage activity and inspect per-user assistant chat history from the dashboard
 
 ---
 
