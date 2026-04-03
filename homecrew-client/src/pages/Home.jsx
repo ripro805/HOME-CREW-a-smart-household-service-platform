@@ -349,7 +349,8 @@ const Home = () => {
               {categories.slice(0, 4).map((category, i) => (
                 <div
                   key={category.id}
-                  className={`${revealVariants[i % revealVariants.length]} delay-${(i % 4) + 1} bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center ${premiumHoverVariants[(i + 1) % premiumHoverVariants.length]} border border-teal-100 flex flex-col group overflow-hidden relative`}
+                  className={`animate-fade-in-up bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 text-center ${premiumHoverVariants[(i + 1) % premiumHoverVariants.length]} border border-teal-100 flex flex-col group overflow-hidden relative`}
+                  style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'both' }}
                 >
                   {/* background orb */}
                   <div className="absolute -top-6 -right-6 w-20 h-20 bg-teal-200 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500" />
