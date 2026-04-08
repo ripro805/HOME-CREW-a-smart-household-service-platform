@@ -9,6 +9,8 @@ import {
   LineChart, Line, BarChart as RechartsBarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
 } from 'recharts';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   ChartBarIcon,
   ShoppingBagIcon,
@@ -25,6 +27,7 @@ import {
   UserCircleIcon,
   MagnifyingGlassIcon,
   ChevronDownIcon,
+  ArrowLeftIcon,
   ArrowRightOnRectangleIcon,
   PencilIcon,
   TrashIcon,
@@ -172,7 +175,7 @@ const DashboardTab = ({ orders, services, users, categories }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-orange-50/50 backdrop-blur-sm rounded-2xl p-6 border border-orange-100 shadow-sm">
           <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mb-4">
             <CubeIcon className="w-6 h-6 text-white" />
@@ -396,7 +399,7 @@ const DashboardTab = ({ orders, services, users, categories }) => {
 };
 
 // ─── 2. ORDERS TAB ──────────────────────────────────────────────────────────
-const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
+const OrdersTab = ({ orders, technicians, onStatusChange, onAssignTechnician, onRefresh }) => {
   const [sub,    setSub]    = useState('ALL');
   const [search, setSearch] = useState('');
   const [detail, setDetail] = useState(null);
@@ -432,6 +435,12 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
     if (detail?.id === id) setDetail(p => p ? {...p, status} : null);
   };
 
+  const handleAssign = async (id, technicianId) => {
+    const payload = technicianId ? Number(technicianId) : null;
+    const updated = await onAssignTechnician(id, payload);
+    if (updated && detail?.id === id) setDetail(updated);
+  };
+
   const saveNote = (id) => {
     if (!noteInput.trim()) return;
     setNotes(p => ({ ...p, [id]: [...(p[id]||[]), { text: noteInput, time: new Date().toISOString() }] }));
@@ -458,12 +467,24 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
       </div>
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <table className="w-full">
-          <thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">#</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Client</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Items</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th></tr></thead>
+          <thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">#</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Client</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Technician</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Items</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th></tr></thead>
           <tbody>
             {filtered.map(o => (
               <tr key={o.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                 <td className="py-3 px-4 text-sm font-semibold"><b>#{o.id}</b></td>
                 <td className="py-3 px-4 text-sm text-gray-700">{o.client_email || o.client || '—'}</td>
+                <td className="py-3 px-4 text-sm text-gray-700 min-w-[220px]">
+                  <select
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white text-sm"
+                    value={o.assigned_technician?.id || ''}
+                    onChange={(e) => handleAssign(o.id, e.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {technicians.map((t) => (
+                      <option key={t.id} value={t.id}>{`${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email}</option>
+                    ))}
+                  </select>
+                </td>
                 <td className="py-3 px-4 text-sm text-gray-600">{o.items?.length||0} item(s)</td>
                 <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{fmt$(o.total_price)}</b></td>
                 <td className="py-3 px-4">
@@ -484,7 +505,7 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
                 </td>
               </tr>
             ))}
-            {!filtered.length && <tr><td colSpan={7} className="text-center py-8 text-gray-400 text-sm">No orders found.</td></tr>}
+            {!filtered.length && <tr><td colSpan={8} className="text-center py-8 text-gray-400 text-sm">No orders found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -516,6 +537,20 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
                     style={{ borderColor: STATUS_COLORS[detail.status] }}
                   >
                     {ORDER_STATUSES.map(s => <option key={s} value={s} disabled={s === 'CANCELLED' && ['SHIPPED','DELIVERED'].includes(detail.status)}>{slabel(s)}</option>)}
+                  </select>
+                  <label className="block text-sm font-semibold text-gray-700 mt-4 mb-2">Assigned Technician</label>
+                  <select
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white"
+                    value={detail.assigned_technician?.id || ''}
+                    onChange={async (e) => {
+                      const updated = await onAssignTechnician(detail.id, e.target.value ? Number(e.target.value) : null);
+                      if (updated) setDetail(updated);
+                    }}
+                  >
+                    <option value="">Unassigned</option>
+                    {technicians.map((t) => (
+                      <option key={t.id} value={t.id}>{`${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -563,8 +598,8 @@ const OrdersTab = ({ orders, onStatusChange, onRefresh }) => {
 };
 
 // ─── 3. SERVICES TAB ────────────────────────────────────────────────────────
-const ServicesTab = ({ services, categories, onRefresh }) => {
-  const EMPTY = { name:'', description:'', price:'', category:'', duration:'60', is_popular:false, available:true };
+const ServicesTab = ({ services, categories, technicians, onRefresh }) => {
+  const EMPTY = { name:'', description:'', price:'', category:'', duration:'60', is_popular:false, available:true, assigned_technician_ids:[] };
   const [form, setForm]         = useState(EMPTY);
   const [imgFile, setImgFile]   = useState(null);
   const [imgPrev, setImgPrev]   = useState('');
@@ -597,7 +632,13 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
   const handleSubmit = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      const payload = { name:form.name, description:form.description, price:parseFloat(form.price), category_id:form.category||null };
+      const payload = {
+        name:form.name,
+        description:form.description,
+        price:parseFloat(form.price),
+        category_id:form.category||null,
+        assigned_technician_ids: form.assigned_technician_ids || [],
+      };
       let res;
       if (editId) res = await api.patch(`/services/${editId}/`, payload);
       else        res = await api.post('/services/', payload);
@@ -622,10 +663,30 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
 
   const handleEdit = s => {
     setEditId(s.id);
-    setForm({ name:s.name, description:s.description, price:s.price, category:s.category?.id||s.category||'', duration:'60', is_popular:false, available:true });
+    setForm({
+      name:s.name,
+      description:s.description,
+      price:s.price,
+      category:s.category?.id||s.category||'',
+      duration:'60',
+      is_popular:false,
+      available:true,
+      assigned_technician_ids: (s.assigned_technicians || []).map((t) => t.id),
+    });
     setCurrImg(s.images?.[0]?.image||'');
     setImgFile(null); setImgPrev('');
     setShowModal(true);
+  };
+
+  const toggleTechnician = (id) => {
+    setForm((prev) => {
+      const current = prev.assigned_technician_ids || [];
+      const has = current.includes(id);
+      return {
+        ...prev,
+        assigned_technician_ids: has ? current.filter((x) => x !== id) : [...current, id],
+      };
+    });
   };
 
   const handleDelete = async () => {
@@ -725,6 +786,26 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
               </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Description *</label><textarea className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} required /></div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Technicians</label>
+                <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {technicians.length ? technicians.map((t) => {
+                    const checked = (form.assigned_technician_ids || []).includes(t.id);
+                    const label = `${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email;
+                    return (
+                      <label key={t.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-teal-600 border-gray-300 rounded"
+                          checked={checked}
+                          onChange={() => toggleTechnician(t.id)}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    );
+                  }) : <p className="text-sm text-gray-500">No technician accounts found.</p>}
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Service Image {editId ? '(leave empty to keep current)' : '*'}</label>
                 <div className="flex items-start gap-4">
                   <label className="flex-shrink-0 w-40 h-40 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-500 cursor-pointer transition-colors flex flex-col items-center justify-center bg-gray-50 hover:bg-teal-50 overflow-hidden">
@@ -789,7 +870,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
           </select>
         </div>
         <table className="w-full">
-          <thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Image</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Price</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rating</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th></tr></thead>
+          <thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Image</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Technicians</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Price</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rating</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th></tr></thead>
           <tbody>
             {filtered.map(s => (
               <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -800,6 +881,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </td>
                 <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{s.name}</b></td>
                 <td className="py-3 px-4 text-sm text-gray-700">{s.category?.name || '—'}</td>
+                <td className="py-3 px-4 text-sm text-gray-700">{(s.assigned_technicians || []).length ? (s.assigned_technicians || []).slice(0, 2).map((t) => `${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email).join(', ') : 'Unassigned'}</td>
                 <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{fmt$(s.price)}</b></td>
                 <td className="py-3 px-4 text-sm"><span className="text-amber-400">{stars(s.avg_rating)}</span> <small className="text-gray-600">{parseFloat(s.avg_rating||0).toFixed(1)}</small></td>
                 <td className="py-3 px-4"><span className="inline-block px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-200">Active</span></td>
@@ -815,7 +897,7 @@ const ServicesTab = ({ services, categories, onRefresh }) => {
                 </td>
               </tr>
             ))}
-            {!filtered.length && <tr><td colSpan={7} className="text-center py-8 text-gray-400 text-sm">No services found.</td></tr>}
+            {!filtered.length && <tr><td colSpan={8} className="text-center py-8 text-gray-400 text-sm">No services found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1053,6 +1135,13 @@ const UsersTab = ({ users, onRefresh }) => {
           <div className="text-3xl font-bold text-gray-800 mb-1">{roleCount('admin')}</div>
           <div className="text-sm text-gray-600">Admins / Staff</div>
         </div>
+        <div className="bg-amber-50/50 backdrop-blur-sm rounded-2xl p-6 border border-amber-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter('all'); setRoleFilter('technician'); }}>
+          <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center mb-4">
+            <WrenchScrewdriverIcon className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-bold text-gray-800 mb-1">{roleCount('technician')}</div>
+          <div className="text-sm text-gray-600">Technicians</div>
+        </div>
         <div className="bg-red-50/50 backdrop-blur-sm rounded-2xl p-6 border border-red-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter('blocked'); setRoleFilter('all'); }}>
           <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mb-4">
             <XCircleSolid className="w-6 h-6 text-white" />
@@ -1070,6 +1159,7 @@ const UsersTab = ({ users, onRefresh }) => {
             <option value="all">All Roles</option>
             <option value="client">Clients</option>
             <option value="admin">Admins</option>
+            <option value="technician">Technicians</option>
           </select>
           <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
             <option value="all">All Status</option>
@@ -1091,7 +1181,7 @@ const UsersTab = ({ users, onRefresh }) => {
                   <td className="py-3 px-4"><div className="w-10 h-10 bg-teal-600 text-white rounded-full flex items-center justify-center font-semibold">{(u.first_name||'U')[0].toUpperCase()}</div></td>
                   <td className="py-3 px-4 text-sm font-semibold text-gray-800"><b>{u.first_name} {u.last_name}</b></td>
                   <td className="py-3 px-4 text-sm text-gray-700">{u.email}</td>
-                  <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${u.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{u.role}</span></td>
+                  <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${u.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':u.role==='technician'?'bg-amber-100 text-amber-700 border-amber-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{u.role}</span></td>
                   <td className="py-3 px-4 text-sm text-gray-700">{u.phone_number || '—'}</td>
                   <td className="py-3 px-4"><span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${isBlocked ? 'bg-red-100 text-red-700 border-red-200' : 'bg-green-100 text-green-700 border-green-200'}`}>{isBlocked ? 'Blocked' : 'Active'}</span></td>
                   <td className="py-3 px-4">
@@ -1125,7 +1215,7 @@ const UsersTab = ({ users, onRefresh }) => {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800">{selected.first_name} {selected.last_name}</h3>
                   <p className="text-gray-600">{selected.email}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border mt-2 ${selected.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{selected.role}</span>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border mt-2 ${selected.role==='admin'?'bg-cyan-100 text-cyan-700 border-cyan-200':selected.role==='technician'?'bg-amber-100 text-amber-700 border-amber-200':'bg-navy-100 text-navy-700 border-navy-200'}`}>{selected.role}</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1133,6 +1223,297 @@ const UsersTab = ({ users, onRefresh }) => {
                 <div className="text-sm text-gray-700"><span className="font-medium text-gray-900">Phone:</span> {selected.phone_number||'—'}</div>
                 <div className="text-sm text-gray-700"><span className="font-medium text-gray-900">Address:</span> {selected.address||'—'}</div>
                 <div className="text-sm text-gray-700"><span className="font-medium text-gray-900">Account:</span> {(blocked[selected.id] !== undefined ? blocked[selected.id] : !selected.is_active) ? <span className="inline-block px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-200">Blocked</span> : <span className="inline-block px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-200">Active</span>}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── 6. TECHNICIANS TAB ────────────────────────────────────────────────────
+const TechniciansTab = ({ technicians, services, categories, reviews, onRefresh }) => {
+  const [selectedTechId, setSelectedTechId] = useState(null);
+  const [categoryId, setCategoryId] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [msg, setMsg] = useState({ text: '', ok: true });
+
+  const toTechIds = (service) =>
+    (service.assigned_technicians || [])
+      .map((entry) => (typeof entry === 'number' ? entry : entry?.id))
+      .filter(Boolean);
+
+  const selectedTech = useMemo(
+    () => technicians.find((technician) => technician.id === selectedTechId) || null,
+    [technicians, selectedTechId]
+  );
+
+  const selectedAssignedServices = useMemo(() => {
+    if (!selectedTech) return [];
+    return services.filter((service) => toTechIds(service).includes(selectedTech.id));
+  }, [selectedTech, services]);
+
+  const selectedServiceIds = useMemo(
+    () => selectedAssignedServices.map((service) => service.id),
+    [selectedAssignedServices]
+  );
+
+  const selectedReviews = useMemo(() => {
+    if (!selectedServiceIds.length) return [];
+    return reviews
+      .filter((review) => selectedServiceIds.includes(review.service))
+      .sort((left, right) => right.id - left.id)
+      .slice(0, 6);
+  }, [reviews, selectedServiceIds]);
+
+  const selectedAvgRating = useMemo(() => {
+    if (!selectedReviews.length) return 0;
+    return selectedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / selectedReviews.length;
+  }, [selectedReviews]);
+
+  const technicianRows = useMemo(
+    () =>
+      technicians.map((technician) => {
+        const assignedCount = services.filter((service) => toTechIds(service).includes(technician.id)).length;
+        return { ...technician, assignedCount };
+      }),
+    [technicians, services]
+  );
+
+  const patchServiceTechIds = async (service, techIds) => {
+    await api.patch(`/services/${service.id}/`, { assigned_technician_ids: techIds });
+  };
+
+  const handleStatusToggle = async () => {
+    if (!selectedTech) return;
+    setProcessing(true);
+    setMsg({ text: '', ok: true });
+    try {
+      const nextActive = !selectedTech.is_active;
+      await api.patch(`/users/${selectedTech.id}/`, { is_active: nextActive });
+
+      if (!nextActive) {
+        const assigned = services.filter((service) => toTechIds(service).includes(selectedTech.id));
+        await Promise.all(
+          assigned.map((service) => {
+            const nextIds = toTechIds(service).filter((id) => id !== selectedTech.id);
+            return patchServiceTechIds(service, nextIds);
+          })
+        );
+      }
+
+      await onRefresh();
+      setMsg({
+        text: nextActive
+          ? `${selectedTech.first_name || 'Technician'} activated successfully.`
+          : `${selectedTech.first_name || 'Technician'} blocked and removed from all assigned services.`,
+        ok: true,
+      });
+    } catch (error) {
+      setMsg({ text: error.response?.data?.detail || 'Status update failed.', ok: false });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleAssignByCategory = async () => {
+    if (!selectedTech || !categoryId) return;
+    if (!selectedTech.is_active) {
+      setMsg({ text: 'Technician is blocked. Activate first to assign services.', ok: false });
+      return;
+    }
+
+    const categoryServices = services.filter(
+      (service) => String(service.category?.id || service.category) === String(categoryId)
+    );
+
+    if (!categoryServices.length) {
+      setMsg({ text: 'No services found in selected category.', ok: false });
+      return;
+    }
+
+    setProcessing(true);
+    setMsg({ text: '', ok: true });
+    try {
+      await Promise.all(
+        categoryServices.map((service) => {
+          const currentIds = toTechIds(service);
+          const nextIds = currentIds.includes(selectedTech.id)
+            ? currentIds
+            : [...currentIds, selectedTech.id];
+          return patchServiceTechIds(service, nextIds);
+        })
+      );
+
+      await onRefresh();
+      const selectedCategory = categories.find((cat) => String(cat.id) === String(categoryId));
+      setMsg({
+        text: `${selectedTech.first_name || 'Technician'} assigned to all services in ${selectedCategory?.name || 'selected'} category.`,
+        ok: true,
+      });
+    } catch (error) {
+      setMsg({ text: error.response?.data?.detail || 'Category assignment failed.', ok: false });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Alert text={msg.text} ok={msg.ok} />
+      {!selectedTech && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <h3 className="text-xl font-semibold text-gray-800">Technicians</h3>
+            <button className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium" onClick={onRefresh}>
+              <ArrowPathIcon className="w-4 h-4" />
+            </button>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Technician</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Phone</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Assigned Services</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {technicianRows.map((technician) => (
+                <tr key={technician.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 text-sm font-semibold text-gray-800">
+                    {`${technician.first_name || ''} ${technician.last_name || ''}`.trim() || technician.email}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-700">{technician.phone_number || '—'}</td>
+                  <td className="py-3 px-4 text-sm text-gray-700">{technician.assignedCount}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${technician.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                      {technician.is_active ? 'Active' : 'Blocked'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                      onClick={() => {
+                        setSelectedTechId(technician.id);
+                        setCategoryId('');
+                      }}
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!technicianRows.length && (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400 text-sm">No technicians found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {selectedTech && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSelectedTechId(null)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ArrowLeftIcon className="w-4 h-4" /> Back to Technician List
+            </button>
+          </div>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              {selectedTech.profile_pic ? (
+                <img src={selectedTech.profile_pic} alt="Technician" className="w-16 h-16 rounded-full object-cover border border-gray-200" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-bold">
+                  {(selectedTech.first_name || selectedTech.email || 'T')[0].toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h4 className="text-xl font-bold text-gray-800">
+                  {`${selectedTech.first_name || ''} ${selectedTech.last_name || ''}`.trim() || selectedTech.email}
+                </h4>
+                <p className="text-sm text-gray-500">{selectedTech.email}</p>
+                <p className="text-sm text-gray-600">Phone: {selectedTech.phone_number || '—'}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleStatusToggle}
+              disabled={processing}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedTech.is_active ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700'} disabled:opacity-60`}
+            >
+              {processing ? 'Processing...' : selectedTech.is_active ? 'Block Technician' : 'Activate Technician'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Assigned Services</p>
+              <p className="text-2xl font-bold text-gray-800">{selectedAssignedServices.length}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Reviews</p>
+              <p className="text-2xl font-bold text-gray-800">{selectedReviews.length}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Average Rating</p>
+              <p className="text-2xl font-bold text-gray-800">{selectedAvgRating ? selectedAvgRating.toFixed(1) : '0.0'} ⭐</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <h5 className="text-base font-semibold text-gray-800 mb-3">Assigned Services</h5>
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {selectedAssignedServices.map((service) => (
+                  <div key={service.id} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                    <p className="text-sm font-semibold text-gray-800">{service.name}</p>
+                    <p className="text-xs text-gray-500">{service.category?.name || '—'}</p>
+                  </div>
+                ))}
+                {!selectedAssignedServices.length && <p className="text-sm text-gray-400">No assigned services.</p>}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">Assign by Service Category</label>
+                <div className="flex gap-2">
+                  <select
+                    value={categoryId}
+                    onChange={(event) => setCategoryId(event.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="">Select category...</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAssignByCategory}
+                    disabled={!categoryId || processing}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 disabled:opacity-60"
+                  >
+                    Assign All
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <h5 className="text-base font-semibold text-gray-800 mb-3">Recent Reviews & Ratings</h5>
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {selectedReviews.map((review) => (
+                  <div key={review.id} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                    <p className="text-sm text-gray-700 mb-1">{review.comment || 'No comment'}</p>
+                    <p className="text-xs text-gray-500">By: {review.client_name || review.client_email || 'Client'}</p>
+                    <p className="text-xs text-gray-500">Rating: {Number(review.rating || 0).toFixed(1)} ⭐</p>
+                  </div>
+                ))}
+                {!selectedReviews.length && <p className="text-sm text-gray-400">No reviews yet.</p>}
               </div>
             </div>
           </div>
@@ -1379,6 +1760,115 @@ const PaymentsTab = ({ orders }) => {
   const pendingCount = safeOrders.filter(o => getPayStatus(o.status)==='pending').length;
   const failedCount  = safeOrders.filter(o => getPayStatus(o.status)==='failed').length;
 
+  const handleDownloadInvoicePdf = (order) => {
+    const paymentStatus = getPayStatus(order.status);
+    const transactionId = `TXN-${String(order.id).padStart(6, '0')}`;
+    const invoiceNo = `INV-${String(order.id).padStart(6, '0')}`;
+    const clientName = order.client_email || order.client || 'N/A';
+    const amount = Number(order.total_price || 0);
+    const paymentMethod = getPayMethod(order.id);
+    const issueDate = fmtD(order.created_at);
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    doc.setFillColor(13, 148, 136);
+    doc.rect(0, 0, 595.28, 95, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('HOME CREW', 40, 42);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.text('Service Invoice', 40, 68);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Invoice No: ${invoiceNo}`, 410, 40);
+    doc.text(`Date: ${issueDate}`, 410, 58);
+    doc.text(`Status: ${paymentStatus.toUpperCase()}`, 410, 76);
+
+    doc.setTextColor(31, 41, 55);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Bill To', 40, 130);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(clientName, 40, 150);
+
+    autoTable(doc, {
+      startY: 180,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 118, 110],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      styles: {
+        font: 'helvetica',
+        fontSize: 10,
+        cellPadding: 8,
+      },
+      head: [['Transaction ID', 'Order ID', 'Payment Method', 'Payment Status', 'Amount (BDT)']],
+      body: [[transactionId, `#${order.id}`, paymentMethod, paymentStatus.toUpperCase(), amount.toFixed(2)]],
+    });
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemRows = items.length
+      ? items.map((item, index) => {
+          const serviceName = item?.service?.name || item?.service || `Service ${index + 1}`;
+          const quantity = Number(item?.quantity || 1);
+          const unitPrice = Number(item?.service?.price ?? item?.price ?? 0);
+          return [serviceName, String(quantity), unitPrice.toFixed(2), (quantity * unitPrice).toFixed(2)];
+        })
+      : [['Service Charge', '1', amount.toFixed(2), amount.toFixed(2)]];
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 18,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [17, 24, 39],
+        textColor: [255, 255, 255],
+      },
+      styles: {
+        font: 'helvetica',
+        fontSize: 10,
+      },
+      head: [['Service', 'Qty', 'Unit Price (BDT)', 'Line Total (BDT)']],
+      body: itemRows,
+    });
+
+    const summaryTop = doc.lastAutoTable.finalY + 22;
+    const summaryBoxWidth = 220;
+    const summaryBoxX = pageWidth - summaryBoxWidth - 40;
+    const summaryBoxHeight = 56;
+
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(summaryBoxX, summaryTop - 18, summaryBoxWidth, summaryBoxHeight, 8, 8, 'F');
+
+    doc.setTextColor(55, 65, 81);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Total Amount', summaryBoxX + 14, summaryTop + 2);
+
+    doc.setTextColor(13, 148, 136);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text(`BDT ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, summaryBoxX + summaryBoxWidth - 14, summaryTop + 28, { align: 'right' });
+
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Thank you for choosing Home Crew.', 40, pageHeight - 40);
+    doc.text('This is a system-generated invoice.', 40, pageHeight - 24);
+
+    doc.save(`invoice-${order.id}.pdf`);
+  };
+
   return (
     <div className="tab-content">
       {/* ── Header ── */}
@@ -1589,12 +2079,7 @@ const PaymentsTab = ({ orders }) => {
                         <td>
                           <button
                             className="btn btn-sm btn-ghost flex items-center gap-1 text-xs"
-                            onClick={() => {
-                              const row = [`TXN-${String(o.id).padStart(6,'0')}`,`#${o.id}`,o.client_email||o.client||'—',getPayMethod(o.id),o.total_price,ps,fmtD(o.created_at)];
-                              const a = document.createElement('a');
-                              a.href = 'data:text/plain;charset=utf-8,'+encodeURIComponent('INVOICE\n'+['TXN ID','Order','Client','Method','Amount','Status','Date'].map((k,i)=>`${k}: ${row[i]}`).join('\n'));
-                              a.download = `invoice-${o.id}.txt`; a.click();
-                            }}
+                            onClick={() => handleDownloadInvoicePdf(o)}
                           >
                             <DocumentChartBarIcon className="w-3.5 h-3.5" /> Invoice
                           </button>
@@ -1654,7 +2139,7 @@ const ReviewsTab = ({ reviews, onRefresh, onDelete }) => {
     if (ratingFilter > 0) r = r.filter(x => toRatingBucket(x.rating) === ratingFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      r = r.filter(x => (x.comment||'').toLowerCase().includes(q) || (x.service_name||'').toLowerCase().includes(q) || (x.client_email||'').toLowerCase().includes(q));
+      r = r.filter(x => (x.comment||'').toLowerCase().includes(q) || (x.service_name||'').toLowerCase().includes(q) || (x.client_email||'').toLowerCase().includes(q) || (x.client_name||'').toLowerCase().includes(q));
     }
     return [...r].sort((a,b) => b.id-a.id);
   }, [reviews, ratingFilter, search, toRatingBucket]);
@@ -1712,7 +2197,10 @@ const ReviewsTab = ({ reviews, onRefresh, onDelete }) => {
               <tr key={r.id}>
                 <td>{r.id}</td>
                 <td>{r.service_name||r.service||'—'}</td>
-                <td>{r.client_email||r.client||'—'}</td>
+                <td>
+                  <div className="text-sm text-gray-800">{r.client_name || r.client_email || r.client || '—'}</div>
+                  {r.client_email && <div className="text-xs text-gray-500">{r.client_email}</div>}
+                </td>
                 <td>
                   <span style={{color: r.rating>=4?'#22c55e':r.rating===3?'#f59e0b':'#ef4444', letterSpacing:'1px'}}>
                     {stars(r.rating)}
@@ -2839,6 +3327,7 @@ const SIDEBAR_ITEMS = [
   { key:'services',   icon: WrenchScrewdriverIcon, label:'Services' },
   { key:'categories', icon: TagIcon, label:'Categories' },
   { key:'users',      icon: UsersIcon, label:'Users' },
+  { key:'technicians', icon: WrenchScrewdriverIcon, label:'Technicians' },
   { key:'ai_activity', icon: ChatBubbleLeftRightIcon, label:'AI Activity' },
   { key:'payments',   icon: CreditCardIcon, label:'Payments' },
   { key:'reviews',    icon: StarIcon, label:'Reviews' },
@@ -2948,6 +3437,7 @@ const PAGE_TITLES = {
   services:  'Service Management',
   categories:'Category Management',
   users:     'User Management',
+  technicians: 'Technician Management',
   ai_activity: 'AI Activity Monitor',
   payments:  'Payments & Revenue',
   reviews:   'Reviews & Ratings',
@@ -2994,9 +3484,20 @@ const AdminDashboard = () => {
   const fetchAllPages = async url => {
     let results = []; let next = url;
     while (next) {
-      // Force https:// on absolute URLs to avoid mixed-content browser errors
-      // when Django generates http:// next-page URLs behind Render's proxy
-      const safeNext = next.startsWith('http://') ? next.replace('http://', 'https://') : next;
+      // Convert next-page absolute URLs to https only for non-local hosts.
+      // Local development (localhost/127.0.0.1) must stay http.
+      let safeNext = next;
+      if (next.startsWith('http://')) {
+        try {
+          const parsed = new URL(next);
+          const isLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+          if (!isLocal) {
+            safeNext = next.replace('http://', 'https://');
+          }
+        } catch {
+          safeNext = next;
+        }
+      }
       const res = await api.get(safeNext);
       const d   = res.data;
       if (Array.isArray(d)) { results = results.concat(d); break; }
@@ -3008,12 +3509,11 @@ const AdminDashboard = () => {
 
   const fetchAll = useCallback(async () => {
     setLoading(true); setFetchErrors([]);
-    const [ordersR, svcsR, usersR, catsR, revR] = await Promise.allSettled([
+    const [ordersR, svcsR, usersR, catsR] = await Promise.allSettled([
       fetchAllPages('/orders/'),
       fetchAllPages('/services/?page_size=200'),
       fetchAllPages('/accounts/'),
       fetchAllPages('/categories/'),
-      fetchAllPages('/reviews/').catch(() => []),
     ]);
     const errors = [];
     const safe = (r, k) => {
@@ -3026,11 +3526,26 @@ const AdminDashboard = () => {
       services:   safe(svcsR,   'Services'),
       users:      safe(usersR,  'Users'),
       categories: safe(catsR,   'Categories'),
-      reviews:    safe(revR,    'Reviews'),
+      reviews:    [],
     });
     setFetchErrors(errors);
     setLoading(false);
   }, []);
+
+  const fetchReviews = useCallback(async () => {
+    try {
+      const reviews = await fetchAllPages('/reviews/');
+      setData((prev) => ({ ...prev, reviews }));
+    } catch {
+      setData((prev) => ({ ...prev, reviews: [] }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if ((activeTab === 'reviews' || activeTab === 'technicians') && data.reviews.length === 0) {
+      fetchReviews();
+    }
+  }, [activeTab, data.reviews.length, fetchReviews]);
 
   const handleStatusChange = async (id, status) => {
     try {
@@ -3043,6 +3558,23 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAssignTechnician = async (id, technicianId) => {
+    try {
+      const res = await api.patch(`/orders/${id}/assign_technician/`, { technician_id: technicianId });
+      const updatedOrder = res.data;
+      setData((p) => ({
+        ...p,
+        orders: p.orders.map((o) => (o.id === id ? updatedOrder : o)),
+      }));
+      return updatedOrder;
+    } catch (e) {
+      await showAlert('Failed to assign technician: ' + (e.response?.data?.detail || e.response?.data?.technician_id?.[0] || e.message), {
+        title: 'Assignment failed',
+      });
+      return null;
+    }
+  };
+
   const handleDeleteReview = async id => {
     try { await api.delete(`/reviews/${id}/`); } catch { /* best-effort */ }
     setData(p => ({ ...p, reviews: p.reviews.filter(r => r.id!==id) }));
@@ -3050,6 +3582,16 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const technicians = useMemo(
+    () => (data.users || []).filter((u) => u.role === 'technician'),
+    [data.users]
+  );
+
+  const activeTechnicians = useMemo(
+    () => technicians.filter((u) => u.is_active !== false),
+    [technicians]
+  );
 
   if (!isAdmin) return null;
 
@@ -3128,10 +3670,11 @@ const AdminDashboard = () => {
           ) : (
             <div className="main-content">
               {activeTab === 'dashboard'  && <DashboardTab {...data} />}
-              {activeTab === 'orders'     && <OrdersTab    orders={data.orders}   onStatusChange={handleStatusChange} onRefresh={fetchAll} />}
-              {activeTab === 'services'   && <ServicesTab  services={data.services} categories={data.categories} onRefresh={fetchAll} />}
+              {activeTab === 'orders'     && <OrdersTab    orders={data.orders} technicians={activeTechnicians} onStatusChange={handleStatusChange} onAssignTechnician={handleAssignTechnician} onRefresh={fetchAll} />}
+              {activeTab === 'services'   && <ServicesTab  services={data.services} categories={data.categories} technicians={activeTechnicians} onRefresh={fetchAll} />}
               {activeTab === 'categories' && <CategoriesTab categories={data.categories} services={data.services} onRefresh={fetchAll} />}
               {activeTab === 'users'      && <UsersTab      users={data.users}     onRefresh={fetchAll} />}
+              {activeTab === 'technicians' && <TechniciansTab technicians={technicians} services={data.services} categories={data.categories} reviews={data.reviews} onRefresh={fetchAll} />}
               {activeTab === 'ai_activity' && <AIAssistantTab />}
               {activeTab === 'payments'   && <PaymentsTab   orders={data.orders} />}
               {activeTab === 'reviews'    && <ReviewsTab    reviews={data.reviews} onRefresh={fetchAll} onDelete={id => setDeleteReviewId(id)} />}

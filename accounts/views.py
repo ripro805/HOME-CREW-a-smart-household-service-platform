@@ -60,8 +60,17 @@ class UserViewSet(viewsets.ModelViewSet):
 	def destroy(self, request, *args, **kwargs):
 		return super().destroy(request, *args, **kwargs)
 
-	queryset = User.objects.all()
+	queryset = User.objects.select_related('profile').all()
 	serializer_class = UserSerializer
+
+	def get_queryset(self):
+		"""
+		Avoid N+1 query when serializing profile_pic from related ClientProfile.
+		Keeps admin user-list and technician panels responsive with large user counts.
+		"""
+		if getattr(self, 'swagger_fake_view', False):
+			return User.objects.none()
+		return User.objects.select_related('profile').all()
 
 	def get_permissions(self):
 		# Only admins can list all users, others can only access their own info

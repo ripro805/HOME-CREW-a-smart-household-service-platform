@@ -19,7 +19,9 @@ const Login = () => {
     setLoading(true);
     const result = await login(formData.email, formData.password);
     if (result.success) {
-      navigate(result.isAdmin ? '/admin-dashboard' : '/');
+      if (result.isAdmin) navigate('/admin-dashboard');
+      else if (result.isTechnician) navigate('/technician-dashboard');
+      else navigate('/');
     } else {
       const err = result.error;
       setError(

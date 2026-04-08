@@ -2,6 +2,30 @@
 from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem, Service
 from orders.service import OrderService
+from accounts.models import User
+from services.models import Review
+
+
+class TechnicianSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number']
+
+
+class AssignTechnicianSerializer(serializers.Serializer):
+    technician_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        tech_id = attrs.get('technician_id', None)
+        if tech_id in (None, ''):
+            attrs['technician'] = None
+            return attrs
+
+        technician = User.objects.filter(id=tech_id, role='technician', is_active=True).first()
+        if not technician:
+            raise serializers.ValidationError({'technician_id': 'Valid active technician not found.'})
+        attrs['technician'] = technician
+        return attrs
 # =========================
 # UPDATE ORDER SERIALIZER (ADMIN ONLY)
 # =========================
@@ -12,6 +36,10 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
 
 class CreateOrderSerializer(serializers.Serializer):
     cart_id = serializers.IntegerField()
+    contact_name = serializers.CharField(required=False, allow_blank=True)
+    contact_phone = serializers.CharField(required=False, allow_blank=True)
+    service_address = serializers.CharField(required=False, allow_blank=True)
+    preferred_date = serializers.CharField(required=False, allow_blank=True)
 
     def validate_cart_id(self, cart_id):
         if not Cart.objects.filter(pk=cart_id).exists():
@@ -24,7 +52,14 @@ class CreateOrderSerializer(serializers.Serializer):
         user_id = self.context['user_id']
         cart_id = validated_data['cart_id']
         try:
-            order = OrderService.create_order(user_id=user_id, cart_id=cart_id)
+            order = OrderService.create_order(
+                user_id=user_id,
+                cart_id=cart_id,
+                contact_name=validated_data.get('contact_name', ''),
+                contact_phone=validated_data.get('contact_phone', ''),
+                service_address=validated_data.get('service_address', ''),
+                preferred_date=validated_data.get('preferred_date', ''),
+            )
             return order
         except ValueError as e:
             raise serializers.ValidationError(str(e))
@@ -89,8 +124,12 @@ class SimpleServiceSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'price', 'avg_rating', 'category', 'images']
     
     def get_images(self, obj):
-        from services.models import ServiceImage
-        images = ServiceImage.objects.filter(service=obj)[:3]
+        prefetched = getattr(obj, '_prefetched_objects_cache', {}).get('images')
+        if prefetched is not None:
+            images = prefetched[:3]
+        else:
+            from services.models import ServiceImage
+            images = ServiceImage.objects.filter(service=obj).only('id', 'image_file', 'image_url')[:3]
         result = []
         for img in images:
             raw = str(img.image) if img.image else ''
@@ -158,6 +197,10 @@ class OrderSerializer(serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
     can_pay = serializers.SerializerMethodField()
+    assigned_technician = TechnicianSummarySerializer(read_only=True)
+    reviewable_services = serializers.SerializerMethodField()
+    reviewed_service_ids = serializers.SerializerMethodField()
+    has_pending_review = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -176,6 +219,12 @@ class OrderSerializer(serializers.ModelSerializer):
             'created_at',
             'payment_status',
             'can_pay',
+            'reviewable_services',
+            'reviewed_service_ids',
+            'has_pending_review',
+            'assigned_technician',
+            'assigned_at',
+            'technician_accepted_at',
         ]
 
     def get_client_email(self, obj):
@@ -198,3 +247,50 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_can_pay(self, obj):
         """Return True if order can be paid (status is NOT_PAID)"""
         return obj.status == Order.NOT_PAID
+
+    def _get_request_user(self):
+        request = self.context.get('request')
+        return getattr(request, 'user', None)
+
+    def _get_unique_items(self, obj):
+        unique = {}
+        for item in obj.items.all():
+            if item.service_id not in unique:
+                unique[item.service_id] = item
+        return list(unique.values())
+
+    def get_reviewed_service_ids(self, obj):
+        user = self._get_request_user()
+        if not user or not user.is_authenticated or getattr(user, 'role', None) != 'client':
+            return []
+        if obj.client_id != user.id:
+            return []
+
+        service_ids = [item.service_id for item in self._get_unique_items(obj)]
+        if not service_ids:
+            return []
+
+        return list(
+            Review.objects.filter(client=user, service_id__in=service_ids)
+            .values_list('service_id', flat=True)
+            .distinct()
+        )
+
+    def get_reviewable_services(self, obj):
+        reviewed_ids = set(self.get_reviewed_service_ids(obj))
+        rows = []
+        for item in self._get_unique_items(obj):
+            rows.append(
+                {
+                    'id': item.service_id,
+                    'name': item.service.name,
+                    'reviewed': item.service_id in reviewed_ids,
+                }
+            )
+        return rows
+
+    def get_has_pending_review(self, obj):
+        if obj.status != Order.DELIVERED:
+            return False
+        reviewable = self.get_reviewable_services(obj)
+        return any(not row['reviewed'] for row in reviewable)

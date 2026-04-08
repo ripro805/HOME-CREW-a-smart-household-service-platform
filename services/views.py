@@ -3,8 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics, filters
+from rest_framework.decorators import api_view, permission_classes
 from api.permissions import IsAdminOrSelfOrReadOnly, IsReviewOwnerOrAdmin
-from django.db.models import Avg, Count, FloatField, Value
+from django.db.models import Avg, Count, FloatField, Value, Prefetch
 from django.db.models.functions import Coalesce
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, Review, ServiceCategory, ServiceImage
@@ -19,10 +20,10 @@ from drf_yasg.utils import swagger_auto_schema
 logger = logging.getLogger(__name__)
 
 
-def service_queryset():
-    return (
+def service_queryset(include_reviews=False):
+    qs = (
         Service.objects.select_related('category')
-        .prefetch_related('images', 'reviews__client')
+        .prefetch_related('images', 'assigned_technicians')
         .annotate(
             calculated_avg_rating=Coalesce(
                 Avg('reviews__rating'),
@@ -33,6 +34,13 @@ def service_queryset():
         )
         .order_by('id')
     )
+
+    if include_reviews:
+        qs = qs.prefetch_related(
+            Prefetch('reviews', queryset=Review.objects.select_related('client').order_by('-created_at'))
+        )
+
+    return qs
 
 class ServiceViewSet(viewsets.ModelViewSet):
 
@@ -137,6 +145,13 @@ class ServiceViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return ServiceDetailSerializer
         return ServiceSerializer
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Service.objects.none()
+        if self.action == 'retrieve':
+            return service_queryset(include_reviews=True)
+        return service_queryset(include_reviews=False)
 
 class ServiceCategoryViewSet(viewsets.ModelViewSet):
     """
@@ -287,3 +302,19 @@ class AdminReviewViewSet(viewsets.ModelViewSet):
         if not (self.request.user.is_authenticated and getattr(self.request.user, 'role', '') == 'admin'):
             return Review.objects.none()
         return Review.objects.select_related('service', 'client').order_by('-created_at')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def technician_reviews(request):
+    if getattr(request.user, 'role', '') != 'technician':
+        return Response({'detail': 'Only technicians can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+    queryset = (
+        Review.objects.filter(service__assigned_technicians=request.user)
+        .select_related('service', 'client')
+        .order_by('-created_at')
+        .distinct()
+    )
+    serializer = AdminReviewSerializer(queryset, many=True)
+    return Response(serializer.data)

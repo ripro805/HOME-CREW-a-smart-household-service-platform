@@ -18,6 +18,7 @@ class User(AbstractUser):
 	ROLE_CHOICES = (
 		("admin", "Admin"),
 		("client", "Client"),
+		("technician", "Technician"),
 	)
 	role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="client")
 
@@ -30,6 +31,9 @@ class User(AbstractUser):
 
 	def is_client(self):
 		return self.role == "client"
+
+	def is_technician(self):
+		return self.role == "technician"
 
 class ClientProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")

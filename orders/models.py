@@ -64,6 +64,16 @@ class Order(models.Model):
         on_delete=models.CASCADE,
         related_name="orders"
     )
+    assigned_technician = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="assigned_orders",
+        null=True,
+        blank=True,
+        limit_choices_to={"role": "technician"},
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    technician_accepted_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

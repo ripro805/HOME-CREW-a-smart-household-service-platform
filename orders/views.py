@@ -12,6 +12,7 @@ from . import emails as order_emails
 from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
 from urllib.parse import urlencode
+from django.utils import timezone
 
 # Helper function to get frontend URL
 def get_frontend_url(request=None):
@@ -65,6 +66,7 @@ from .serializers import (
     OrderItemSerializer,
     CreateOrderSerializer,
     UpdateOrderSerializer,
+    AssignTechnicianSerializer,
 )
 
 
@@ -95,9 +97,10 @@ class CartViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = Cart.objects.select_related('client').prefetch_related('items__service__category', 'items__service__images')
         if getattr(user, "role", None) == "admin":
-            return Cart.objects.all()
-        return Cart.objects.filter(client=user)
+            return qs
+        return qs.filter(client=user)
 
 
 # =========================
@@ -120,12 +123,13 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return CartItem.objects.none()
         cart_id = self.kwargs["cart_pk"]
         user = self.request.user
+        qs = CartItem.objects.select_related('service__category').prefetch_related('service__images')
 
         if getattr(user, "role", None) == "admin":
-            return CartItem.objects.filter(cart_id=cart_id)
+            return qs.filter(cart_id=cart_id)
 
         cart = Cart.objects.filter(id=cart_id, client=user).first()
-        return CartItem.objects.filter(cart=cart) if cart else CartItem.objects.none()
+        return qs.filter(cart=cart) if cart else CartItem.objects.none()
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -215,6 +219,84 @@ class OrderViewSet(viewsets.ModelViewSet):
         if order.status != old_status:
             order_emails.send_order_status_email(order, old_status)
         return Response({'status': f"Order status updated to {new_status}"})
+
+    @action(detail=True, methods=['patch'])
+    def assign_technician(self, request, pk=None):
+        order = self.get_object()
+        if not (request.user.is_authenticated and (request.user.is_staff or getattr(request.user, 'role', None) == 'admin')):
+            return Response({'detail': 'Only admin can assign technician.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = AssignTechnicianSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        technician = serializer.validated_data.get('technician')
+
+        previous_technician_id = order.assigned_technician_id
+        order.assigned_technician = technician
+        order.assigned_at = timezone.now() if technician else None
+        if previous_technician_id != (technician.id if technician else None):
+            order.technician_accepted_at = None
+        order.save(update_fields=['assigned_technician', 'assigned_at', 'technician_accepted_at'])
+        order.refresh_from_db()
+
+        return Response(self.get_serializer(order).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def my_assigned(self, request):
+        if not (request.user.is_authenticated and getattr(request.user, 'role', None) == 'technician'):
+            return Response({'detail': 'Only technicians can access assigned jobs.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = self.get_queryset().filter(assigned_technician=request.user)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def accept_job(self, request, pk=None):
+        order = self.get_object()
+        if not (request.user.is_authenticated and getattr(request.user, 'role', None) == 'technician'):
+            return Response({'detail': 'Only technicians can accept jobs.'}, status=status.HTTP_403_FORBIDDEN)
+        if order.assigned_technician_id != request.user.id:
+            return Response({'detail': 'You are not assigned to this order.'}, status=status.HTTP_403_FORBIDDEN)
+        if order.status not in [Order.READY_TO_SHIP, Order.SHIPPED]:
+            return Response({'detail': 'Job can be accepted only after order is confirmed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not order.technician_accepted_at:
+            order.technician_accepted_at = timezone.now()
+            order.save(update_fields=['technician_accepted_at'])
+
+        order.refresh_from_db()
+        return Response(self.get_serializer(order).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['patch'])
+    def technician_update_status(self, request, pk=None):
+        order = self.get_object()
+        if not (request.user.is_authenticated and getattr(request.user, 'role', None) == 'technician'):
+            return Response({'detail': 'Only technicians can update technician status.'}, status=status.HTTP_403_FORBIDDEN)
+        if order.assigned_technician_id != request.user.id:
+            return Response({'detail': 'You are not assigned to this order.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if not order.technician_accepted_at:
+            return Response({'detail': 'Please accept this job first.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_status = request.data.get('status')
+        if new_status not in [Order.SHIPPED, Order.DELIVERED]:
+            return Response({'detail': 'Technician can set status only to SHIPPED or DELIVERED.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status == Order.SHIPPED and order.status in [Order.NOT_PAID, Order.CANCELLED, Order.DELIVERED]:
+            return Response({'detail': f'Cannot set SHIPPED from current status {order.status}.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status == Order.DELIVERED and order.status != Order.SHIPPED:
+            return Response({'detail': 'Order must be SHIPPED before marking DELIVERED.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_status = order.status
+        order.status = new_status
+        order.save(update_fields=['status'])
+        if old_status != order.status:
+            order_emails.send_order_status_email(order, old_status)
+        return Response({'status': f'Order status updated to {new_status}'}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         method='post',
@@ -319,7 +401,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get_permissions(self):
-        if self.action in ['update_status', 'destroy', 'partial_update', 'update']:
+        if self.action in ['update_status', 'destroy', 'partial_update', 'update', 'assign_technician']:
             return [IsAdminUser()]
         return [IsAuthenticated()]
 
@@ -337,25 +419,34 @@ class OrderViewSet(viewsets.ModelViewSet):
         return OrderSerializer
 
     def get_serializer_context(self):
-        return {'user_id': self.request.user.id, 'user': self.request.user}
+        context = super().get_serializer_context()
+        context.update({'user_id': self.request.user.id, 'user': self.request.user})
+        return context
 
     def get_queryset(self):
-        if self.request.user.is_staff:
-            return Order.objects.prefetch_related('items__service').order_by('-id')
-        return Order.objects.prefetch_related('items__service').filter(client=self.request.user).order_by('-id')
+        role = getattr(self.request.user, 'role', None)
+        qs = Order.objects.select_related('client').prefetch_related(
+            'items__service__category',
+            'items__service__images',
+        ).select_related('assigned_technician')
+        if self.request.user.is_staff or role == 'admin':
+            return qs.order_by('-id')
+        if role == 'technician':
+            return qs.filter(assigned_technician=self.request.user).order_by('-id')
+        return qs.filter(client=self.request.user).order_by('-id')
 
     def destroy(self, request, *args, **kwargs):
-        if not request.user.is_staff:
+        if not (request.user.is_staff or getattr(request.user, 'role', None) == 'admin'):
             return Response({'detail': 'Only admin can delete orders.'}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        if not request.user.is_staff:
+        if not (request.user.is_staff or getattr(request.user, 'role', None) == 'admin'):
             return Response({'detail': 'Only admin can update orders.'}, status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        if not request.user.is_staff:
+        if not (request.user.is_staff or getattr(request.user, 'role', None) == 'admin'):
             return Response({'detail': 'Only admin can update orders.'}, status=status.HTTP_403_FORBIDDEN)
         return super().partial_update(request, *args, **kwargs)
 
@@ -455,7 +546,7 @@ class ViewCartView(generics.GenericAPIView):
     permission_classes = [IsAdminOrSelfOrReadOnly]
 
     def get(self, request):
-        cart = Cart.objects.filter(client=request.user).first()
+        cart = Cart.objects.select_related('client').prefetch_related('items__service__category', 'items__service__images').filter(client=request.user).first()
         if not cart:
             return Response({"cart": []})
         return Response(self.serializer_class(cart).data)
@@ -489,10 +580,15 @@ class PlaceOrderView(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        order = Order.objects.create(client=request.user)
+        order = Order.objects.create(
+            client=request.user,
+            contact_name=request.user.get_full_name() or '',
+            contact_phone=request.user.phone_number or '',
+            service_address=request.user.address or '',
+        )
         total_price = 0
 
-        for item in cart.items.all():
+        for item in cart.items.select_related('service').all():
             OrderItem.objects.create(
                 order=order,
                 service=item.service,
@@ -503,6 +599,11 @@ class PlaceOrderView(generics.GenericAPIView):
 
         order.total_price = total_price
         order.save()
+
+        OrderService.auto_assign_technician(
+            order,
+            service_ids=[item.service_id for item in order.items.all()],
+        )
 
         cart.items.all().delete()
 

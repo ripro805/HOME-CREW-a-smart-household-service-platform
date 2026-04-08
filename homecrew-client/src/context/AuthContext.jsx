@@ -46,7 +46,12 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${access}` }
       });
       setUser(meRes.data);
-      return { success: true, isAdmin: meRes.data.role === 'admin' };
+      return {
+        success: true,
+        isAdmin: meRes.data.role === 'admin',
+        isTechnician: meRes.data.role === 'technician',
+        role: meRes.data.role,
+      };
     } catch (error) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
@@ -77,6 +82,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = user?.role === 'admin';
+  const isTechnician = user?.role === 'technician';
 
   const value = {
     user,
@@ -86,6 +92,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user,
     isAdmin,
+    isTechnician,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

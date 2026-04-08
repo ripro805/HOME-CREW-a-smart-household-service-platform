@@ -20,6 +20,12 @@ class Service(models.Model):
 	avg_rating = models.FloatField(default=0)
 	available_locations = models.JSONField(default=list, blank=True)
 	category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="services")
+	assigned_technicians = models.ManyToManyField(
+		settings.AUTH_USER_MODEL,
+		blank=True,
+		related_name="assigned_services",
+		limit_choices_to={"role": "technician"},
+	)
 
 	def __str__(self):
 		return self.name

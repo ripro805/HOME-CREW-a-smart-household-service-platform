@@ -16,8 +16,10 @@ import Cart from './pages/Cart';
 import Messages from './pages/Messages';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
+import TrackTechnician from './pages/TrackTechnician';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import TechnicianDashboard from './pages/TechnicianDashboard';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFail from './pages/PaymentFail';
 import PaymentCancel from './pages/PaymentCancel';
@@ -51,7 +53,7 @@ function ScrollToTop() {
 }
 
 function AppContent() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTechnician, loading } = useAuth();
   const location = useLocation();
   const [showHomeIntro, setShowHomeIntro] = useState(false);
   const [homeIntroRunKey, setHomeIntroRunKey] = useState(0);
@@ -147,6 +149,29 @@ function AppContent() {
     );
   }
 
+  if (isTechnician) {
+    return (
+      <div className="app">
+        <HomeLogoIntro visible={showHomeIntro && isHomeLikePath} runKey={homeIntroRunKey} />
+        {!(showHomeIntro && isHomeLikePath) && <Navbar />}
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/services/:id" element={<ServiceDetail />} />
+            <Route path="/technician-dashboard/*" element={<TechnicianDashboard />} />
+            <Route path="/admin-dashboard" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
+
   /* ── Client: regular layout with navbar ── */
   return (
     <div className="app">
@@ -170,6 +195,7 @@ function AppContent() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="/orders/:id/track-technician" element={<TrackTechnician />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/payment/success/:orderId" element={<PaymentSuccess />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
@@ -179,6 +205,7 @@ function AppContent() {
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           {/* Non-admin users can't access admin dashboard */}
           <Route path="/admin-dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/technician-dashboard" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <ChatbotIcon />

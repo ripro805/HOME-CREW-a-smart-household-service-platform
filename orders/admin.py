@@ -7,7 +7,7 @@ from .models import Order, OrderItem, Cart, CartItem
 # =========================
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "client", "status", "total_price", "created_at")
+    list_display = ("id", "client", "assigned_technician", "status", "total_price", "created_at")
     list_filter = ("status", "created_at")
     search_fields = (
         "id",
@@ -15,7 +15,7 @@ class OrderAdmin(admin.ModelAdmin):
         "client__email",
     )
     readonly_fields = ("id", "total_price", "created_at")
-    list_select_related = ("client",)
+    list_select_related = ("client", "assigned_technician")
     ordering = ("-created_at",)
 
 

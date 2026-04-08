@@ -24,12 +24,13 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isTechnician } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifDropdown,   setShowNotifDropdown]   = useState(false);
   const [mobileOpen,          setMobileOpen]          = useState(false);
+  const [technicianOnline, setTechnicianOnline] = useState(true);
   const [orders, setOrders] = useState([]);
   const [supportConversations, setSupportConversations] = useState([]);
   const [readIds, setReadIds] = useState(() => {
@@ -43,13 +44,36 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated && !isAdmin) {
-      api.get('/orders/').then(r => setOrders(r.data.results || r.data || [])).catch(() => {});
+    if (!isAuthenticated || isAdmin || isTechnician) {
+      setOrders([]);
+      return undefined;
     }
-  }, [isAuthenticated, isAdmin]);
+
+    let mounted = true;
+    const syncOrders = async () => {
+      try {
+        const response = await api.get('/orders/');
+        if (mounted) {
+          setOrders(response.data.results || response.data || []);
+        }
+      } catch {
+        if (mounted) {
+          setOrders([]);
+        }
+      }
+    };
+
+    syncOrders();
+    const intervalId = window.setInterval(syncOrders, 12000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [isAuthenticated, isAdmin, isTechnician]);
 
   useEffect(() => {
-    if (!isAuthenticated || isAdmin) {
+    if (!isAuthenticated || isAdmin || isTechnician) {
       setSupportConversations([]);
       return undefined;
     }
@@ -76,7 +100,7 @@ const Navbar = () => {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isTechnician]);
 
   // Close mobile drawer on route change
   useEffect(() => { setMobileOpen(false); }, [navigate]);
@@ -91,6 +115,9 @@ const Navbar = () => {
   // Build notifications
   const notifications = [
     ...orders.map(o => {
+      const techName = o.assigned_technician
+        ? `${o.assigned_technician.first_name || ''} ${o.assigned_technician.last_name || ''}`.trim() || o.assigned_technician.email
+        : '';
       const statusMap = {
         NOT_PAID:      { icon:'bag',     color:'orange', msg:`Order #${o.id} placed - awaiting payment` },
         READY_TO_SHIP: { icon:'check',   color:'blue',   msg:`Order #${o.id} confirmed by HomeCrew` },
@@ -98,8 +125,51 @@ const Navbar = () => {
         DELIVERED:     { icon:'check',   color:'green',  msg:`Order #${o.id} completed successfully` },
         CANCELLED:     { icon:'x',       color:'red',    msg:`Order #${o.id} was cancelled` },
       };
-      const s = statusMap[o.status] || { icon:'bag', color:'gray', msg:`Order #${o.id} update` };
-      return { id:`order-${o.id}`, icon:s.icon, color:s.color, msg:s.msg, time:o.created_at, link:`/orders/${o.id}` };
+      let s = statusMap[o.status] || { icon:'bag', color:'gray', msg:`Order #${o.id} update` };
+      let phase = o.status?.toLowerCase() || 'update';
+
+      if (techName && (o.status === 'NOT_PAID' || o.status === 'READY_TO_SHIP')) {
+        if (o.technician_accepted_at) {
+          s = {
+            icon: 'check',
+            color: 'green',
+            msg: `${techName} accepted your Order #${o.id}. Technician will start soon.`,
+          };
+          phase = 'accepted';
+        } else {
+          s = {
+            icon: 'check',
+            color: 'blue',
+            msg: `${techName} assigned to Order #${o.id}. Wait for the technician to accept job.`,
+          };
+          phase = 'assigned';
+        }
+      }
+
+      if (techName && o.status === 'SHIPPED') {
+        s = {
+          icon: 'truck',
+          color: 'purple',
+          msg: `${techName} accepted your job. Service is ongoing for Order #${o.id}.`,
+        };
+        phase = 'ongoing';
+      }
+
+      if (techName && o.status === 'DELIVERED') {
+        phase = o.has_pending_review ? 'delivered-review' : 'delivered';
+      }
+
+      return {
+        id:`order-${o.id}-${phase}`,
+        icon:s.icon,
+        color:s.color,
+        msg:s.msg,
+        time:o.created_at,
+        link:`/orders/${o.id}`,
+        reviewAction: o.status === 'DELIVERED' && o.has_pending_review
+          ? { label: 'Rate Technician', orderId: o.id }
+          : null,
+      };
     }),
     { id:'promo-1', icon:'tag',     color:'indigo', msg:'50% off on Home Cleaning this weekend!', time:null, link:'/services' },
     { id:'promo-2', icon:'sparkle', color:'amber',  msg:'New service added: Pest Control',         time:null, link:'/services' },
@@ -176,7 +246,7 @@ const Navbar = () => {
             <Link to="/about" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
               About Us
             </Link>
-            {isAuthenticated && !isAdmin && (
+            {isAuthenticated && !isAdmin && !isTechnician && (
               <Link to="/services" className="px-4 py-2 text-gray-700 hover:text-teal-600 font-semibold text-base transition-colors rounded-lg hover:bg-teal-50 link-underline">
                 Services
               </Link>
@@ -212,6 +282,52 @@ const Navbar = () => {
                       <button onClick={() => { setShowProfileDropdown(false); navigate('/admin-dashboard', { state:{ tab:'settings' } }); }} className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
                         <Cog6ToothIcon className="w-5 h-5" /> Settings
                       </button>
+                      <div className="border-t border-gray-100 mt-1" />
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" /> Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : isTechnician ? (
+              <>
+                <Link to="/technician-dashboard" className="hidden md:flex px-3 py-2 text-teal-600 hover:text-teal-800 font-semibold text-sm transition-colors rounded-lg hover:bg-teal-50 items-center gap-2">
+                  <WrenchScrewdriverIcon className="w-5 h-5" /> Technician Panel
+                </Link>
+                <button
+                  onClick={() => navigate('/technician-dashboard/notifications')}
+                  className="hidden md:inline-flex relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50"
+                  title="Notifications"
+                >
+                  <BellIcon className="w-7 h-7" />
+                </button>
+                <button
+                  onClick={() => setTechnicianOnline((v) => !v)}
+                  className="hidden md:inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl border border-white/60 bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all"
+                  title="Toggle availability"
+                >
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold tracking-wide ${technicianOnline ? 'text-emerald-600' : 'text-slate-500'}`}>
+                    <span className={`w-2 h-2 rounded-full ${technicianOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-400'}`} />
+                    {technicianOnline ? 'ONLINE' : 'OFFLINE'}
+                  </span>
+                  <span className={`relative w-12 h-6 rounded-full transition-all duration-300 ${technicianOnline ? 'bg-gradient-to-r from-teal-500 to-emerald-500 shadow-[0_0_12px_rgba(20,184,166,0.45)]' : 'bg-gradient-to-r from-slate-300 to-slate-400'}`}>
+                    <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md border border-white/70 transition-transform duration-300 ${technicianOnline ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  </span>
+                </button>
+                <div className="relative" ref={dropdownRef}>
+                  <button onClick={() => setShowProfileDropdown(p => !p)} className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors rounded-lg hover:bg-teal-50">
+                    <UserCircleIcon className="w-7 h-7" />
+                  </button>
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                      <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-100 truncate">{user?.email}</div>
+                      <Link to="/technician-dashboard" className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors" onClick={() => setShowProfileDropdown(false)}>
+                        <WrenchScrewdriverIcon className="w-5 h-5" /> My Jobs
+                      </Link>
+                      <Link to="/profile" className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors" onClick={() => setShowProfileDropdown(false)}>
+                        <UserCircleIcon className="w-5 h-5" /> My Profile
+                      </Link>
                       <div className="border-t border-gray-100 mt-1" />
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
                         <ArrowRightOnRectangleIcon className="w-5 h-5" /> Logout
@@ -264,6 +380,19 @@ const Navbar = () => {
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm leading-snug ${isUnread ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>{n.msg}</p>
                                 <p className="text-xs text-gray-400 mt-1">{fmtTime(n.time)}</p>
+                                {n.reviewAction && (
+                                  <button
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      markRead(n.id);
+                                      setShowNotifDropdown(false);
+                                      navigate('/profile', { state: { tab: 'orders', reviewOrderId: n.reviewAction.orderId } });
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
+                                  >
+                                    {n.reviewAction.label}
+                                  </button>
+                                )}
                               </div>
                               {isUnread && <span className="flex-shrink-0 w-2 h-2 bg-teal-500 rounded-full mt-2" />}
                             </div>
@@ -360,7 +489,7 @@ const Navbar = () => {
             <UserCircleIcon className="w-5 h-5" /> About Us
           </Link>
 
-          {isAuthenticated && !isAdmin && (
+          {isAuthenticated && !isAdmin && !isTechnician && (
             <Link to="/services" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <WrenchScrewdriverIcon className="w-5 h-5" /> Services
             </Link>
@@ -370,13 +499,13 @@ const Navbar = () => {
             <PhoneIcon className="w-5 h-5" /> Contact
           </Link>
 
-          {isAuthenticated && !isAdmin && (
+          {isAuthenticated && !isAdmin && !isTechnician && (
             <Link to="/orders" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <ShoppingBagIcon className="w-5 h-5" /> My Orders
             </Link>
           )}
 
-          {isAuthenticated && !isAdmin && (
+          {isAuthenticated && !isAdmin && !isTechnician && (
             <Link to="/cart" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <ShoppingCartIcon className="w-5 h-5" />
               Cart
@@ -384,7 +513,7 @@ const Navbar = () => {
             </Link>
           )}
 
-          {isAuthenticated && !isAdmin && (
+          {isAuthenticated && !isAdmin && !isTechnician && (
             <Link to="/messages" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <ChatBubbleLeftRightIcon className="w-5 h-5" />
               Messages
@@ -392,10 +521,21 @@ const Navbar = () => {
             </Link>
           )}
 
-          {isAuthenticated && !isAdmin && (
+          {isAuthenticated && !isAdmin && !isTechnician && (
             <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
               <UserCircleIcon className="w-5 h-5" /> My Profile
             </Link>
+          )}
+
+          {isTechnician && (
+            <>
+              <Link to="/technician-dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-teal-700 bg-teal-50 hover:bg-teal-100 font-semibold transition-colors">
+                <WrenchScrewdriverIcon className="w-5 h-5" /> My Jobs
+              </Link>
+              <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-teal-50 hover:text-teal-700 font-medium transition-colors">
+                <UserCircleIcon className="w-5 h-5" /> My Profile
+              </Link>
+            </>
           )}
 
           {isAdmin && (

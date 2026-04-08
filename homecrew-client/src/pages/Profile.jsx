@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useDialog } from '../context/DialogContext';
@@ -43,10 +43,21 @@ const Profile = () => {
     confirm_password: '',
   });
   const [resetEmail, setResetEmail] = useState('');
+  const [reviewModalOrder, setReviewModalOrder] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ service_id: '', rating: 5, comment: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
   
   const { isAuthenticated, user, logout } = useAuth();
   const { showAlert, showConfirm } = useDialog();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isTechnicianUser = profile?.role === 'technician' || user?.role === 'technician';
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -54,10 +65,10 @@ const Profile = () => {
       return;
     }
     fetchProfile();
-    if (activeTab === 'orders') {
+    if (activeTab === 'orders' && !isTechnicianUser) {
       fetchOrders();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated, activeTab, isTechnicianUser]);
 
   const fetchProfile = async () => {
     try {
@@ -197,6 +208,45 @@ const Profile = () => {
     navigate('/');
   };
 
+  const openReviewModal = (order) => {
+    const reviewables = (order.reviewable_services || []).filter((service) => !service.reviewed);
+    if (!reviewables.length) return;
+    setReviewModalOrder(order);
+    setReviewForm({ service_id: String(reviewables[0].id), rating: 5, comment: '' });
+  };
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    if (!reviewForm.service_id) return;
+
+    setReviewSubmitting(true);
+    try {
+      await api.post(`/services/${reviewForm.service_id}/review/`, {
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment,
+      });
+      await showAlert('Thanks! Your review has been submitted.', { title: 'Review submitted' });
+      setReviewModalOrder(null);
+      setReviewForm({ service_id: '', rating: 5, comment: '' });
+      await fetchOrders();
+    } catch (error) {
+      await showAlert(error.response?.data?.error || 'Failed to submit review', {
+        title: 'Review failed',
+      });
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!location.state?.reviewOrderId || activeTab !== 'orders' || !orders.length) return;
+    const targetOrder = orders.find((order) => order.id === location.state.reviewOrderId);
+    if (targetOrder?.has_pending_review) {
+      openReviewModal(targetOrder);
+    }
+    navigate(location.pathname, { replace: true, state: { tab: 'orders' } });
+  }, [location.state, activeTab, orders, navigate, location.pathname]);
+
   const inputCls = "w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white transition";
 
   const getStatusBadgeClass = (status) => {
@@ -270,14 +320,20 @@ const Profile = () => {
             Edit Profile
           </button>
           <button
-            onClick={() => setActiveTab('orders')}
+            onClick={() => {
+              if (isTechnicianUser) {
+                navigate('/technician-dashboard/my-jobs');
+                return;
+              }
+              setActiveTab('orders');
+            }}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
               activeTab === 'orders'
                 ? 'bg-teal-600 text-white shadow-md btn-glow'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
-            My Orders
+            {isTechnicianUser ? 'My Jobs' : 'My Orders'}
           </button>
           <button
             onClick={() => setActiveTab('security')}
@@ -311,7 +367,7 @@ const Profile = () => {
                   {profile.first_name} {profile.last_name}
                 </h2>
                 <div className="px-4 py-1.5 bg-teal-100 rounded-full text-sm font-semibold mb-8 text-teal-700">
-                  {profile.role === 'admin' ? '⭐ Admin User' : '👤 Premium User'}
+                  {profile.role === 'admin' ? '⭐ Admin User' : profile.role === 'technician' ? '🛠️ Technician User' : '👤 Premium User'}
                 </div>
 
                 {/* Social Media Section */}
@@ -556,7 +612,7 @@ const Profile = () => {
         )}
 
         {/* Orders Tab */}
-        {activeTab === 'orders' && (
+        {activeTab === 'orders' && !isTechnicianUser && (
           <div className="bg-white rounded-3xl shadow-lg p-10 animate-fade-in-up">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-gray-800 section-heading">My Orders</h2>
@@ -683,15 +739,81 @@ const Profile = () => {
                           </button>
                         )}
                         {order.status === 'DELIVERED' && (
-                          <span className="px-5 py-2 text-green-600 text-sm font-semibold flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-                            Completed
-                          </span>
+                          <>
+                            <span className="px-5 py-2 text-green-600 text-sm font-semibold flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                              Completed
+                            </span>
+                            {order.has_pending_review && (
+                              <button
+                                onClick={() => openReviewModal(order)}
+                                className="btn btn-primary btn-sm"
+                              >
+                                Rate Technician
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {reviewModalOrder && (
+              <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4" onClick={() => setReviewModalOrder(null)}>
+                <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl p-6" onClick={(event) => event.stopPropagation()}>
+                  <h3 className="text-xl font-bold text-gray-800 mb-1">Rate Technician</h3>
+                  <p className="text-sm text-gray-500 mb-5">Order #{reviewModalOrder.id} completed — please share your feedback.</p>
+                  <form className="space-y-4" onSubmit={submitReview}>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service</label>
+                      <select
+                        value={reviewForm.service_id}
+                        onChange={(event) => setReviewForm((prev) => ({ ...prev, service_id: event.target.value }))}
+                        className={inputCls}
+                        required
+                      >
+                        {(reviewModalOrder.reviewable_services || [])
+                          .filter((service) => !service.reviewed)
+                          .map((service) => (
+                            <option key={service.id} value={service.id}>{service.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
+                      <select
+                        value={reviewForm.rating}
+                        onChange={(event) => setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))}
+                        className={inputCls}
+                      >
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                          <option key={rating} value={rating}>{rating} Star{rating > 1 ? 's' : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Comment</label>
+                      <textarea
+                        rows="4"
+                        value={reviewForm.comment}
+                        onChange={(event) => setReviewForm((prev) => ({ ...prev, comment: event.target.value }))}
+                        className={inputCls}
+                        placeholder="Write your experience with the technician..."
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-1">
+                      <button type="submit" disabled={reviewSubmitting} className="btn btn-primary">
+                        {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={() => setReviewModalOrder(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
           </div>
