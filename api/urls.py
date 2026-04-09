@@ -3,6 +3,7 @@ from . import views
 from .support_views import SupportConversationViewSet
 from .chatbot_views import (
     assistant_chat,
+    assistant_detect_image,
     assistant_sessions,
     assistant_session_detail,
     assistant_admin_users,
@@ -47,6 +48,7 @@ urlpatterns = [
     path("auth/", include("djoser.urls.jwt")),
     path("analytics/", views.analytics_dashboard, name="analytics-dashboard"),
     path("assistant/chat/", assistant_chat, name="assistant-chat"),
+    path("detect-image/", assistant_detect_image, name="assistant-detect-image"),
     path("assistant/sessions/", assistant_sessions, name="assistant-sessions"),
     path("assistant/sessions/<int:session_id>/", assistant_session_detail, name="assistant-session-detail"),
     path("assistant/admin/users/", assistant_admin_users, name="assistant-admin-users"),

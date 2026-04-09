@@ -13,6 +13,7 @@ from django.conf import settings as django_settings
 from django.http import HttpResponseRedirect
 from urllib.parse import urlencode
 from django.utils import timezone
+from django.db.models import Sum
 
 # Helper function to get frontend URL
 def get_frontend_url(request=None):
@@ -226,9 +227,18 @@ class OrderViewSet(viewsets.ModelViewSet):
         if not (request.user.is_authenticated and (request.user.is_staff or getattr(request.user, 'role', None) == 'admin')):
             return Response({'detail': 'Only admin can assign technician.'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = AssignTechnicianSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        technician = serializer.validated_data.get('technician')
+        is_electrical = OrderService.is_electrical_order(order=order)
+        if is_electrical:
+            technician = OrderService.get_technician_one()
+            if not technician:
+                return Response(
+                    {'detail': 'Electrical orders require Technician One, but Technician One was not found.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            serializer = AssignTechnicianSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            technician = serializer.validated_data.get('technician')
 
         previous_technician_id = order.assigned_technician_id
         order.assigned_technician = technician
@@ -334,8 +344,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         sslcz = SSLCOMMERZ(settings)
         
-        # Calculate number of items
-        num_items = sum(item.quantity for item in order.items.all())
+        # Calculate number of items with single aggregate query
+        num_items = int(order.items.aggregate(total=Sum('quantity')).get('total') or 0)
 
         source = _normalize_source(request.data.get('source'))
         assistant_session_id = request.data.get('assistant_session_id')
@@ -587,6 +597,7 @@ class PlaceOrderView(generics.GenericAPIView):
             service_address=request.user.address or '',
         )
         total_price = 0
+        service_ids = []
 
         for item in cart.items.select_related('service').all():
             OrderItem.objects.create(
@@ -596,13 +607,14 @@ class PlaceOrderView(generics.GenericAPIView):
                 price=item.service.price,
             )
             total_price += item.quantity * item.service.price
+            service_ids.append(item.service_id)
 
         order.total_price = total_price
         order.save()
 
         OrderService.auto_assign_technician(
             order,
-            service_ids=[item.service_id for item in order.items.all()],
+            service_ids=service_ids,
         )
 
         cart.items.all().delete()

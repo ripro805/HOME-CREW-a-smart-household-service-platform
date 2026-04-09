@@ -334,3 +334,9 @@ BACKEND_URL = config('BACKEND_URL', default=os.environ.get('RENDER_EXTERNAL_URL'
 # Groq AI assistant settings
 GROQ_API_KEY = config('GROQ_API_KEY', default='')
 GROQ_MODEL = config('GROQ_MODEL', default='llama-3.3-70b-versatile')
+
+# Gemini AI assistant settings
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-flash-latest')
+GEMINI_VISION_MODEL = config('GEMINI_VISION_MODEL', default='gemini-flash-latest')
+GEMINI_TIMEOUT_SECONDS = config('GEMINI_TIMEOUT_SECONDS', default=3, cast=int)

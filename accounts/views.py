@@ -333,10 +333,13 @@ def service_history(request):
 		2. Returns order ID, service ID, name, status, and date.
 		3. Useful for client dashboards and history tracking.
 		"""
-		orders = request.user.orders.all().prefetch_related('services')
+		orders = request.user.orders.prefetch_related('items__service').all()
 		history = []
 		for order in orders:
-			for service in order.services.all():
+			for item in order.items.all():
+				service = item.service
+				if not service:
+					continue
 				history.append({
 					'order_id': order.id,
 					'service_id': service.id,

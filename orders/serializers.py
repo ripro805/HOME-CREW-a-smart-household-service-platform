@@ -252,14 +252,38 @@ class OrderSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return getattr(request, 'user', None)
 
+    def _review_ids_cache(self):
+        cache = self.context.get('_reviewed_service_ids_cache')
+        if cache is None:
+            cache = {}
+            self.context['_reviewed_service_ids_cache'] = cache
+        return cache
+
+    def _unique_items_cache(self):
+        cache = self.context.get('_unique_order_items_cache')
+        if cache is None:
+            cache = {}
+            self.context['_unique_order_items_cache'] = cache
+        return cache
+
     def _get_unique_items(self, obj):
+        cached_items = self._unique_items_cache().get(obj.id)
+        if cached_items is not None:
+            return cached_items
+
         unique = {}
         for item in obj.items.all():
             if item.service_id not in unique:
                 unique[item.service_id] = item
-        return list(unique.values())
+        items = list(unique.values())
+        self._unique_items_cache()[obj.id] = items
+        return items
 
     def get_reviewed_service_ids(self, obj):
+        cached_review_ids = self._review_ids_cache().get(obj.id)
+        if cached_review_ids is not None:
+            return cached_review_ids
+
         user = self._get_request_user()
         if not user or not user.is_authenticated or getattr(user, 'role', None) != 'client':
             return []
@@ -270,11 +294,13 @@ class OrderSerializer(serializers.ModelSerializer):
         if not service_ids:
             return []
 
-        return list(
+        reviewed_ids = list(
             Review.objects.filter(client=user, service_id__in=service_ids)
             .values_list('service_id', flat=True)
             .distinct()
         )
+        self._review_ids_cache()[obj.id] = reviewed_ids
+        return reviewed_ids
 
     def get_reviewable_services(self, obj):
         reviewed_ids = set(self.get_reviewed_service_ids(obj))

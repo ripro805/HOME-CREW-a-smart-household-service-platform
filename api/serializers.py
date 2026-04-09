@@ -186,16 +186,32 @@ class AssistantChatSessionListSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "last_message_preview", "last_message_at", "created_at", "updated_at"]
 
     def get_last_message_preview(self, obj):
-        last_message = obj.messages.order_by("-created_at").first()
-        if not last_message:
+        text = getattr(obj, "last_message_text", None)
+        if text is None:
+            last_message = obj.messages.order_by("-created_at").values_list("text", flat=True).first()
+            text = last_message or ""
+
+        text = (text or "").strip()
+        if not text:
             return ""
-        text = (last_message.text or "").strip()
         return text if len(text) <= 88 else f"{text[:85]}..."
 
 
 class AssistantChatSessionDetailSerializer(serializers.ModelSerializer):
-    messages = AssistantChatMessageSerializer(many=True, read_only=True)
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = AssistantChatSession
         fields = ["id", "title", "context", "last_message_at", "created_at", "updated_at", "messages"]
+
+    def get_messages(self, obj):
+        limit = self.context.get("messages_limit")
+        queryset = obj.messages.order_by("-created_at")
+
+        if isinstance(limit, int) and limit > 0:
+            items = list(queryset[:limit])
+        else:
+            items = list(queryset)
+
+        items.reverse()  # Oldest -> newest for UI continuity
+        return AssistantChatMessageSerializer(items, many=True).data

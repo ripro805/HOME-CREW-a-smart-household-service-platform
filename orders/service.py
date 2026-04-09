@@ -10,6 +10,50 @@ from services.models import Service
 
 class OrderService:
     @staticmethod
+    def get_technician_one():
+        """Return the dedicated technician for electrical jobs: Technician One."""
+        technician = (
+            User.objects.filter(
+                role='technician',
+                is_active=True,
+                first_name__iexact='Technician',
+                last_name__iexact='One',
+            )
+            .order_by('id')
+            .first()
+        )
+        if technician:
+            return technician
+
+        # Fallback matching in case naming varies slightly in data.
+        return (
+            User.objects.filter(
+                role='technician',
+                is_active=True,
+            )
+            .filter(
+                first_name__icontains='technician',
+                last_name__icontains='one',
+            )
+            .order_by('id')
+            .first()
+        )
+
+    @staticmethod
+    def is_electrical_order(order=None, service_ids=None):
+        """Check whether an order contains any Electrical Work category service."""
+        if service_ids:
+            return Service.objects.filter(
+                id__in=service_ids,
+                category__name__icontains='electrical',
+            ).exists()
+
+        if order is None:
+            return False
+
+        return order.items.filter(service__category__name__icontains='electrical').exists()
+
+    @staticmethod
     def _tokenize_address(value):
         text = (value or '').lower().strip()
         if not text:
@@ -83,6 +127,15 @@ class OrderService:
     @staticmethod
     def auto_assign_technician(order, service_ids=None):
         if order.assigned_technician_id:
+            return order
+
+        # Hard business rule: electrical orders must always go to Technician One.
+        if OrderService.is_electrical_order(order=order, service_ids=service_ids):
+            technician_one = OrderService.get_technician_one()
+            if technician_one:
+                order.assigned_technician = technician_one
+                order.assigned_at = timezone.now()
+                order.save(update_fields=['assigned_technician', 'assigned_at'])
             return order
 
         address_text = (order.service_address or '').strip() or (order.client.address or '').strip()

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -14,6 +14,12 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../api/axios';
 import { useDialog } from '../context/DialogContext';
+import VoiceButton from '../components/chat/VoiceButton';
+import SmartReplyList from '../components/chat/SmartReplyList';
+import RecommendationCard from '../components/chat/RecommendationCard';
+import ImageUploadButton from '../components/chat/ImageUploadButton';
+import CameraCaptureButton from '../components/chat/CameraCaptureButton';
+import ImagePreview from '../components/chat/ImagePreview';
 
 const DEFAULT_CONTEXT = {
   service_id: null,
@@ -36,6 +42,106 @@ const QUICK_PROMPTS = [
   'Mirpur e available slot ache?',
 ];
 
+const KEYWORD_RULES = [
+  {
+    keys: ['ac', 'air conditioner', 'cooling', 'এসি', 'ac problem', 'ac issue'],
+    smartReplies: ['Price koto?', 'Kobe asbe?', 'Nearby technician', 'Gas refill lagbe?'],
+    recommendations: [
+      {
+        id: 'ac-1',
+        serviceType: 'AC Servicing',
+        technicianName: 'Md. Rahim',
+        rating: 4.8,
+        priceEstimate: '৳1200 - ৳1800',
+        bookPrompt: 'Ami AC servicing book korte chai',
+      },
+      {
+        id: 'ac-2',
+        serviceType: 'AC Gas Refill',
+        technicianName: 'Shahid Hasan',
+        rating: 4.7,
+        priceEstimate: '৳2200 - ৳3200',
+        bookPrompt: 'Ami AC gas refill er booking korte chai',
+      },
+    ],
+  },
+  {
+    keys: ['fan', 'ceiling fan', 'pakha', 'পাখা', 'wiring', 'electric', 'ফ্যান', 'ইলেকট্রিক', 'ইলেকট্রিশিয়ান'],
+    smartReplies: ['Technician kokhon free?', 'Estimated cost bolo', 'Urgent service possible?'],
+    recommendations: [
+      {
+        id: 'elec-1',
+        serviceType: 'Fan Repair & Wiring',
+        technicianName: 'Naim Uddin',
+        rating: 4.6,
+        priceEstimate: '৳700 - ৳1500',
+        bookPrompt: 'Fan repair and wiring service book korte chai',
+      },
+    ],
+  },
+  {
+    keys: ['clean', 'cleaning', 'deep clean', 'kitchen', 'rannaghor', 'রান্নাঘর', 'nongra', 'nogra', 'নোংরা', 'sofa', 'ক্লিন', 'পরিষ্কার', 'সোফা'],
+    smartReplies: ['Package ki ki?', 'Koto somoy lagbe?', 'Discount ache?'],
+    recommendations: [
+      {
+        id: 'clean-1',
+        serviceType: 'Home Deep Cleaning',
+        technicianName: 'Tania Sultana',
+        rating: 4.9,
+        priceEstimate: '৳2500 - ৳5000',
+        bookPrompt: 'Home deep cleaning service book korte chai',
+      },
+      {
+        id: 'clean-2',
+        serviceType: 'Sofa Cleaning',
+        technicianName: 'Rifat Karim',
+        rating: 4.7,
+        priceEstimate: '৳900 - ৳1800',
+        bookPrompt: 'Sofa cleaning service book korte chai',
+      },
+    ],
+  },
+];
+
+const DEFAULT_SMART_REPLIES = ['Price koto?', 'Available slot ache?', 'Ami booking korte chai'];
+
+const getRuleByMessage = (message = '') => {
+  const text = message.toLowerCase();
+  return KEYWORD_RULES.find((rule) => rule.keys.some((key) => text.includes(key)));
+};
+
+const getSmartRepliesForMessage = (message = '') => {
+  const rule = getRuleByMessage(message);
+  return (rule?.smartReplies || DEFAULT_SMART_REPLIES).slice(0, 5);
+};
+
+const getRecommendationsForMessage = (message = '') => {
+  const rule = getRuleByMessage(message);
+  return (rule?.recommendations || []).slice(0, 3);
+};
+
+const getRecommendationsFromDetection = (detection = {}) => {
+  const suggestedService = String(detection?.suggested_service || '').trim();
+  const problemType = String(detection?.problem_type || '').trim();
+  const combined = `${suggestedService} ${problemType}`.trim();
+
+  if (!combined) return [];
+
+  const fromKeywords = getRecommendationsForMessage(combined);
+  if (fromKeywords.length) return fromKeywords;
+
+  return [
+    {
+      id: `detected-${suggestedService || 'general'}`,
+      serviceType: suggestedService || 'General Technician Service',
+      technicianName: 'On-demand Technician',
+      rating: 4.7,
+      priceEstimate: '৳800 - ৳2200',
+      bookPrompt: `Ami ${suggestedService || 'general service'} book korte chai`,
+    },
+  ];
+};
+
 const Assistant = () => {
   const navigate = useNavigate();
   const { showConfirm, showAlert } = useDialog();
@@ -50,6 +156,18 @@ const Assistant = () => {
 
   const [context, setContext] = useState(DEFAULT_CONTEXT);
   const [services, setServices] = useState([]);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [voiceHint, setVoiceHint] = useState('');
+  const [voiceLanguage, setVoiceLanguage] = useState('bn-BD');
+  const [smartReplies, setSmartReplies] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [imageApiResponse, setImageApiResponse] = useState(null);
+  const [imageAnalyzing, setImageAnalyzing] = useState(false);
+  const recognitionRef = useRef(null);
+  const sendMessageRef = useRef(null);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -63,10 +181,44 @@ const Assistant = () => {
     [sessions, activeSessionId]
   );
 
-  const canSend = useMemo(() => text.trim().length > 0 && !loading, [text, loading]);
+  const canSend = useMemo(
+    () => (text.trim().length > 0 || Boolean(uploadedImage)) && !loading && !imageAnalyzing,
+    [text, uploadedImage, loading, imageAnalyzing]
+  );
 
-  const pushMessage = (role, messageText, data = null) => {
-    setMessages((prev) => [...prev, { role, text: messageText, data }]);
+  const pushMessage = (role, messageText, data = null, extra = {}) => {
+    setMessages((prev) => [...prev, { role, text: messageText, data, ...extra }]);
+  };
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageSelect = async (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith('image/')) {
+      setVoiceHint('Please select a valid image file.');
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setUploadedImage(file);
+      setPreviewUrl(dataUrl);
+      setImageApiResponse(null);
+    } catch {
+      setUploadedImage(null);
+      setPreviewUrl('');
+    }
+  };
+
+  const clearSelectedImage = () => {
+    setUploadedImage(null);
+    setPreviewUrl('');
   };
 
   const increaseVisibleServices = (messageKey, totalCount) => {
@@ -81,6 +233,7 @@ const Assistant = () => {
       role: message.role,
       text: message.text,
       data: message.data || null,
+      type: message.data?.message_type || null,
     }));
 
   const loadSessions = async () => {
@@ -103,7 +256,9 @@ const Assistant = () => {
 
   const openSession = async (sessionId) => {
     try {
-      const response = await api.get(`/assistant/sessions/${sessionId}/`);
+      const response = await api.get(`/assistant/sessions/${sessionId}/`, {
+        params: { limit: 120 },
+      });
       const payload = response.data || {};
 
       setActiveSessionId(payload.id || sessionId);
@@ -261,6 +416,8 @@ const Assistant = () => {
     }
 
     pushMessage('user', body);
+    setSmartReplies([]);
+    setRecommendations([]);
     setText('');
     setLoading(true);
 
@@ -279,6 +436,11 @@ const Assistant = () => {
       }
 
       pushMessage('assistant', payload.reply || 'I could not generate a reply this time.', payload.data || null);
+
+      const nextReplies = getSmartRepliesForMessage(body);
+      const nextRecommendations = getRecommendationsForMessage(body);
+      setSmartReplies(nextReplies);
+      setRecommendations(nextRecommendations);
 
       if (payload.context) {
         setContext((prev) => ({ ...prev, ...payload.context }));
@@ -323,6 +485,244 @@ const Assistant = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendImageMessage = async (messageText = '') => {
+    if (!uploadedImage || imageAnalyzing || loading) return;
+
+    let sessionId = activeSessionId;
+    const caption = (messageText || text || '').trim();
+    const imageDataUrl = previewUrl;
+
+    if (!sessionId) {
+      try {
+        const response = await api.post('/assistant/sessions/', { title: caption.slice(0, 70) || 'Image Detection Chat' });
+        const created = response.data;
+        sessionId = created?.id;
+        if (sessionId) {
+          setActiveSessionId(sessionId);
+          setSessions((prev) => [
+            {
+              id: sessionId,
+              title: created.title || caption.slice(0, 70) || 'Image Detection Chat',
+              last_message_preview: '',
+              last_message_at: created.last_message_at,
+              created_at: created.created_at,
+              updated_at: created.updated_at,
+            },
+            ...prev,
+          ]);
+        }
+      } catch {
+        // fallback: continue without session
+      }
+    }
+
+    const userImageText = caption || '📷 Image uploaded';
+    pushMessage('user', userImageText, {
+      message_type: 'image',
+      caption,
+      image_preview_url: imageDataUrl,
+    }, {
+      type: 'image',
+      imageUrl: imageDataUrl,
+      caption,
+    });
+
+    setText('');
+    setSmartReplies([]);
+    setRecommendations([]);
+    setImageAnalyzing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', uploadedImage);
+      if (caption) formData.append('message', caption);
+      if (sessionId) formData.append('session_id', String(sessionId));
+
+      const response = await api.post('/detect-image/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const payload = response.data || {};
+      const effectiveSessionId = payload.session_id || sessionId || null;
+      if (effectiveSessionId && effectiveSessionId !== activeSessionId) {
+        setActiveSessionId(effectiveSessionId);
+      }
+
+      if (effectiveSessionId) {
+        setSessions((prev) => {
+          const existing = prev.find((item) => item.id === effectiveSessionId);
+          const preview = payload.reply || userImageText;
+
+          if (!existing) {
+            return [
+              {
+                id: effectiveSessionId,
+                title: userImageText.slice(0, 70) || 'Image Detection Chat',
+                last_message_preview: preview,
+                last_message_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+              ...prev,
+            ];
+          }
+
+          return [
+            {
+              ...existing,
+              last_message_preview: preview,
+              last_message_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            ...prev.filter((item) => item.id !== effectiveSessionId),
+          ];
+        });
+      }
+
+      setImageApiResponse(payload);
+
+      pushMessage(
+        'assistant',
+        payload.reply || 'Image analyzed successfully.',
+        {
+          ...(payload.data || {}),
+          source: payload.source || 'gemini',
+        }
+      );
+
+      const smartFromImage = getSmartRepliesForMessage(
+        `${payload?.data?.problem_type || ''} ${payload?.data?.suggested_service || ''} ${caption}`
+      );
+      const recFromImage = getRecommendationsFromDetection(payload?.data || {});
+      setSmartReplies(smartFromImage);
+      setRecommendations(recFromImage);
+    } catch (error) {
+      pushMessage(
+        'assistant',
+        error.response?.data?.detail || 'Image analysis failed. Please try again.',
+        { source: 'gemini' }
+      );
+    } finally {
+      clearSelectedImage();
+      setImageAnalyzing(false);
+    }
+  };
+
+  const handleSendAction = () => {
+    if (uploadedImage) {
+      sendImageMessage();
+      return;
+    }
+    sendMessage();
+  };
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      setVoiceHint('Voice input is not supported in this browser.');
+      return undefined;
+    }
+
+    setSpeechSupported(true);
+    setVoiceHint('');
+    const recognition = new SpeechRecognition();
+    recognition.lang = voiceLanguage;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceHint(voiceLanguage === 'bn-BD' ? 'শুনছি... এখন কথা বলুন' : 'Listening... speak now');
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setVoiceHint((prev) => (
+        prev === 'Listening... speak now' || prev === 'শুনছি... এখন কথা বলুন' ? '' : prev
+      ));
+    };
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      const errorType = event?.error;
+      if (errorType === 'no-speech') {
+        setVoiceHint(voiceLanguage === 'bn-BD' ? 'কোনো শব্দ ধরা যায়নি, আবার চেষ্টা করুন।' : 'No speech detected. Please try again.');
+        return;
+      }
+      if (errorType === 'not-allowed' || errorType === 'service-not-allowed') {
+        setVoiceHint(
+          voiceLanguage === 'bn-BD'
+            ? 'মাইক্রোফোন পারমিশন বন্ধ আছে। Allow করে আবার চেষ্টা করুন।'
+            : 'Microphone access denied. Please allow mic permission and retry.'
+        );
+        return;
+      }
+      setVoiceHint(voiceLanguage === 'bn-BD' ? 'ভয়েস ইনপুট ব্যর্থ হয়েছে, আবার চেষ্টা করুন।' : 'Voice input failed. Please try again.');
+    };
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const chunk = event.results[i]?.[0]?.transcript || '';
+        if (event.results[i].isFinal) {
+          finalTranscript += chunk;
+        } else {
+          interimTranscript += chunk;
+        }
+      }
+
+      const combined = (finalTranscript || interimTranscript).trim();
+      if (combined) setText(combined);
+
+      if (finalTranscript.trim()) {
+        const spoken = finalTranscript.trim();
+        setVoiceHint(voiceLanguage === 'bn-BD' ? 'ভয়েস নেওয়া হয়েছে, পাঠানো হচ্ছে...' : 'Voice captured. Sending...');
+        sendMessageRef.current?.(spoken);
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.abort();
+      recognitionRef.current = null;
+    };
+  }, [voiceLanguage]);
+
+  const toggleVoiceInput = async () => {
+    if (!speechSupported || loading || !recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.lang = voiceLanguage;
+        recognitionRef.current.start();
+      } catch (error) {
+        setIsListening(false);
+        setVoiceHint(voiceLanguage === 'bn-BD' ? 'মাইক চালু করা যায়নি, আবার চেষ্টা করুন।' : 'Could not start microphone. Please retry.');
+        await showAlert('Microphone start kora jacche na. Browser permission allow kore abar try korun. Language BN/EN switch koreo try korte paren.', {
+          title: 'Voice input error',
+        });
+      }
+    }
+  };
+
+  const onSmartReplySelect = (reply) => {
+    if (!reply) return;
+    sendMessage(reply);
+  };
+
+  const onRecommendationBook = (recommendation) => {
+    const prompt = recommendation?.bookPrompt || `Ami ${recommendation?.serviceType || 'service'} book korte chai`;
+    sendMessage(prompt);
   };
 
   const startAssistantPayment = async (orderId, messageData = null) => {
@@ -602,6 +1002,12 @@ const Assistant = () => {
                     }`}
                   >
                     <p>{message.text}</p>
+                    {(message.type === 'image' || message.data?.message_type === 'image') && (message.imageUrl || message.data?.image_preview_url) && (
+                      <div className="mt-3 rounded-xl overflow-hidden border border-white/20 bg-black/10">
+                        <img src={message.imageUrl || message.data?.image_preview_url} alt="Uploaded issue" className="max-h-60 w-full object-contain bg-black/10" />
+                        {(message.caption || message.data?.caption) ? <p className="px-3 py-2 text-xs text-white/90">{message.caption || message.data?.caption}</p> : null}
+                      </div>
+                    )}
                     {message.data?.services?.length > 0 && (
                       <div className="mt-3 rounded-xl bg-white/10 p-3 text-xs">
                         {(() => {
@@ -668,6 +1074,36 @@ const Assistant = () => {
                   <div className="rounded-[24px] bg-slate-900 px-5 py-3 text-sm text-slate-200">Typing...</div>
                 </div>
               )}
+              {imageAnalyzing && (
+                <div className="flex justify-start">
+                  <div className="rounded-[24px] bg-slate-900 px-5 py-3 text-sm text-slate-200">Analyzing image...</div>
+                </div>
+              )}
+
+              {!loading && smartReplies.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="max-w-2xl w-full">
+                    <SmartReplyList replies={smartReplies} onSelect={onSmartReplySelect} />
+                  </div>
+                </div>
+              )}
+
+              {!loading && recommendations.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="max-w-3xl w-full rounded-2xl border border-cyan-100 bg-cyan-50/40 p-3 backdrop-blur transition-all duration-300 animate-[fadeIn_0.25s_ease]">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Recommended For You</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {recommendations.map((recommendation) => (
+                        <RecommendationCard
+                          key={recommendation.id}
+                          recommendation={recommendation}
+                          onBookNow={onRecommendationBook}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -680,7 +1116,7 @@ const Assistant = () => {
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
-                    sendMessage();
+                    handleSendAction();
                   }
                 }}
                 placeholder="Type your question. Example: Fan problem, ki service lagbe?"
@@ -688,13 +1124,55 @@ const Assistant = () => {
               />
               <button
                 type="button"
-                onClick={() => sendMessage()}
+                onClick={handleSendAction}
                 disabled={!canSend}
                 className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <PaperAirplaneIcon className="h-4 w-4" /> Send
+                <PaperAirplaneIcon className="h-4 w-4" /> {uploadedImage ? 'Send Image' : 'Send'}
               </button>
+              <VoiceButton
+                isListening={isListening}
+                isSupported={speechSupported}
+                onToggle={toggleVoiceInput}
+                disabled={loading || imageAnalyzing}
+              />
             </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 px-2">
+              <ImageUploadButton onSelect={handleImageSelect} disabled={loading || imageAnalyzing} />
+              <CameraCaptureButton onSelect={handleImageSelect} disabled={loading || imageAnalyzing} />
+              {imageApiResponse?.source ? (
+                <span className="text-[11px] font-semibold text-slate-500">Image AI source: {imageApiResponse.source}</span>
+              ) : null}
+            </div>
+            <ImagePreview
+              previewUrl={previewUrl}
+              fileName={uploadedImage?.name}
+              onRemove={clearSelectedImage}
+            />
+            {speechSupported && (
+              <div className="mt-2 px-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Voice language</span>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLanguage('bn-BD')}
+                  disabled={isListening}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${voiceLanguage === 'bn-BD' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-60`}
+                >
+                  বাংলা
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLanguage('en-US')}
+                  disabled={isListening}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${voiceLanguage === 'en-US' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} disabled:opacity-60`}
+                >
+                  English
+                </button>
+              </div>
+            )}
+            {!!voiceHint && (
+              <p className="mt-2 px-2 text-xs font-medium text-slate-500">{voiceHint}</p>
+            )}
           </div>
         </section>
       </div>

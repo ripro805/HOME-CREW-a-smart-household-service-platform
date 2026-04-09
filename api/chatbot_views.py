@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import json
 import re
+import base64
+import ast
 from pathlib import Path
 from typing import Any
 
 import requests
 from django.conf import settings
-from django.db.models import Q, Avg, Count, Max, Min
+from django.db.models import Q, Avg, Count, Max, Min, OuterRef, Subquery
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -26,6 +29,133 @@ from .serializers import (
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+ALLOWED_AI_INTENTS = {
+    "service_info",
+    "booking_assistant",
+    "service_recommendation",
+    "order_tracking",
+    "review_feedback",
+    "location_availability",
+}
+
+
+def _gemini_api_url() -> str:
+    model_name = getattr(settings, "GEMINI_MODEL", "gemini-flash-latest")
+    return f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+
+
+def _gemini_vision_api_url() -> str:
+    model_name = getattr(settings, "GEMINI_VISION_MODEL", "gemini-flash-latest")
+    return f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+
+
+def _gemini_vision_models_to_try() -> list[str]:
+    candidates = [
+        getattr(settings, "GEMINI_VISION_MODEL", ""),
+        getattr(settings, "GEMINI_MODEL", ""),
+        "gemini-flash-latest",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+    ]
+    cleaned: list[str] = []
+    for model_name in candidates:
+        value = str(model_name or "").strip()
+        if value and value not in cleaned:
+            cleaned.append(value)
+    return cleaned
+
+
+def _build_ai_classifier_prompt(message: str, services: list[dict[str, Any]]) -> str:
+    schema = {
+        "intent": "one of service_info|booking_assistant|service_recommendation|order_tracking|review_feedback|location_availability",
+        "problem_summary": "short one-line issue summary in plain text",
+        "suggested_service_names": ["service names from available services list only"],
+    }
+
+    examples = [
+        {
+            "user": "amar ac thanda kom dicche, best option bolen",
+            "json": {
+                "intent": "service_recommendation",
+                "problem_summary": "AC cooling issue",
+                "suggested_service_names": ["AC Servicing"],
+            },
+        },
+        {
+            "user": "booking korte chai kal dhaka mirpur e",
+            "json": {
+                "intent": "booking_assistant",
+                "problem_summary": "User wants to create booking",
+                "suggested_service_names": [],
+            },
+        },
+        {
+            "user": "order 152 status bolo",
+            "json": {
+                "intent": "order_tracking",
+                "problem_summary": "User asked for order status",
+                "suggested_service_names": [],
+            },
+        },
+        {
+            "user": "ghar nongra hoye ase",
+            "json": {
+                "intent": "service_recommendation",
+                "problem_summary": "Home needs cleaning",
+                "suggested_service_names": ["House Cleaning - Basic"],
+            },
+        },
+        {
+            "user": "plug e spark hocche, socket e agun er moto",
+            "json": {
+                "intent": "service_recommendation",
+                "problem_summary": "Electrical spark/fire risk",
+                "suggested_service_names": ["Socket & Switch Repair"],
+            },
+        },
+        {
+            "user": "fridge thanda kore na",
+            "json": {
+                "intent": "service_recommendation",
+                "problem_summary": "Fridge cooling issue",
+                "suggested_service_names": ["Appliance Repair - Refrigerator Repair"],
+            },
+        },
+    ]
+
+    available_categories = sorted({str(item.get("category") or "General") for item in services})
+
+    return (
+        "You are an intent + recommendation classifier for a Bangladesh household service assistant. "
+        "User messages can be Bengali, Banglish, or English.\n"
+        "Rules:\n"
+        "1) Return strictly valid compact JSON only. No markdown, no prose.\n"
+        "2) Keep intent exactly from allowed values.\n"
+        "3) suggested_service_names must use only names from available services when possible.\n"
+        "4) If uncertain, prefer service_recommendation intent.\n"
+        "5) Keep problem_summary short and practical.\n"
+        "6) Do NOT suggest unrelated categories (example: sofa/furniture/wood problems must map to Carpentry, not AC or Cleaning).\n"
+        "7) Priority category mapping: "
+        "dirty/nongra/moila=>House Cleaning or Deep Cleaning; "
+        "spark/fire/socket/wiring=>Electrical Work; "
+        "fridge/washing machine/microwave/oven=>Appliance Repair; "
+        "door/wood/furniture=>Carpentry; "
+        "leak/pipe/drain=>Plumbing; "
+        "paint/rong/wall=>Painting; "
+        "insect/mosquito/cockroach=>Pest Control; "
+        "shift/move/packing=>Moving Services; "
+        "clothes/wash/iron/laundry=>Laundry Services; "
+        "garden/grass/tree=>Gardening; "
+        "ac/cooling=>AC Repair.\n"
+        "8) suggested_service_names must be from the provided service list and should best match the detected category.\n"
+        f"Allowed intents: {sorted(ALLOWED_AI_INTENTS)}\n"
+        f"Available categories: {json.dumps(available_categories, ensure_ascii=False)}\n"
+        f"Output schema: {json.dumps(schema, ensure_ascii=False)}\n"
+        f"Few-shot examples: {json.dumps(examples, ensure_ascii=False)}\n"
+        f"Available services: {json.dumps(services, ensure_ascii=False)}\n"
+        f"User message: {message}"
+    )
+
 STATUS_TEXT = {
     Order.NOT_PAID: "Payment pending. Complete payment to confirm your booking.",
     Order.READY_TO_SHIP: "Booking confirmed. Technician scheduling is in progress.",
@@ -39,13 +169,52 @@ PROBLEM_KEYWORD_TO_SERVICE = {
     "air condition": "AC",
     "air conditioner": "AC",
     "fan": "Electrical",
+    "ceiling fan": "Electrical",
+    "pakha": "Electrical",
+    "পাখা": "Electrical",
+    "ফ্যান": "Electrical",
     "light": "Electrical",
     "lights off": "Electrical",
     "switch": "Electrical",
     "socket": "Electrical",
+    "plug": "Electrical",
+    "outlet": "Electrical",
+    "switchboard": "Electrical",
     "wire": "Electrical",
     "wiring": "Electrical",
+    "electric": "Electrical",
+    "electrical": "Electrical",
+    "charge": "Electrical",
+    "charging": "Electrical",
+    "charger": "Electrical",
+    "short": "Electrical",
+    "short circuit": "Electrical",
+    "spark": "Electrical",
+    "fire": "Electrical",
+    "smoke": "Electrical",
+    "burn": "Electrical",
+    "burning": "Electrical",
+    "আগুন": "Electrical",
+    "স্পার্ক": "Electrical",
+    "শর্ট": "Electrical",
+    "সকেট": "Electrical",
+    "প্লাগ": "Electrical",
+    "তার": "Electrical",
+    "ধোঁয়া": "Electrical",
+    "ধোঁয়া": "Electrical",
+    "পুড়ে": "Electrical",
+    "পোড়া": "Electrical",
     "rong": "Painting",
+    "রং": "Painting",
+    "রঙ": "Painting",
+    "পেইন্ট": "Painting",
+    "painting": "Painting",
+    "দেয়াল": "Painting",
+    "দেয়াল": "Painting",
+    "খসে": "Painting",
+    "খসে পড়": "Painting",
+    "খসে পড়ে": "Painting",
+    "চুন": "Painting",
     "paint": "Painting",
     "color": "Painting",
     "colour": "Painting",
@@ -57,8 +226,129 @@ PROBLEM_KEYWORD_TO_SERVICE = {
     "dirty": "Cleaning",
     "clean": "Cleaning",
     "kitchen": "Cleaning",
+    "kitchen dirty": "Deep Cleaning",
+    "kitchen nongra": "Deep Cleaning",
+    "rannaghor": "Deep Cleaning",
+    "ranna ghor": "Deep Cleaning",
+    "রান্নাঘর": "Deep Cleaning",
+    "রান্না ঘর": "Deep Cleaning",
+    "রান্নাঘর নোংরা": "Deep Cleaning",
+    "রান্নাঘর ময়লা": "Deep Cleaning",
     "bathroom": "Cleaning",
+    "nongra": "Cleaning",
+    "nogra": "Cleaning",
+    "noṅgra": "Cleaning",
+    "moila": "Cleaning",
+    "নোংরা": "Cleaning",
+    "ময়লা": "Cleaning",
+    "ময়লা": "Cleaning",
+    "ঘর নোংরা": "Cleaning",
+    "বাসা নোংরা": "Cleaning",
+    "house dirty": "Cleaning",
+    "mosha": "Pest",
+    "মশা": "Pest",
+    "cockroach": "Pest",
+    "তেলাপোকা": "Pest",
+    "pest": "Pest",
+    "shift": "Moving",
+    "moving": "Moving",
+    "relocation": "Moving",
+    "laundry": "Laundry",
+    "wash & fold": "Laundry",
+    "garden": "Gardening",
+    "bagan": "Gardening",
+    "baganer": "Gardening",
+    "ghash": "Gardening",
+    "fridge": "Appliance",
+    "refrigerator": "Appliance",
+    "washing machine": "Appliance",
+    "sofa": "Carpentry",
+    "furniture": "Carpentry",
+    "wood": "Carpentry",
+    "carpentry": "Carpentry",
+    "cabinet": "Carpentry",
+    "wardrobe": "Carpentry",
+    "table": "Carpentry",
+    "chair": "Carpentry",
+    "door": "Carpentry",
+    "window": "Carpentry",
+    "hinge": "Carpentry",
+    "ভাঙা": "Carpentry",
+    "broken sofa": "Carpentry",
+    "আলমারি": "Carpentry",
+    "কাঠ": "Carpentry",
+    "কাঠের": "Carpentry",
+    "দরজা": "Carpentry",
+    "জানালা": "Carpentry",
 }
+
+
+CATEGORY_KEYWORD_HINTS: dict[str, list[str]] = {
+    "Carpentry": [
+        "sofa", "couch", "furniture", "wood", "wooden", "carpentry", "carpenter", "cabinet", "wardrobe",
+        "table", "chair", "door", "window", "hinge", "shelf", "bed", "drawer",
+        "ভাঙা", "কাঠ", "কাঠের", "দরজা", "জানালা", "আলমারি", "ফার্নিচার", "সোফা",
+    ],
+    "Painting": [
+        "paint", "painting", "rong", "রং", "রঙ", "পেইন্ট", "দেয়াল", "দেয়াল", "wall", "color", "colour", "খসে",
+    ],
+    "Plumbing": [
+        "plumb", "pipe", "drain", "leak", "water leak", "tap", "faucet", "toilet", "washroom", "পানি", "লিক", "পাইপ",
+    ],
+    "Electrical Work": [
+        "fan", "ceiling fan", "pakha", "পাখা", "ফ্যান", "light", "switch", "socket", "plug", "outlet", "switchboard", "wire", "wiring", "electric", "electrical",
+        "charge", "charging", "charger", "short", "short circuit", "spark", "fire", "smoke", "burning",
+        "বিদ্যুৎ", "কারেন্ট", "ফ্যান", "লাইট", "সকেট", "প্লাগ", "তার", "আগুন", "স্পার্ক", "শর্ট", "ধোঁয়া", "ধোঁয়া",
+    ],
+    "AC Repair": [
+        "ac", "air condition", "air conditioner", "cooling", "compressor", "এসি",
+    ],
+    "House Cleaning": [
+        "clean", "cleaning", "dirty", "kitchen", "bathroom", "mop", "sanitize", "home cleaning", "house cleaning",
+        "nongra", "nogra", "moila", "ghar", "basha", "নোংরা", "ময়লা", "ময়লা", "ঘর নোংরা", "বাসা নোংরা", "বাসা পরিষ্কার", "ঘর পরিষ্কার", "পরিষ্কার",
+    ],
+    "Deep Cleaning": [
+        "deep clean", "deep cleaning", "full clean", "intensive clean", "stain removal", "sanitize full",
+        "deep", "kitchen dirty", "kitchen nongra", "rannaghor", "ranna ghor", "রান্নাঘর", "রান্না ঘর",
+        "grease", "oily", "ডিপ ক্লিন", "গভীর পরিষ্কার", "পুরা বাসা পরিষ্কার", "রান্নাঘর নোংরা",
+    ],
+    "Appliance Repair": [
+        "fridge", "refrigerator", "washing machine", "washer", "microwave", "oven", "geyser", "heater", "tv", "dishwasher", "freezer",
+        "appliance", "electronic item", "ফ্রিজ", "ওয়াশিং মেশিন", "ওয়াশিং মেশিন", "মাইক্রোওয়েভ", "মাইক্রোওয়েভ", "গিজার", "হিটার", "টিভি",
+    ],
+    "Pest Control": [
+        "pest", "mosquito", "mosha", "cockroach", "insect", "termite", "rat", "bed bug", "bug", "fumigation",
+        "মশা", "তেলাপোকা", "উই", "ইঁদুর", "পোকা", "পেস্ট",
+    ],
+    "Moving Services": [
+        "move", "moving", "shift", "shifting", "basha shift", "ghar shift", "relocate", "relocation", "packers", "pack", "transport",
+        "বাসা বদল", "শিফট", "মুভ", "প্যাকিং", "বহন", "স্থানান্তর",
+    ],
+    "Laundry Services": [
+        "laundry", "wash clothes", "washing", "iron", "press", "dry clean", "garments clean", "cloth cleaning",
+        "কাপড়", "কাপড়", "ধোয়া", "ধোয়া", "ইস্ত্রি", "লন্ড্রি", "ড্রাই ক্লিন",
+    ],
+    "Gardening": [
+        "garden", "gardening", "grass", "lawn", "tree", "plant", "prune", "hedge", "watering",
+        "bagan", "baganer", "ghash", "বাগান", "ঘাস", "গাছ", "গার্ডেন", "ছাঁটাই", "পানি দেওয়া", "পানি দেওয়া",
+    ],
+}
+
+
+CATEGORY_DETECTION_PRIORITY = [
+    "Electrical Work",
+    "Plumbing",
+    "Carpentry",
+    "Appliance Repair",
+    "Pest Control",
+    "Moving Services",
+    "Laundry Services",
+    "Gardening",
+    "AC Repair",
+    "Painting",
+    "Deep Cleaning",
+    "House Cleaning",
+]
 
 DEFAULT_BD_LOCATIONS = [
     "Dhaka",
@@ -94,7 +384,82 @@ def _parse_json_from_text(text: str) -> dict[str, Any] | None:
         parsed = json.loads(cleaned)
         return parsed if isinstance(parsed, dict) else None
     except json.JSONDecodeError:
+        # Try extracting first JSON object if model adds extra prose around it.
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            chunk = cleaned[start : end + 1]
+            try:
+                parsed = json.loads(chunk)
+                return parsed if isinstance(parsed, dict) else None
+            except json.JSONDecodeError:
+                # Fallback for python-like dict outputs with single quotes
+                try:
+                    parsed = ast.literal_eval(chunk)
+                    return parsed if isinstance(parsed, dict) else None
+                except Exception:
+                    return None
         return None
+
+
+def _clean_llm_text(text: str) -> str:
+    cleaned = (text or "").replace("```json", "").replace("```", "").strip()
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip("\"'")
+
+
+def _canonical_service_label(value: str) -> str:
+    label = _normalize(value)
+    mapping = {
+        "electrician": "Electrical Work",
+        "electrical": "Electrical Work",
+        "electrical work": "Electrical Work",
+        "plumber": "Plumbing",
+        "plumbing": "Plumbing",
+        "ac technician": "AC Repair",
+        "ac": "AC Repair",
+        "ac repair": "AC Repair",
+        "painter": "Painting",
+        "painting": "Painting",
+        "cleaning service": "House Cleaning",
+        "cleaning": "House Cleaning",
+        "house cleaning": "House Cleaning",
+        "deep cleaning": "Deep Cleaning",
+        "carpentry": "Carpentry",
+        "carpenter": "Carpentry",
+        "pest": "Pest Control",
+        "pest control": "Pest Control",
+        "moving": "Moving Services",
+        "moving services": "Moving Services",
+        "laundry": "Laundry Services",
+        "laundry services": "Laundry Services",
+        "gardening": "Gardening",
+        "appliance": "Appliance Repair",
+        "appliance repair": "Appliance Repair",
+        "general": "General Technician",
+        "general technician": "General Technician",
+    }
+    return mapping.get(label, value.strip() or "General Technician")
+
+
+def _extract_detection_fields_from_text(text: str) -> dict[str, str]:
+    """Best-effort extraction when model returns malformed JSON-like text."""
+    raw = _clean_llm_text(text)
+    if not raw:
+        return {}
+
+    def _grab(field: str) -> str:
+        # Supports: "field": "value" or 'field': 'value'
+        pattern = rf"['\"]?{field}['\"]?\s*:\s*['\"]([^'\"]+)['\"]"
+        match = re.search(pattern, raw, flags=re.IGNORECASE)
+        return _clean_llm_text(match.group(1)) if match else ""
+
+    result = {
+        "problem_type": _grab("problem_type"),
+        "suggested_service": _grab("suggested_service"),
+        "explanation": _grab("explanation"),
+    }
+    return {k: v for k, v in result.items() if v}
 
 
 def _to_json_safe(value: Any) -> Any:
@@ -164,12 +529,29 @@ def _compact_services(limit: int = 20) -> list[dict[str, Any]]:
     ]
 
 
+def _service_catalog_for_prompt(limit: int = 180) -> list[dict[str, Any]]:
+    """Compact catalog for AI prompts so model can choose from a wider service set."""
+    queryset = Service.objects.select_related("category").only("id", "name", "category__name").order_by("name")
+    if limit and limit > 0:
+        queryset = queryset[:limit]
+
+    return [
+        {
+            "id": service.id,
+            "name": service.name,
+            "category": service.category.name if service.category else "General",
+        }
+        for service in queryset
+    ]
+
+
 def _find_services_by_text(text: str, limit: int = 5) -> list[Service]:
     normalized = _normalize(text)
     if not normalized:
         return []
 
-    terms = [term for term in re.split(r"[^a-z0-9]+", normalized) if len(term) >= 2][:8]
+    # Unicode-aware tokenization so Bangla/Banglish/English all get searchable terms.
+    terms = [term for term in re.split(r"[^\w]+", normalized, flags=re.UNICODE) if len(term) >= 2][:10]
     query = Q()
     for term in terms:
         query |= Q(name__icontains=term)
@@ -232,15 +614,80 @@ def _has_problem_signal(message: str) -> bool:
             "noshto",
             "nosto",
             "fan",
+            "ceiling fan",
+            "pakha",
+            "পাখা",
+            "ফ্যান",
             "light",
             "switch",
+            "socket",
+            "plug",
             "wiring",
             "wire",
+            "charge",
+            "charging",
+            "charger",
+            "short",
+            "spark",
+            "fire",
+            "smoke",
+            "আগুন",
+            "স্পার্ক",
+            "শর্ট",
+            "সকেট",
             "wall",
             "paint",
             "rong",
+            "রং",
+            "রঙ",
+            "দেয়াল",
+            "দেয়াল",
+            "খসে",
+            "পেইন্ট",
+            "sofa",
+            "furniture",
+            "wood",
+            "ভাঙা",
+            "কাঠ",
+            "dirty",
+            "clean",
+            "nongra",
+            "moila",
+            "নোংরা",
+            "ময়লা",
+            "ময়লা",
+            "ঘর",
+            "বাসা",
         ]
     )
+
+
+def _detect_problem_category(message: str) -> str | None:
+    text = _normalize(message)
+
+    kitchen_tokens = ["kitchen", "rannaghor", "ranna ghor", "রান্নাঘর", "রান্না ঘর"]
+    dirty_tokens = ["dirty", "nongra", "nogra", "moila", "messy", "grease", "oily", "নোংরা", "ময়লা", "ময়লা"]
+    if any(token in text for token in kitchen_tokens) and any(token in text for token in dirty_tokens):
+        return "Deep Cleaning"
+
+    scores: dict[str, int] = {}
+    for category, keywords in CATEGORY_KEYWORD_HINTS.items():
+        hit_count = sum(1 for keyword in keywords if keyword in text)
+        if hit_count:
+            scores[category] = hit_count
+
+    if not scores:
+        return None
+
+    priority_map = {name: idx for idx, name in enumerate(CATEGORY_DETECTION_PRIORITY)}
+
+    return max(
+        scores.items(),
+        key=lambda item: (
+            item[1],
+            -priority_map.get(item[0], 10_000),
+        ),
+    )[0]
 
 
 def _rules_intent(message: str) -> str:
@@ -476,20 +923,19 @@ def _call_groq_problem_classifier(message: str) -> dict[str, Any] | None:
     if not api_key:
         return None
 
-    services = _compact_services(limit=15)
-    prompt = (
-        "You are an intent and recommendation classifier for a Bangladesh household service chatbot. "
-        "Users may write in English, Bangla, or Banglish. "
-        "Return ONLY compact JSON with keys: intent, problem_summary, suggested_service_names. "
-        "intent must be one of: service_info, booking_assistant, service_recommendation, order_tracking, review_feedback, location_availability.\n"
-        f"Available services: {json.dumps(services, ensure_ascii=True)}\n"
-        f"User message: {message}"
-    )
+    services = _service_catalog_for_prompt(limit=180)
+    prompt = _build_ai_classifier_prompt(message, services)
 
     payload = {
         "model": getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
         "messages": [
-            {"role": "system", "content": "Respond with valid compact JSON only."},
+            {
+                "role": "system",
+                "content": (
+                    "Respond with valid compact JSON only. "
+                    "No markdown. No additional keys."
+                ),
+            },
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
@@ -516,16 +962,315 @@ def _call_groq_problem_classifier(message: str) -> dict[str, Any] | None:
         return None
 
 
+def _decide_ai_model(message: str) -> str:
+    text = _normalize(message)
+    gemini_keywords = ["best", "recommend", "compare", "nearby", "cheap"]
+
+    if any(keyword in text for keyword in gemini_keywords):
+        return "gemini"
+
+    if len((message or "").strip()) > 50:
+        return "gemini"
+
+    return "groq"
+
+
+def _call_gemini_problem_classifier(message: str) -> dict[str, Any] | None:
+    api_key = getattr(settings, "GEMINI_API_KEY", "")
+    if not api_key:
+        return None
+
+    services = _service_catalog_for_prompt(limit=180)
+    prompt = _build_ai_classifier_prompt(message, services)
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": (
+                            "Respond with valid compact JSON only. No markdown.\n"
+                            f"{prompt}"
+                        )
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 240,
+        },
+    }
+
+    try:
+        response = requests.post(
+            _gemini_api_url(),
+            params={"key": api_key},
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=getattr(settings, "GEMINI_TIMEOUT_SECONDS", 3),
+        )
+        if response.status_code >= 400:
+            return None
+
+        data = response.json()
+        text = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        return _parse_json_from_text(text)
+    except Exception:
+        return None
+
+
+def _call_ai_problem_classifier(message: str) -> tuple[dict[str, Any] | None, str]:
+    selected = _decide_ai_model(message)
+
+    if selected == "gemini":
+        gemini_data = _call_gemini_problem_classifier(message)
+        if gemini_data:
+            return gemini_data, "gemini"
+
+        groq_data = _call_groq_problem_classifier(message)
+        if groq_data:
+            return groq_data, "groq"
+        return None, "groq"
+
+    groq_data = _call_groq_problem_classifier(message)
+    if groq_data:
+        return groq_data, "groq"
+
+    gemini_data = _call_gemini_problem_classifier(message)
+    if gemini_data:
+        return gemini_data, "gemini"
+
+    return None, "groq"
+
+
+def _infer_service_from_detection_text(text: str) -> str:
+    normalized = _normalize(text)
+
+    electrical_keywords = [
+        "fire", "flame", "burn", "burning", "spark", "short", "short circuit", "smoke", "overheat",
+        "socket", "plug", "outlet", "switch", "wire", "wiring", "electric", "electrical",
+        "আগুন", "স্পার্ক", "শর্ট", "কারেন্ট", "প্লাগ", "সকেট", "তার", "পুড়ে",
+    ]
+    if any(keyword in normalized for keyword in electrical_keywords):
+        return "Electrical Work"
+
+    carpentry_keywords = [
+        "door",
+        "window",
+        "sofa",
+        "furniture",
+        "wood",
+        "wooden",
+        "cabinet",
+        "wardrobe",
+        "drawer",
+        "hinge",
+        "carpentry",
+        "carpenter",
+        "ভাঙা",
+        "কাঠ",
+        "দরজা",
+        "জানালা",
+        "আলমারি",
+        "সোফা",
+        "ফার্নিচার",
+    ]
+    if any(keyword in normalized for keyword in carpentry_keywords):
+        return "Carpentry"
+
+    for keyword, hint in PROBLEM_KEYWORD_TO_SERVICE.items():
+        if keyword in normalized:
+            return _canonical_service_label(str(hint))
+    return "General Technician"
+
+
+def _image_detection_fallback_service(user_text: str) -> str:
+    combined = _normalize(user_text or "")
+
+    detected_category = _detect_problem_category(combined)
+    if detected_category:
+        return detected_category
+
+    inferred = _canonical_service_label(_infer_service_from_detection_text(combined))
+    if inferred != "General Technician":
+        return inferred
+
+    # Safety-first default for unknown image analysis failures.
+    return "Electrical Work"
+
+
+def _call_gemini_image_detector(image_bytes: bytes, mime_type: str, user_text: str = "") -> dict[str, Any] | None:
+    api_key = getattr(settings, "GEMINI_API_KEY", "")
+    if not api_key:
+        return None
+
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    prompt = (
+        "You are an image-based issue detector for Bangladesh household services. "
+        "Analyze the image and optional user note, then return ONLY strict JSON with keys: "
+        "problem_type, suggested_service, explanation. "
+        "suggested_service should be one suitable service category label from this list only: "
+        "Painting, Electrical Work, Appliance Repair, Carpentry, Deep Cleaning, Gardening, House Cleaning, Pest Control, Moving Services, AC Repair, Plumbing, Laundry Services. "
+        "If image shows broken door/window/furniture/wood, suggested_service MUST be Carpentry. "
+        "If image shows burning plug/socket/wire, smoke, spark or short-circuit signs, suggested_service MUST be Electrical Work. "
+        "Keep explanation short. "
+        f"User note: {user_text or 'N/A'}"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": image_b64,
+                        }
+                    },
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 300,
+        },
+    }
+
+    try:
+        timeout_seconds = max(8, getattr(settings, "GEMINI_TIMEOUT_SECONDS", 3))
+        for model_name in _gemini_vision_models_to_try():
+            response = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                params={"key": api_key},
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=timeout_seconds,
+            )
+            if response.status_code >= 400:
+                continue
+
+            data = response.json()
+            text = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            parsed = _parse_json_from_text(text)
+            if parsed:
+                parsed["problem_type"] = _clean_llm_text(str(parsed.get("problem_type") or "Detected household issue"))
+                if not parsed.get("suggested_service"):
+                    parsed["suggested_service"] = _infer_service_from_detection_text(
+                        f"{parsed.get('problem_type', '')} {parsed.get('explanation', '')} {user_text}"
+                    )
+                else:
+                    parsed["suggested_service"] = _canonical_service_label(
+                        _clean_llm_text(str(parsed.get("suggested_service")))
+                    )
+                parsed["explanation"] = _clean_llm_text(str(parsed.get("explanation") or "Image analyzed successfully."))
+                parsed.setdefault("model", model_name)
+                return parsed
+
+            if text:
+                safe_text = _clean_llm_text(text)
+                extracted = _extract_detection_fields_from_text(safe_text)
+                combined_text = " ".join(
+                    [
+                        extracted.get("problem_type", ""),
+                        extracted.get("suggested_service", ""),
+                        extracted.get("explanation", ""),
+                        safe_text,
+                        user_text,
+                    ]
+                )
+                return {
+                    "problem_type": extracted.get("problem_type") or "Detected household issue",
+                    "suggested_service": _canonical_service_label(
+                        extracted.get("suggested_service") or _infer_service_from_detection_text(combined_text)
+                    ),
+                    "explanation": (extracted.get("explanation") or safe_text or "Image analyzed; please proceed with suggested service.")[:220],
+                    "model": model_name,
+                }
+
+        return None
+    except Exception:
+        return None
+
+
 def _recommended_services_from_problem(message: str, groq_data: dict[str, Any] | None) -> list[Service]:
     queryset = Service.objects.select_related("category").all()
 
     normalized = _normalize(message)
 
+    # Kitchen dirty messages should prioritize Deep Cleaning.
+    kitchen_tokens = ["kitchen", "rannaghor", "ranna ghor", "রান্নাঘর", "রান্না ঘর"]
+    dirty_tokens = ["dirty", "nongra", "nogra", "moila", "messy", "grease", "oily", "নোংরা", "ময়লা", "ময়লা"]
+    if any(token in normalized for token in kitchen_tokens) and any(token in normalized for token in dirty_tokens):
+        strict_deep_clean = list(
+            queryset.filter(category__name__iexact="Deep Cleaning")[:6]
+        )
+
+        def _deep_clean_rank(service: Service) -> tuple[int, int]:
+            name = _normalize(service.name or "")
+            has_deep_name = 1 if "deep clean" in name or "deep cleaning" in name else 0
+            has_kitchen = 1 if "kitchen" in name or "রান্নাঘর" in name else 0
+            return (has_deep_name, has_kitchen)
+
+        if strict_deep_clean:
+            strict_deep_clean.sort(key=_deep_clean_rank, reverse=True)
+            return strict_deep_clean
+
+        deep_clean_matches = list(
+            queryset.filter(
+                Q(category__name__icontains="deep cleaning")
+                | Q(name__icontains="deep clean")
+                | Q(description__icontains="deep clean")
+            )[:6]
+        )
+        if deep_clean_matches:
+            deep_clean_matches.sort(key=_deep_clean_rank, reverse=True)
+            return deep_clean_matches
+
+    # 0) Strong category-first detection from multilingual keywords (e.g., sofa broken => Carpentry)
+    detected_category = _detect_problem_category(message)
+    if detected_category:
+        category_matches = list(
+            queryset.filter(
+                Q(category__name__icontains=detected_category)
+                | Q(name__icontains=detected_category)
+                | Q(description__icontains=detected_category)
+            )[:6]
+        )
+        if category_matches:
+            return category_matches
+
+    # Painting issues should strongly prioritize painting services for Bangla/Banglish prompts.
+    if any(token in normalized for token in ["paint", "painting", "rong", "রং", "রঙ", "পেইন্ট", "দেয়াল", "দেয়াল", "খসে"]):
+        paint_matches = list(
+            queryset.filter(
+                Q(name__icontains="paint")
+                | Q(category__name__icontains="paint")
+                | Q(category__name__icontains="painting")
+            )[:6]
+        )
+        if paint_matches:
+            return paint_matches
+
     # Fan issues should prioritize fan/electrical services (not AC by default)
-    if "fan" in normalized:
+    if any(token in normalized for token in ["fan", "ceiling fan", "pakha", "পাখা", "ফ্যান"]):
         fan_matches = list(
             queryset.filter(
                 Q(name__icontains="fan")
+                | Q(description__icontains="fan")
+                | Q(name__icontains="ceiling")
+                | Q(description__icontains="ceiling")
                 | Q(description__icontains="fan")
                 | Q(category__name__icontains="electrical")
                 | Q(category__name__icontains="electric")
@@ -548,7 +1293,20 @@ def _recommended_services_from_problem(message: str, groq_data: dict[str, Any] |
         suggestions = groq_data.get("suggested_service_names") or []
 
     for suggested in suggestions:
-        hit = queryset.filter(name__icontains=str(suggested)).first()
+        suggestion_text = str(suggested)
+        if detected_category:
+            hit = queryset.filter(
+                Q(name__icontains=suggestion_text)
+                & (
+                    Q(category__name__icontains=detected_category)
+                    | Q(name__icontains=detected_category)
+                    | Q(description__icontains=detected_category)
+                )
+            ).first()
+            if hit:
+                return [hit]
+
+        hit = queryset.filter(name__icontains=suggestion_text).first()
         if hit:
             return [hit]
 
@@ -1467,69 +2225,73 @@ def assistant_chat(request):
     )
 
     # Keep conversation state deterministic for multi-turn flows.
-    if review_signal and (context.get("pending_rating") or _extract_order_id(message, fallback=None) or "order" in normalized_message):
-        intent = "review_feedback"
-        groq_data = None
-    elif booking_context_active:
-        intent = "booking_assistant"
-        groq_data = None
-    elif context.get("awaiting_update_order_id"):
-        intent = "order_update"
-        groq_data = None
-    elif context.get("awaiting_new_location") and context.get("order_id"):
-        intent = "order_update"
-        groq_data = None
-    # If previous step asked for Order ID, force tracking intent when user sends a number.
-    elif context.get("awaiting_order_id") and _extract_order_id(message):
-        intent = "order_tracking"
-        groq_data = None
-    elif context.get("pending_rating") and not context.get("service_id"):
-        intent = "review_feedback"
-        groq_data = None
-    elif _is_small_talk(message):
-        intent = "small_talk"
-        groq_data = None
-    else:
-        groq_data = _call_groq_problem_classifier(message)
-        intent = _rules_intent(message)
+    ai_source = "groq"
+    groq_data = None
 
-    if groq_data and groq_data.get("intent"):
-        groq_intent = str(groq_data["intent"]).strip()
-        allowed = {
-            "service_info",
-            "booking_assistant",
-            "service_recommendation",
-            "order_tracking",
-            "order_update",
-            "review_feedback",
-            "location_availability",
-        }
-        if groq_intent in allowed:
-            # Don't let model drift clear problem statements into generic service-info intent.
-            if _has_problem_signal(message) and groq_intent == "service_info":
-                groq_intent = "service_recommendation"
-            intent = groq_intent
+    try:
+        if review_signal and (context.get("pending_rating") or _extract_order_id(message, fallback=None) or "order" in normalized_message):
+            intent = "review_feedback"
+            groq_data = None
+        elif booking_context_active:
+            intent = "booking_assistant"
+            groq_data = None
+        elif context.get("awaiting_update_order_id"):
+            intent = "order_update"
+            groq_data = None
+        elif context.get("awaiting_new_location") and context.get("order_id"):
+            intent = "order_update"
+            groq_data = None
+        # If previous step asked for Order ID, force tracking intent when user sends a number.
+        elif context.get("awaiting_order_id") and _extract_order_id(message):
+            intent = "order_tracking"
+            groq_data = None
+        elif context.get("pending_rating") and not context.get("service_id"):
+            intent = "review_feedback"
+            groq_data = None
+        elif _is_small_talk(message):
+            intent = "small_talk"
+            groq_data = None
+        else:
+            groq_data, ai_source = _call_ai_problem_classifier(message)
+            intent = _rules_intent(message)
 
-    if intent == "service_info":
-        reply, data = _handle_service_info(message)
-    elif intent == "small_talk":
-        reply, data = _handle_small_talk()
-    elif intent == "booking_assistant":
-        reply, data = _handle_booking_assistant(request.user, message, context)
-    elif intent == "order_tracking":
-        reply, data = _handle_order_tracking(request.user, message, context)
-    elif intent == "order_update":
-        reply, data = _handle_order_update(request.user, message, context)
-    elif intent == "review_feedback":
-        reply, data = _handle_review_feedback(request.user, message, context)
-    elif intent == "location_availability":
-        reply, data = _handle_location_availability(request.user, message, context)
-    else:
-        reply, data = _handle_recommendation(message, groq_data)
+        if groq_data and groq_data.get("intent"):
+            groq_intent = str(groq_data["intent"]).strip()
+            allowed = set(ALLOWED_AI_INTENTS) | {"order_update"}
+            if groq_intent in allowed:
+                # Don't let model drift clear problem statements into generic service-info intent.
+                if _has_problem_signal(message) and groq_intent == "service_info":
+                    groq_intent = "service_recommendation"
+                intent = groq_intent
+
+        if intent == "service_info":
+            reply, data = _handle_service_info(message)
+        elif intent == "small_talk":
+            reply, data = _handle_small_talk()
+        elif intent == "booking_assistant":
+            reply, data = _handle_booking_assistant(request.user, message, context)
+        elif intent == "order_tracking":
+            reply, data = _handle_order_tracking(request.user, message, context)
+        elif intent == "order_update":
+            reply, data = _handle_order_update(request.user, message, context)
+        elif intent == "review_feedback":
+            reply, data = _handle_review_feedback(request.user, message, context)
+        elif intent == "location_availability":
+            reply, data = _handle_location_availability(request.user, message, context)
+        else:
+            reply, data = _handle_recommendation(message, groq_data)
+    except Exception:
+        # Never fail hard for user chat; degrade gracefully to rules-based recommendation.
+        intent = "service_recommendation"
+        ai_source = "rules-fallback"
+        reply, data = _handle_recommendation(message, None)
 
     response_context = data.get("context", context)
     safe_data = _to_json_safe(data)
     safe_context = _to_json_safe(response_context)
+
+    if isinstance(safe_data, dict):
+        safe_data.setdefault("source", ai_source)
 
     if session:
         AssistantChatMessage.objects.create(
@@ -1556,8 +2318,166 @@ def assistant_chat(request):
         {
             "intent": intent,
             "reply": reply,
+            "source": ai_source,
             "data": safe_data,
             "context": safe_context,
+            "session_id": session.id if session else None,
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser])
+def assistant_detect_image(request):
+    image = request.FILES.get("image")
+    user_message = (request.data.get("message") or "").strip()
+    session_id_raw = request.data.get("session_id")
+
+    session_id = None
+    try:
+        if session_id_raw not in (None, "", "null"):
+            session_id = int(session_id_raw)
+    except (TypeError, ValueError):
+        session_id = None
+
+    if not image:
+        return Response({"detail": "Image file is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    mime_type = getattr(image, "content_type", "") or "image/jpeg"
+    if not mime_type.startswith("image/"):
+        return Response({"detail": "Only image files are allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+    image_bytes = image.read()
+    if not image_bytes:
+        return Response({"detail": "Uploaded image is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+    session = _get_assistant_session(
+        request.user,
+        session_id=session_id,
+        first_message=user_message or "Image upload",
+    )
+
+    detected = _call_gemini_image_detector(image_bytes=image_bytes, mime_type=mime_type, user_text=user_message)
+    if not detected:
+        fallback_service = _image_detection_fallback_service(user_message)
+        fail_reply = (
+            "Image analysis service temporary unavailable. "
+            f"Safety-first recommendation: {fallback_service} (Wiring inspection)."
+        )
+
+        if session:
+            AssistantChatMessage.objects.create(
+                session=session,
+                role=AssistantChatMessage.ROLE_USER,
+                text=user_message or "📷 Image uploaded",
+                data={
+                    "message_type": "image",
+                    "mime_type": mime_type,
+                    "image_name": getattr(image, "name", "uploaded-image"),
+                },
+            )
+            AssistantChatMessage.objects.create(
+                session=session,
+                role=AssistantChatMessage.ROLE_ASSISTANT,
+                text=fail_reply,
+                data={
+                    "source": "rules-fallback",
+                    "feature": "image_detection_fallback",
+                    "problem_type": "Image analysis temporarily unavailable",
+                    "suggested_service": fallback_service,
+                    "explanation": "Used fallback recommendation while image AI service was unavailable.",
+                },
+            )
+
+            if session.title == "New Chat":
+                session.title = _make_chat_title(user_message or "Image upload")
+            session.last_message_at = timezone.now()
+            session.save(update_fields=["title", "last_message_at", "updated_at"])
+
+        return Response(
+            {
+                "reply": fail_reply,
+                "source": "rules-fallback",
+                "data": {
+                    "problem_type": "Image analysis temporarily unavailable",
+                    "suggested_service": fallback_service,
+                    "explanation": "Used fallback recommendation while image AI service was unavailable.",
+                },
+                "session_id": session.id if session else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    problem_type = _clean_llm_text(str(detected.get("problem_type") or "Detected household issue"))
+    suggested_service = _canonical_service_label(_clean_llm_text(
+        str(
+            detected.get("suggested_service")
+            or _infer_service_from_detection_text(f"{problem_type} {user_message}")
+        )
+    ))
+    explanation = _clean_llm_text(str(detected.get("explanation") or "Image analyzed successfully."))
+
+    if explanation.startswith("{") or explanation.startswith("\"{"):
+        explanation = "Image analyzed successfully."
+
+    inferred_service = _infer_service_from_detection_text(f"{problem_type} {explanation} {user_message}")
+    detected_category = _detect_problem_category(f"{problem_type} {explanation} {user_message}")
+    if detected_category:
+        suggested_service = detected_category
+    elif suggested_service.lower() in {"general technician", "general technician service", "technician", "general"} and inferred_service != "General Technician":
+        suggested_service = inferred_service
+    elif suggested_service.lower() in {"general technician", "general technician service", "technician", "general"}:
+        fallback_services = _recommended_services_from_problem(f"{problem_type} {explanation} {user_message}", None)
+        if fallback_services and fallback_services[0].category:
+            suggested_service = fallback_services[0].category.name
+
+    reply = (
+        f"Image analysis complete ✅\n"
+        f"Problem: {problem_type}\n"
+        f"Suggested service: {suggested_service}\n"
+        f"Note: {explanation}"
+    )
+
+    if session:
+        AssistantChatMessage.objects.create(
+            session=session,
+            role=AssistantChatMessage.ROLE_USER,
+            text=user_message or "📷 Image uploaded",
+            data={
+                "message_type": "image",
+                "mime_type": mime_type,
+                "image_name": getattr(image, "name", "uploaded-image"),
+            },
+        )
+        AssistantChatMessage.objects.create(
+            session=session,
+            role=AssistantChatMessage.ROLE_ASSISTANT,
+            text=reply,
+            data={
+                "source": "gemini",
+                "feature": "image_detection",
+                "problem_type": problem_type,
+                "suggested_service": suggested_service,
+                "explanation": explanation,
+            },
+        )
+
+        if session.title == "New Chat":
+            session.title = _make_chat_title(user_message or "Image upload")
+        session.last_message_at = timezone.now()
+        session.save(update_fields=["title", "last_message_at", "updated_at"])
+
+    return Response(
+        {
+            "reply": reply,
+            "source": "gemini",
+            "data": {
+                "problem_type": problem_type,
+                "suggested_service": suggested_service,
+                "explanation": explanation,
+            },
             "session_id": session.id if session else None,
         },
         status=status.HTTP_200_OK,
@@ -1568,7 +2488,15 @@ def assistant_chat(request):
 @permission_classes([IsAuthenticated])
 def assistant_sessions(request):
     if request.method == "GET":
-        queryset = AssistantChatSession.objects.filter(user=request.user).prefetch_related("messages")
+        latest_message_subquery = (
+            AssistantChatMessage.objects.filter(session_id=OuterRef("pk"))
+            .order_by("-created_at")
+            .values("text")[:1]
+        )
+
+        queryset = AssistantChatSession.objects.filter(user=request.user).annotate(
+            last_message_text=Subquery(latest_message_subquery)
+        )
         serialized = AssistantChatSessionListSerializer(queryset, many=True)
         return Response(serialized.data, status=status.HTTP_200_OK)
 
@@ -1581,7 +2509,7 @@ def assistant_sessions(request):
 @api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def assistant_session_detail(request, session_id: int):
-    session = AssistantChatSession.objects.filter(id=session_id, user=request.user).prefetch_related("messages").first()
+    session = AssistantChatSession.objects.filter(id=session_id, user=request.user).first()
     if not session:
         return Response({"detail": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1589,5 +2517,14 @@ def assistant_session_detail(request, session_id: int):
         session.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    serialized = AssistantChatSessionDetailSerializer(session)
+    try:
+        limit_raw = request.query_params.get("limit")
+        messages_limit = int(limit_raw) if limit_raw else 120
+    except (TypeError, ValueError):
+        messages_limit = 120
+
+    if messages_limit <= 0:
+        messages_limit = 120
+
+    serialized = AssistantChatSessionDetailSerializer(session, context={"messages_limit": messages_limit})
     return Response(serialized.data, status=status.HTTP_200_OK)
