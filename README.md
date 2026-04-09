@@ -1,205 +1,296 @@
-# HomeCrew - A Smart Household Service Platform
+# HomeCrew - Smart Household Service Platform
 
-HomeCrew is a full-stack household service platform built with Django (backend) and React (frontend). It supports user registration, service discovery, order placement, online payment via SSLCommerz, direct support messaging, and admin-side service management.
+HomeCrew is a full-stack, production-ready household service platform built with **Django + DRF** (backend) and **React + Vite** (frontend).  
+It supports service browsing, order lifecycle management, SSLCommerz payments, support chat, and an advanced multilingual AI assistant with text, voice, and image understanding.
 
 ---
 
-## 🚀 Live Demo
+## 🚀 Live Links
+
 - **Frontend:** https://home-crew-a-smart-household-service-hv7v.onrender.com/
-- **Backend API:** https://home-crew-a-smart-household-service-b93r.onrender.com/api/v1/
-- **Admin:** https://home-crew-a-smart-household-service-b93r.onrender.com/admin/
+- **Backend API Root:** https://home-crew-a-smart-household-service-b93r.onrender.com/api/v1/
+- **Admin Panel:** https://home-crew-a-smart-household-service-b93r.onrender.com/admin/
 
 ---
 
-## Screenshots
+## ✨ Full Website Features
 
-### Public Website
+### 👤 Authentication & User Account
 
-| Home Hero - Electrical | Home Hero - Painting |
-| --- | --- |
-| ![Home hero electrical](scrennshots/home-hero-electrical.png) | ![Home hero painting](scrennshots/home-hero-painting.png) |
+- Email-based signup/login with JWT auth (Djoser + SimpleJWT)
+- Profile management (name, phone, address, profile details)
+- Role-aware access: admin, client, technician
 
-| About Page | Services Page |
-| --- | --- |
-| ![About page](scrennshots/about-page.png) | ![Services page](scrennshots/services-page.png) |
+### 🧰 Service Discovery & Catalog
 
-| Contact Page | Service Detail Overview |
-| --- | --- |
-| ![Contact page](scrennshots/contact-page.png) | ![Service detail overview](scrennshots/service-detail-overview.png) |
+- Category-based service browsing
+- Service search/filter/sort support
+- Service detail pages with price, description, images, and rating
+- Related service recommendations in detail view
 
-| Service Detail Related Services | Admin Dashboard Overview |
-| --- | --- |
-| ![Service detail related services](scrennshots/service-detail-related-services.png) | ![Admin dashboard overview](scrennshots/admin-dashboard-overview.png) |
+### 🛒 Cart, Booking & Order Lifecycle
 
-### Admin Dashboard
+- Add/remove/update cart items
+- Place order with contact details and preferred date/location
+- Order status tracking from NOT_PAID → READY_TO_SHIP → SHIPPED → DELIVERED
+- Cancel/update flow where applicable
 
-| Payments Overview | Payments Table |
-| --- | --- |
-| ![Admin payments overview](scrennshots/admin-payments-overview.png) | ![Admin payments table](scrennshots/admin-payments-table.png) |
+### 💳 Payments
+
+- SSLCommerz payment initialization
+- Success/fail/cancel/IPN callback handling
+- Payment-aware order status transitions
+
+### ⭐ Reviews & Feedback
+
+- Client reviews with rating + comment
+- Pending review awareness for delivered orders
+- Admin review visibility
+
+### 💬 Support & Communication
+
+- Contact form email to admin
+- Client ↔ admin support conversation threads
+- Admin-side support management
+
+### 🤖 AI Assistant (Major Capability)
+
+- Hybrid AI flow (Groq + Gemini)
+- Multilingual understanding: **Bangla, Banglish, English**
+- Contextual intent routing (service info, booking, tracking, feedback, availability)
+- Category-grounded recommendation across all website categories
+- Voice input + smart reply suggestions + recommendation cards
+- Image upload detection endpoint (`/detect-image/`) with robust fallback
+- Persistent multi-session assistant history
+- Admin AI activity monitoring (user list + per-user chat history)
+
+### 🧠 Recommendation/Routing Improvements
+
+- Deterministic category-first detection for tricky cases (electrical/carpentry/deep cleaning/etc.)
+- Kitchen-dirty/rannaghor intent prioritizes **Deep Cleaning**
+- Fan/fan Bangla variants forced to **Electrical Work** recommendations
+- Electrical image/fire/spark/socket signals map to electrical recommendations
+- Image provider temporary failure still returns safe fallback recommendation
+
+### 🛡️ Assignment Rule
+
+- Electrical category orders are locked to **Technician One** (auto + manual assignment protection)
 
 ---
 
 ## 🏗️ Project Structure
 
-```
+```text
 HouseHoldservice/
-├── accounts/         # Django app: user accounts, registration, profile
-├── api/              # Django app: API root, versioning
-├── orders/           # Django app: order management, payment
-├── services/         # Django app: service categories, listings
-├── house_hold_service/ # Django project settings, URLs
-├── homecrew-client/  # React frontend (Vite)
-├── fixtures/         # Sample data for development
-├── staticfiles/      # Collected static files
-├── media/            # Uploaded media files
-├── build.sh          # Backend build script for Render
-├── render.yaml       # Render deployment blueprint
-├── requirements.txt  # Python dependencies
-├── README.md         # Project documentation
-└── ...
+├── accounts/                  # Auth, users, profiles
+├── api/                       # API root, analytics, assistant/chat endpoints
+├── orders/                    # Cart, orders, assignment, payment
+├── services/                  # Categories, services, images, reviews
+├── house_hold_service/        # Django project settings/urls
+├── homecrew-client/           # React + Vite frontend
+├── fixtures/                  # Seed/dummy data
+├── staticfiles/               # Collected static output
+├── media/                     # Uploaded media
+├── build.sh                   # Render backend build script
+├── render.yaml                # Render infra blueprint
+├── requirements.txt           # Backend dependencies
+└── README.md
 ```
 
 ---
 
-## ✨ Features
-- User registration, login, password reset (Djoser JWT)
-- Service browsing & search
-- Order placement & order history
-- Service detail pages with ratings and reviews
-- Online payment (SSLCommerz integration)
-- Contact form that sends email to the admin inbox
-- Real-time style support chat between client and admin
-- Admin dashboard with orders, reviews, users, and support inbox
-- AI Assistant chatbot (Groq API) for:
-  - Service info & FAQ
-  - Booking assistant (service -> date -> location -> confirm)
-  - Service recommendation based on user problem
-  - Order tracking
-  - Review & feedback (star rating)
-  - Location-based availability and time slots
-  - Problem understanding to detect required service
-- Responsive UI (React + Tailwind CSS)
+## 🧠 Business Rules (Current)
+
+- **Electrical category orders:** assigned technician must be **Technician One**.
+  - Auto assignment enforces this.
+  - Manual admin assignment for electrical orders is also locked to Technician One.
 
 ---
 
-## Recent Updates
-- Added `About Us` and `Contact` pages to the frontend navigation
-- Added client-to-admin support messaging with a dedicated chat page
-- Added admin support inbox with live conversations plus demo tickets
-- Fixed support chat database migration on the production database
-- Improved service detail reviews, related services, and order page UI
-- Added AI Assistant quick popup chat from the floating chatbot button
-- Added expand-to-details + return-to-popup flow for assistant (`/ai-assistant`)
-- Improved assistant session handling (minimize keeps session, close/reopen starts fresh session)
-- Added admin AI activity monitoring (users list + per-user assistant message history timeline)
-- Replaced browser native alerts/confirms with styled in-app dialog modals
-- Updated admin and chatbot UX polish (session history actions, delete flows, progressive lists, visual refinements)
+## 🔌 Key API Endpoints
+
+Base path: `/api/v1/`
+
+- `POST assistant/chat/` – AI chat
+- `POST detect-image/` – image issue analysis
+- `GET/POST assistant/sessions/` – chat sessions
+- `GET/DELETE assistant/sessions/<id>/` – session detail/history
+- `GET assistant/admin/users/` – admin AI usage users list
+- `GET assistant/admin/users/<id>/messages/` – admin AI history per user
+- `GET analytics/` – admin analytics summary
+- `POST contact/` – contact message
+- `auth/*` – djoser auth routes
+- plus CRUD routes via DRF routers for users/services/orders/carts/reviews/support
 
 ---
 
 ## 🛠️ Tech Stack
-- **Backend:** Django, Django REST Framework, Djoser, PostgreSQL
-- **Frontend:** React, Vite, Tailwind CSS, Axios
-- **Payments:** SSLCommerz
-- **Messaging:** Django REST API + JWT-authenticated client/admin chat flow
+
+- **Backend:** Django 6, DRF, Djoser, SimpleJWT, django-filter
+- **Frontend:** React, Vite, Axios, Tailwind CSS
+- **DB:** PostgreSQL (Render/Supabase compatible)
 - **Media:** Cloudinary
-- **Deployment:** Render.com
+- **Payments:** SSLCommerz
+- **AI:** Groq + Gemini (text + vision)
+- **Deployment:** Render
 
 ---
 
-## ⚡ Quick Start (Local)
+## ⚡ Local Setup
 
-### 1. Clone the repository
+### 1) Clone
+
 ```bash
 git clone https://github.com/ripro805/HOME-CREW-a-smart-household-service-platform.git
 cd HOME-CREW-a-smart-household-service-platform
 ```
 
-### 2. Backend Setup
+### 2) Backend
+
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate (Windows)
+.venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env  # Fill in your secrets
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py runserver
+d:/KnowledgeVault/Project/HouseHoldservice/.venv/Scripts/python.exe manage.py runserver
 ```
 
-### 3. Frontend Setup
+> Windows note: if plain `python manage.py runserver` fails due to interpreter mismatch, use the full venv python path above.
+
+### 3) Frontend
+
 ```bash
 cd homecrew-client
-cp .env.example .env  # Set VITE_API_URL=http://localhost:8000/api/v1
 npm install
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000/api/v1
-
-Note: run `python manage.py migrate` after pulling new backend changes so support chat and other recent features get their database tables.
+- Frontend local URL: usually `http://localhost:5173` (or next free port)
+- Backend local URL: `http://127.0.0.1:8000`
 
 ---
 
-## 🚀 Deployment (Render.com)
-See [`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md) for full step-by-step Render deployment guide.
+## 🔐 Environment Variables
 
----
+### Backend `.env`
 
-## 📝 Environment Variables
+```env
+SECRET_KEY=...
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,.onrender.com
 
-### Backend (.env)
-```
-SECRET_KEY=your-secret-key
-DEBUG=False
-ALLOWED_HOSTS=.onrender.com,localhost,127.0.0.1
-DATABASE_URL=your-postgres-url
-CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
-EMAIL_HOST_USER=your-gmail
-EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=your-from-email
-ADMIN_CONTACT_EMAIL=your-admin-inbox
-FRONTEND_PROTOCOL=https
-FRONTEND_DOMAIN=your-frontend-url
-BACKEND_URL=your-backend-url
-SSLCOMMERZ_STORE_ID=your-store-id
-SSLCOMMERZ_STORE_PASSWORD=your-store-password
+DATABASE_URL=postgres://...
+
+CLOUDINARY_URL=cloudinary://...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=...
+EMAIL_HOST_PASSWORD=...
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=...
+ADMIN_CONTACT_EMAIL=...
+
+FRONTEND_PROTOCOL=http
+FRONTEND_DOMAIN=localhost:5173
+BACKEND_URL=http://localhost:8000
+
+SSLCOMMERZ_STORE_ID=...
+SSLCOMMERZ_STORE_PASSWORD=...
 SSLCOMMERZ_IS_SANDBOX=True
-GROQ_API_KEY=your-groq-api-key
+
+GROQ_API_KEY=...
 GROQ_MODEL=llama-3.3-70b-versatile
+
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-flash-latest
+GEMINI_VISION_MODEL=gemini-flash-latest
+GEMINI_TIMEOUT_SECONDS=20
 ```
 
-### Frontend (.env)
-```
-VITE_API_URL=https://your-backend-url/api/v1
+### Frontend `.env`
+
+```env
+VITE_API_URL=http://localhost:8000/api/v1
 ```
 
 ---
 
-## Key User Flows
-- Clients can browse services, open a service detail page, read reviews, and place orders
-- Clients can use the `Contact` page to send an email directly to the admin inbox
-- Logged-in clients can open the message icon in the navbar and chat with admin from the support page
-- Admins can manage support conversations from the dashboard support tab and reply back to clients
-- Users can open `/ai-assistant` and chat with AI for booking guidance, recommendations, tracking, and feedback
-- Users can also start with the floating quick-chat popup and optionally expand to full assistant details
-- Admins can review AI usage activity and inspect per-user assistant chat history from the dashboard
+## 📈 Performance & Reliability Improvements Included
+
+- Assistant session list optimized (reduced N+1 query pattern)
+- Session detail supports message limits for faster reload
+- Frontend session-open flow now requests bounded history payload
+- Chatbot routing strengthened with deterministic category-first logic
+- Image detection parser hardened against malformed model outputs
+- Graceful fallback for temporary image AI provider issues
 
 ---
 
-## 🧑‍💻 Contributing
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+## 🧪 Developer Notes
+
+- Run backend checks:
+
+```bash
+d:/KnowledgeVault/Project/HouseHoldservice/.venv/Scripts/python.exe manage.py check
+```
+
+- If Vite reports occupied port, it auto-selects next available one.
+
+---
+
+## 🚀 Deployment
+
+Detailed Render deployment steps are in:  
+[`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md)
+
+---
+
+## 📸 Screenshots (With Proper Titles)
+
+All screenshots are loaded from `scrennshots/`.
+
+### Public Website Pages
+
+| Home Hero (Electrical Theme) | Home Hero (Painting Theme) |
+| --- | --- |
+| ![Home Hero - Electrical](scrennshots/home-hero-electrical.png) | ![Home Hero - Painting](scrennshots/home-hero-painting.png) |
+
+| About Page | Services Listing Page |
+| --- | --- |
+| ![About Page](scrennshots/about-page.png) | ![Services Page](scrennshots/services-page.png) |
+
+| Contact Page | Service Detail - Overview |
+| --- | --- |
+| ![Contact Page](scrennshots/contact-page.png) | ![Service Detail Overview](scrennshots/service-detail-overview.png) |
+
+| Service Detail - Related Services |
+| --- |
+| ![Service Detail Related Services](scrennshots/service-detail-related-services.png) |
+
+### Admin Dashboard Views
+
+| Admin Dashboard - Overview | Admin Dashboard - Payments Overview |
+| --- | --- |
+| ![Admin Dashboard Overview](scrennshots/admin-dashboard-overview.png) | ![Admin Payments Overview](scrennshots/admin-payments-overview.png) |
+
+| Admin Dashboard - Payments Table |
+| --- |
+| ![Admin Payments Table](scrennshots/admin-payments-table.png) |
+
+---
+
+## 🤝 Contributing
+
+PRs are welcome. For major feature or architectural changes, please open an issue first.
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License.
 
----
-
-## 🙏 Acknowledgements
-- [Django](https://www.djangoproject.com/)
-- [React](https://react.dev/)
-- [Render](https://render.com/)
-- [SSLCommerz](https://www.sslcommerz.com/)
-- [Cloudinary](https://cloudinary.com/)
+MIT License
