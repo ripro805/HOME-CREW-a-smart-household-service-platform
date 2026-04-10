@@ -2,6 +2,30 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext();
+const USER_CACHE_KEY = 'homecrew_user_cache';
+
+const readCachedUser = () => {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedUser = (user) => {
+  try {
+    if (user) {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+      localStorage.setItem('user_role', user.role || 'client');
+    } else {
+      localStorage.removeItem(USER_CACHE_KEY);
+      localStorage.removeItem('user_role');
+    }
+  } catch {
+    // ignore localStorage write errors
+  }
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -12,7 +36,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => readCachedUser());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,17 +45,31 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const response = await api.get('/auth/users/me/');
-        setUser(response.data);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-      }
+    if (!token) {
+      setUser(null);
+      writeCachedUser(null);
+      setLoading(false);
+      return;
     }
+
+    // Release UI immediately; validate token/user in background.
     setLoading(false);
+
+    // If no cached user is available yet, keep an optimistic session object
+    // so protected screens don't hard-redirect on reload.
+    setUser((prev) => prev || { role: localStorage.getItem('user_role') || 'client' });
+
+    try {
+      const response = await api.get('/auth/users/me/');
+      setUser(response.data);
+      writeCachedUser(response.data);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      writeCachedUser(null);
+      setUser(null);
+    }
   };
 
   const login = async (email, password) => {
@@ -46,6 +84,7 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${access}` }
       });
       setUser(meRes.data);
+      writeCachedUser(meRes.data);
       return {
         success: true,
         isAdmin: meRes.data.role === 'admin',
@@ -78,6 +117,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    writeCachedUser(null);
     setUser(null);
   };
 

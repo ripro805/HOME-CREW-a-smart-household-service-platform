@@ -1,8 +1,7 @@
 from datetime import datetime
 
-from django.db.models import Count, OuterRef, Q, Subquery, Value, DateTimeField
+from django.db.models import Count, OuterRef, Q, Subquery, Value, DateTimeField, TextField
 from django.db.models.functions import Coalesce
-from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -26,16 +25,13 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     pagination_class = SupportConversationPagination
 
+    SUPPORT_MESSAGES_LIMIT = 80
+
     def get_queryset(self):
-        message_queryset = SupportMessage.objects.select_related("sender").order_by("created_at")
         base_queryset = SupportConversation.objects.select_related("client").order_by("-last_message_at")
 
         if not is_admin_user(self.request.user):
             base_queryset = base_queryset.filter(client=self.request.user)
-
-        action = getattr(self, "action", None)
-        if action == "retrieve":
-            return base_queryset.prefetch_related(Prefetch("messages", queryset=message_queryset))
 
         epoch = timezone.make_aware(datetime(1970, 1, 1))
         last_message_preview_subquery = (
@@ -58,8 +54,16 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
         return base_queryset.annotate(
             message_count=Count("messages", distinct=True),
             unread_count=Count("messages", filter=unread_filter, distinct=True),
-            last_message_preview=Coalesce(Subquery(last_message_preview_subquery), Value("")),
+            last_message_preview=Coalesce(
+                Subquery(last_message_preview_subquery, output_field=TextField()),
+                Value("", output_field=TextField()),
+            ),
         )
+
+    def _detail_serializer_context(self):
+        context = self.get_serializer_context()
+        context["messages_limit"] = self.SUPPORT_MESSAGES_LIMIT
+        return context
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -108,14 +112,14 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
         conversation.save()
 
         conversation = self.get_queryset().get(pk=conversation.pk)
-        detail = SupportConversationDetailSerializer(conversation, context=self.get_serializer_context())
+        detail = SupportConversationDetailSerializer(conversation, context=self._detail_serializer_context())
         return Response(detail.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs):
         conversation = self.get_object()
         self._mark_as_read(conversation)
         conversation = self.get_queryset().get(pk=conversation.pk)
-        serializer = self.get_serializer(conversation)
+        serializer = self.get_serializer(conversation, context=self._detail_serializer_context())
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="messages")
@@ -142,7 +146,7 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
 
         conversation.save()
         conversation = self.get_queryset().get(pk=conversation.pk)
-        detail = SupportConversationDetailSerializer(conversation, context=self.get_serializer_context())
+        detail = SupportConversationDetailSerializer(conversation, context=self._detail_serializer_context())
         return Response(detail.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["patch"], url_path="status")
@@ -159,5 +163,5 @@ class SupportConversationViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         conversation = self.get_queryset().get(pk=conversation.pk)
-        detail = SupportConversationDetailSerializer(conversation, context=self.get_serializer_context())
+        detail = SupportConversationDetailSerializer(conversation, context=self._detail_serializer_context())
         return Response(detail.data)

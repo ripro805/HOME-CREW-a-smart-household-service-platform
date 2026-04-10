@@ -4,6 +4,8 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { useDialog } from '../context/DialogContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -90,6 +92,119 @@ const OrderDetail = () => {
     return statusLabels[status] || status.replace('_', ' ');
   };
 
+  const handleDownloadInvoicePdf = () => {
+    if (!order) return;
+
+    const paymentStatus = order.can_pay ? 'pending' : 'paid';
+    const transactionId = `TXN-${String(order.id).padStart(6, '0')}`;
+    const invoiceNo = `INV-${String(order.id).padStart(6, '0')}`;
+    const amount = Number(order.total_price || 0);
+    const issueDate = new Date(order.created_at).toLocaleDateString('en-GB');
+
+    const customerName = [order.contact_name, order.client_email]
+      .filter(Boolean)
+      .join(' | ') || 'Customer';
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    doc.setFillColor(13, 148, 136);
+    doc.rect(0, 0, 595.28, 95, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('HOME CREW', 40, 42);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.text('Service Invoice', 40, 68);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Invoice No: ${invoiceNo}`, 410, 40);
+    doc.text(`Date: ${issueDate}`, 410, 58);
+    doc.text(`Status: ${paymentStatus.toUpperCase()}`, 410, 76);
+
+    doc.setTextColor(31, 41, 55);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Bill To', 40, 130);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(customerName, 40, 150);
+
+    autoTable(doc, {
+      startY: 180,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 118, 110],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      styles: {
+        font: 'helvetica',
+        fontSize: 10,
+        cellPadding: 8,
+      },
+      head: [['Transaction ID', 'Order ID', 'Payment Status', 'Amount (BDT)']],
+      body: [[transactionId, `#${order.id}`, paymentStatus.toUpperCase(), amount.toFixed(2)]],
+    });
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemRows = items.length
+      ? items.map((item, index) => {
+          const serviceName = item?.service?.name || `Service ${index + 1}`;
+          const quantity = Number(item?.quantity || 1);
+          const unitPrice = Number(item?.service?.price ?? item?.price ?? 0);
+          return [serviceName, String(quantity), unitPrice.toFixed(2), (quantity * unitPrice).toFixed(2)];
+        })
+      : [['Service Charge', '1', amount.toFixed(2), amount.toFixed(2)]];
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 18,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [17, 24, 39],
+        textColor: [255, 255, 255],
+      },
+      styles: {
+        font: 'helvetica',
+        fontSize: 10,
+      },
+      head: [['Service', 'Qty', 'Unit Price (BDT)', 'Line Total (BDT)']],
+      body: itemRows,
+    });
+
+    const summaryTop = doc.lastAutoTable.finalY + 22;
+    const summaryBoxWidth = 220;
+    const summaryBoxX = pageWidth - summaryBoxWidth - 40;
+    const summaryBoxHeight = 56;
+
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(summaryBoxX, summaryTop - 18, summaryBoxWidth, summaryBoxHeight, 8, 8, 'F');
+
+    doc.setTextColor(55, 65, 81);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Total Amount', summaryBoxX + 14, summaryTop + 2);
+
+    doc.setTextColor(13, 148, 136);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text(`BDT ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, summaryBoxX + summaryBoxWidth - 14, summaryTop + 28, { align: 'right' });
+
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Thank you for choosing Home Crew.', 40, pageHeight - 40);
+    doc.text('This is a system-generated invoice.', 40, pageHeight - 24);
+
+    doc.save(`invoice-${order.id}.pdf`);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-lg text-gray-600">Loading order details...</div></div>;
 
   if (error) {
@@ -132,9 +247,17 @@ const OrderDetail = () => {
                 })}
               </span>
             </div>
-            <span className={getStatusBadgeClass(order.status)}>
-              {getStatusLabel(order.status)}
-            </span>
+            <div className="flex flex-col items-start md:items-end gap-3">
+              <span className={getStatusBadgeClass(order.status)}>
+                {getStatusLabel(order.status)}
+              </span>
+              <button
+                onClick={handleDownloadInvoicePdf}
+                className="px-4 py-2 border-2 border-teal-600 text-teal-700 hover:bg-teal-50 font-semibold rounded-lg transition-colors"
+              >
+                📄 Download Invoice
+              </button>
+            </div>
           </div>
 
           {/* Items */}

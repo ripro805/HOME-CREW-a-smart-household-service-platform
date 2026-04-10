@@ -48,7 +48,7 @@ const formatBubbleTime = (value) =>
   });
 
 const Messages = () => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const { showConfirm } = useDialog();
   const navigate = useNavigate();
   const messageEndRef = useRef(null);
@@ -98,8 +98,17 @@ const Messages = () => {
       setHasMoreConversations(Boolean(response.data.next));
 
       if (nextSelectedId) {
-        const detailResponse = await api.get(`/support/conversations/${nextSelectedId}/`);
-        setSelectedConversation(detailResponse.data);
+        const selectedSummary = mergedList.find((conversation) => conversation.id === nextSelectedId);
+        const shouldFetchDetail =
+          !selectedConversation ||
+          selectedConversation.id !== nextSelectedId ||
+          (selectedSummary?.last_message_at || '') !== (selectedConversation?.last_message_at || '') ||
+          !selectedConversation.messages;
+
+        if (shouldFetchDetail) {
+          const detailResponse = await api.get(`/support/conversations/${nextSelectedId}/`);
+          setSelectedConversation(detailResponse.data);
+        }
       } else {
         setSelectedConversation(null);
       }
@@ -118,6 +127,10 @@ const Messages = () => {
   };
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -131,7 +144,7 @@ const Messages = () => {
     setConversationPage(1);
     setHasMoreConversations(true);
     syncChat(false, 1, false);
-  }, [isAuthenticated, isAdmin, navigate, refreshTick, forceNoSelection]);
+  }, [authLoading, isAuthenticated, isAdmin, navigate, refreshTick, forceNoSelection]);
 
   useEffect(() => {
     if (!isAuthenticated || isAdmin) {

@@ -21,10 +21,14 @@ const Orders = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreRef = useRef(null);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -33,7 +37,7 @@ const Orders = () => {
     setCurrentPage(1);
     setHasMore(true);
     fetchOrders(1, false);
-  }, [isAuthenticated, navigate, sortBy]);
+  }, [authLoading, isAuthenticated, navigate, sortBy]);
 
   const orderingParam = (sortKey) => {
     if (sortKey === 'oldest') return 'id';

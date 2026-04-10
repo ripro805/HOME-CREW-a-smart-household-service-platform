@@ -141,10 +141,37 @@ class SupportConversationListSerializer(SupportConversationBaseSerializer):
 
 
 class SupportConversationDetailSerializer(SupportConversationBaseSerializer):
-    messages = SupportMessageSerializer(many=True, read_only=True)
+    messages = serializers.SerializerMethodField()
+    messages_truncated = serializers.SerializerMethodField()
 
     class Meta(SupportConversationBaseSerializer.Meta):
-        fields = SupportConversationBaseSerializer.Meta.fields + ["messages"]
+        fields = SupportConversationBaseSerializer.Meta.fields + ["messages", "messages_truncated"]
+
+    def _message_limit(self):
+        limit = self.context.get("messages_limit", 80)
+        try:
+            limit = int(limit)
+        except (TypeError, ValueError):
+            limit = 80
+        return max(20, min(limit, 200))
+
+    def get_messages(self, obj):
+        limit = self._message_limit()
+        queryset = obj.messages.select_related("sender").order_by("-created_at")[:limit]
+        items = list(queryset)
+        items.reverse()  # oldest -> newest for chat continuity
+        return SupportMessageSerializer(items, many=True).data
+
+    def get_messages_truncated(self, obj):
+        limit = self._message_limit()
+        total = getattr(obj, "message_count", None)
+        if total is None:
+            total = obj.messages.count()
+        try:
+            total = int(total)
+        except (TypeError, ValueError):
+            total = 0
+        return total > limit
 
 
 class SupportConversationCreateSerializer(serializers.Serializer):
