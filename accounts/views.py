@@ -3,6 +3,10 @@ from rest_framework.views import APIView
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from api.permissions import IsAdminOrSelfOrReadOnly
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Avg, Count, Sum
+from django.db.models.functions import TruncMonth
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from .models import User, ClientProfile
@@ -222,6 +226,8 @@ from django.contrib.auth import authenticate, login
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from orders.models import OrderItem
+from services.models import Review
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -395,3 +401,217 @@ def promote_to_admin(request):
 		return Response({'message': f'{user.username} promoted to admin'})
 	except User.DoesNotExist:
 		return Response({'error': 'User not found'}, status=404)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def client_ai_insights(request):
+	"""
+	AI-ready client insights for dashboard/profile.
+	Returns:
+	1) service usage + top category
+	2) smart reminders (seasonal + usage)
+	3) next best recommendations (top 3 + book again)
+	4) budget trend and forecast
+	5) issue classifier rules metadata
+	6) churn-risk nudges
+	7) review sentiment summary
+	"""
+
+	if getattr(request.user, 'role', '') != 'client':
+		return Response({'detail': 'Only clients can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+	now = timezone.now()
+
+	order_items = (
+		OrderItem.objects
+		.filter(order__client=request.user)
+		.select_related('service__category', 'order')
+		.order_by('-order__created_at')
+	)
+
+	service_usage = {}
+	service_last_used = {}
+	category_usage = {}
+	monthly_spend = {}
+
+	for item in order_items:
+		service = item.service
+		service_name = service.name if service else 'Unknown Service'
+		category_name = service.category.name if service and service.category else 'Uncategorized'
+		service_id = service.id if service else None
+		qty = int(item.quantity or 1)
+		created_at = item.order.created_at
+
+		if service_name not in service_usage:
+			service_usage[service_name] = {'service_id': service_id, 'name': service_name, 'count': 0}
+		service_usage[service_name]['count'] += qty
+
+		if service_name not in service_last_used or created_at > service_last_used[service_name]:
+			service_last_used[service_name] = created_at
+
+		category_usage[category_name] = category_usage.get(category_name, 0) + qty
+
+		month_key = created_at.strftime('%Y-%m')
+		monthly_spend[month_key] = monthly_spend.get(month_key, 0) + float(item.price or 0)
+
+	top_services = sorted(service_usage.values(), key=lambda row: row['count'], reverse=True)[:3]
+	most_used_category = None
+	if category_usage:
+		category_name, category_count = sorted(category_usage.items(), key=lambda row: row[1], reverse=True)[0]
+		most_used_category = {'name': category_name, 'count': category_count}
+
+	# Smart seasonal + usage reminders
+	reminders = []
+	for service_name, last_date in service_last_used.items():
+		name = service_name.lower()
+		days_since = (now - last_date).days
+
+		if ('ac' in name or 'air conditioner' in name) and days_since >= 105:
+			reminders.append({
+				'type': 'seasonal',
+				'message': 'AC servicing due in 2 weeks',
+				'service': service_name,
+			})
+		if ('water purifier' in name or 'filter' in name or 'purifier' in name) and days_since >= 150:
+			reminders.append({
+				'type': 'usage',
+				'message': 'Water purifier filter replacement likely due',
+				'service': service_name,
+			})
+		if ('electrical' in name or 'wiring' in name) and days_since >= 120:
+			reminders.append({
+				'type': 'safety',
+				'message': 'Electrical safety check may be due soon',
+				'service': service_name,
+			})
+
+	if not reminders and top_services:
+		reminders.append({
+			'type': 'general',
+			'message': f"Routine check recommended for {top_services[0]['name']}",
+			'service': top_services[0]['name'],
+		})
+
+	# Next best recommendation (top 3)
+	recommendations = []
+	for row in top_services:
+		recommendations.append({
+			'service_id': row['service_id'],
+			'service_name': row['name'],
+			'reason': 'Based on your usage history',
+			'book_again': bool(row['service_id']),
+		})
+
+	if most_used_category and len(recommendations) < 3:
+		recommendations.append({
+			'service_id': None,
+			'service_name': f"Explore more in {most_used_category['name']}",
+			'reason': 'Most used category pattern',
+			'book_again': False,
+		})
+
+	# Budget forecast
+	month_rows = []
+	for i in range(5, -1, -1):
+		month_dt = (now.replace(day=1) - timedelta(days=1)).replace(day=1) if i > 0 else now.replace(day=1)
+		for _ in range(max(i - 1, 0)):
+			month_dt = (month_dt - timedelta(days=1)).replace(day=1)
+
+	# Better month generation (oldest -> latest, last 6 months)
+	month_rows = []
+	base = now.replace(day=1)
+	for offset in range(5, -1, -1):
+		month = (base - timedelta(days=offset * 31)).replace(day=1)
+		key = month.strftime('%Y-%m')
+		month_rows.append({
+			'key': key,
+			'label': month.strftime('%b %Y'),
+			'amount': round(monthly_spend.get(key, 0), 2),
+		})
+
+	non_zero_months = [row['amount'] for row in month_rows if row['amount'] > 0]
+	avg_monthly = (sum(non_zero_months) / len(non_zero_months)) if non_zero_months else 0
+	current_month_key = now.strftime('%Y-%m')
+	current_spend = monthly_spend.get(current_month_key, 0)
+	days_in_month = 30
+	days_elapsed = max(now.day, 1)
+	pace_projection = (current_spend / days_elapsed) * days_in_month
+	estimated_this_month = max(avg_monthly, pace_projection)
+
+	# Churn risk + nudge
+	last_activity_date = None
+	if service_last_used:
+		last_activity_date = max(service_last_used.values())
+	inactivity_days = (now - last_activity_date).days if last_activity_date else 999
+	if inactivity_days <= 30:
+		churn_level = 'low'
+		nudge = 'Great engagement! Keep your home systems maintained with timely checkups.'
+		coupon = None
+	elif inactivity_days <= 90:
+		churn_level = 'medium'
+		nudge = 'It has been a while since your last booking. Want a quick preventive service this week?'
+		coupon = 'WELCOME-BACK-10'
+	else:
+		churn_level = 'high'
+		nudge = 'We miss you! Book a maintenance service to avoid sudden breakdowns.'
+		coupon = 'COMEBACK-15'
+
+	# Review sentiment intelligence
+	reviews = Review.objects.filter(client=request.user)
+	review_count = reviews.count()
+	avg_rating = float(reviews.aggregate(avg=Avg('rating')).get('avg') or 0)
+	unhappy_count = reviews.filter(rating__lt=3).count()
+	follow_up_needed = unhappy_count > 0
+	if follow_up_needed:
+		sentiment_message = 'We noticed a few low ratings. Support follow-up is recommended.'
+	else:
+		sentiment_message = 'Your feedback trend looks healthy. Keep sharing reviews to improve recommendations.'
+
+	# Issue classifier metadata for frontend/chat form
+	classifier_rules = [
+		{
+			'category': 'AC Services',
+			'keywords': ['ac', 'air conditioner', 'cooling', 'gas refill', 'split ac'],
+			'priority_keywords': ['not cooling', 'leak', 'burning smell'],
+		},
+		{
+			'category': 'Electrical Services',
+			'keywords': ['switch', 'wiring', 'mcb', 'db box', 'short circuit', 'spark'],
+			'priority_keywords': ['fire', 'spark', 'burn', 'shock'],
+		},
+		{
+			'category': 'Plumbing Services',
+			'keywords': ['pipe', 'leak', 'water', 'tap', 'drain', 'bathroom'],
+			'priority_keywords': ['burst pipe', 'flood', 'overflow'],
+		},
+	]
+
+	return Response({
+		'service_usage_frequency': top_services,
+		'most_used_service_category': most_used_category,
+		'smart_service_reminders': reminders[:4],
+		'next_best_recommendations': recommendations[:3],
+		'ai_budget_forecast': {
+			'monthly_trend': month_rows,
+			'estimated_this_month': round(estimated_this_month, 2),
+			'avg_monthly_spend': round(avg_monthly, 2),
+		},
+		'issue_classifier': {
+			'rules': classifier_rules,
+			'priority_hint': 'If issue seems risky (spark, fire, leakage), suggest priority booking.',
+		},
+		'churn_risk_nudge': {
+			'level': churn_level,
+			'inactivity_days': inactivity_days,
+			'nudge': nudge,
+			'coupon_code': coupon,
+		},
+		'review_sentiment_intelligence': {
+			'review_count': review_count,
+			'avg_rating': round(avg_rating, 2),
+			'unhappy_count': unhappy_count,
+			'follow_up_needed': follow_up_needed,
+			'message': sentiment_message,
+		},
+	})

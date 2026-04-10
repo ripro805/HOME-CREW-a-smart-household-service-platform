@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
@@ -15,6 +15,8 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 const TAKA = '\u09F3';
+const PRICE_SLIDER_MAX = 50000;
+const SERVICES_PAGE_SIZE = 10;
 
 const Services = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,11 +30,14 @@ const Services = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: PRICE_SLIDER_MAX });
   const [sortBy, setSortBy] = useState('default');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
   
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
@@ -58,20 +63,24 @@ const Services = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString()]); // Use string representation to avoid object reference issues
 
-  // Fetch services when category or page changes
-  const fetchServices = useCallback(async () => {
+  // Fetch services lazily (page-by-page)
+  const fetchServices = useCallback(async (pageToLoad = 1, append = false) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       
       // Add category filter and pagination to API call
-      const params = { page: currentPage, page_size: 10 };
+      const params = { page: pageToLoad, page_size: SERVICES_PAGE_SIZE };
       if (selectedCategory && selectedCategory !== 'all') {
         params.category = selectedCategory;
       }
       
       console.log('[INFO] Fetching services...');
       console.log('  Category:', selectedCategory);
-      console.log('  Page:', currentPage);
+      console.log('  Page:', pageToLoad);
       console.log('  API Params:', params);
       
       const response = await api.get('/services/', { params });
@@ -79,24 +88,57 @@ const Services = () => {
       console.log('[OK] Received:', response.data.count, 'total services,', response.data.results?.length, 'in this page');
       
       // Backend returns paginated data: {count, next, previous, results}
-      setServices(response.data.results || response.data);
-      setTotalCount(response.data.count || 0);
-      setTotalPages(Math.ceil((response.data.count || 0) / 10));
+      const nextBatch = response.data.results || response.data || [];
+      const total = Number(response.data.count || 0);
+
+      setServices((prev) => (append ? [...prev, ...nextBatch] : nextBatch));
+      setTotalCount(total);
+      setTotalPages(Math.ceil(total / SERVICES_PAGE_SIZE) || 1);
+      setCurrentPage(pageToLoad);
+      setHasMore(Boolean(response.data.next));
     } catch (error) {
       console.error('[ERROR] Failed to fetch services:', error);
-      setServices([]);
-      setTotalCount(0);
-      setTotalPages(1);
+      if (!append) {
+        setServices([]);
+        setTotalCount(0);
+        setTotalPages(1);
+      }
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [selectedCategory, currentPage]);
+  }, [selectedCategory]);
 
-  // Fetch services when callback changes
+  // Reset and fetch first page when category changes
   useEffect(() => {
     console.log('[INFO] Effect triggered - fetching services');
-    fetchServices();
-  }, [fetchServices]);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchServices(1, false);
+  }, [fetchServices, selectedCategory]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting) return;
+        if (loading || loadingMore || !hasMore) return;
+        fetchServices(currentPage + 1, true);
+      },
+      { rootMargin: '250px 0px 250px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [currentPage, hasMore, loading, loadingMore, fetchServices]);
 
   const fetchCategories = async () => {
     try {
@@ -239,7 +281,7 @@ const Services = () => {
                     <input
                       type="range"
                       min="0"
-                      max="1000"
+                      max={PRICE_SLIDER_MAX}
                       step="10"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) })}
@@ -251,7 +293,7 @@ const Services = () => {
                     <input
                       type="range"
                       min="0"
-                      max="1000"
+                      max={PRICE_SLIDER_MAX}
                       step="10"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) })}
@@ -289,7 +331,7 @@ const Services = () => {
         {/* Results Count */}
         {totalCount > 0 && (
           <div className="mb-4 text-sm text-gray-600">
-            Showing {((currentPage - 1) * 10) + 1}-{Math.min(currentPage * 10, totalCount)} of {totalCount} services
+            Showing {sortedServices.length} of {totalCount} services
           </div>
         )}
 
@@ -364,57 +406,13 @@ const Services = () => {
           )}
         </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex justify-center items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Previous
-            </button>
-            
-            <div className="flex gap-1">
-              {[...Array(totalPages)].map((_, index) => {
-                const pageNum = index + 1;
-                // Show first page, last page, current page, and 2 pages around current
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition-colors ${
-                        currentPage === pageNum
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                } else if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return <span key={pageNum} className="px-2 text-gray-500">...</span>;
-                }
-                return null;
-              })}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          </div>
+        {/* Infinite-scroll sentinel */}
+        <div ref={loadMoreRef} className="h-10" />
+        {loadingMore && (
+          <div className="py-4 text-center text-sm text-gray-500">Loading more services...</div>
+        )}
+        {!hasMore && totalCount > 0 && (
+          <div className="py-4 text-center text-xs text-gray-400">You have reached the end.</div>
         )}
       </div>
     </div>

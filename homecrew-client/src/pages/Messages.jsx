@@ -20,6 +20,16 @@ const STATUS_LABELS = {
   resolved: 'Resolved',
 };
 
+const CONVERSATIONS_PAGE_SIZE = 10;
+
+const mergeUniqueConversations = (incoming = [], existing = []) => {
+  const map = new Map();
+  [...incoming, ...existing].forEach((item) => {
+    if (item?.id) map.set(item.id, item);
+  });
+  return Array.from(map.values()).sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
+};
+
 const formatPanelTime = (value) => {
   if (!value) return 'Just now';
   return new Date(value).toLocaleString('en-GB', {
@@ -42,6 +52,7 @@ const Messages = () => {
   const { showConfirm } = useDialog();
   const navigate = useNavigate();
   const messageEndRef = useRef(null);
+  const loadMoreRef = useRef(null);
 
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -52,24 +63,39 @@ const Messages = () => {
   const [error, setError] = useState('');
   const [refreshTick, setRefreshTick] = useState(0);
   const [forceNoSelection, setForceNoSelection] = useState(false);
+  const [conversationPage, setConversationPage] = useState(1);
+  const [hasMoreConversations, setHasMoreConversations] = useState(true);
+  const [loadingMoreConversations, setLoadingMoreConversations] = useState(false);
 
-  const syncChat = async (keepSpinner = false) => {
+  const syncChat = async (keepSpinner = false, pageToLoad = 1, append = false) => {
     if (!keepSpinner) {
       setLoading(true);
     }
+    if (append) {
+      setLoadingMoreConversations(true);
+    }
 
     try {
-      const response = await api.get('/support/conversations/');
+      const response = await api.get('/support/conversations/', {
+        params: { page: pageToLoad, page_size: CONVERSATIONS_PAGE_SIZE },
+      });
       const list = response.data.results || response.data || [];
-      const nextSelectedId =
-        forceNoSelection
-          ? null
-          : selectedId && list.some((conversation) => conversation.id === selectedId)
-            ? selectedId
-            : list[0]?.id || null;
+      const mergedList = append
+        ? mergeUniqueConversations([...(conversations || []), ...(Array.isArray(list) ? list : [])], [])
+        : keepSpinner
+          ? mergeUniqueConversations(Array.isArray(list) ? list : [], conversations || [])
+          : (Array.isArray(list) ? list : []);
 
-      setConversations(Array.isArray(list) ? list : []);
+      const nextSelectedId = forceNoSelection
+        ? null
+        : selectedId && mergedList.some((conversation) => conversation.id === selectedId)
+          ? selectedId
+          : mergedList[0]?.id || null;
+
+      setConversations(mergedList);
       setSelectedId(nextSelectedId);
+      setConversationPage(pageToLoad);
+      setHasMoreConversations(Boolean(response.data.next));
 
       if (nextSelectedId) {
         const detailResponse = await api.get(`/support/conversations/${nextSelectedId}/`);
@@ -85,6 +111,9 @@ const Messages = () => {
       if (!keepSpinner) {
         setLoading(false);
       }
+      if (append) {
+        setLoadingMoreConversations(false);
+      }
     }
   };
 
@@ -99,7 +128,9 @@ const Messages = () => {
       return;
     }
 
-    syncChat();
+    setConversationPage(1);
+    setHasMoreConversations(true);
+    syncChat(false, 1, false);
   }, [isAuthenticated, isAdmin, navigate, refreshTick, forceNoSelection]);
 
   useEffect(() => {
@@ -117,6 +148,24 @@ const Messages = () => {
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedConversation]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting) return;
+        if (loading || loadingMoreConversations || !hasMoreConversations) return;
+        syncChat(true, conversationPage + 1, true);
+      },
+      { rootMargin: '220px 0px 220px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [conversationPage, hasMoreConversations, loading, loadingMoreConversations, selectedId, forceNoSelection]);
 
   const handleSendMessage = async () => {
     const trimmedDraft = draft.trim();
@@ -305,51 +354,57 @@ const Messages = () => {
                 </div>
 
                 {conversations.length > 0 ? (
-                  conversations.map((conversation) => (
-                    <div
-                      key={conversation.id}
-                      className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                        selectedId === conversation.id
-                          ? 'border-teal-300/50 bg-teal-400/10 shadow-lg shadow-teal-500/10'
-                          : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setForceNoSelection(false);
-                            setSelectedId(conversation.id);
-                            setRefreshTick((tick) => tick + 1);
-                          }}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <p className="truncate font-semibold text-white">{conversation.subject || 'HomeCrew Support Chat'}</p>
-                        </button>
-                        <div className="flex items-center gap-2">
-                          {conversation.unread_count > 0 && (
-                            <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white">
-                              {conversation.unread_count}
-                            </span>
-                          )}
+                  <>
+                    {conversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                          selectedId === conversation.id
+                            ? 'border-teal-300/50 bg-teal-400/10 shadow-lg shadow-teal-500/10'
+                            : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
                           <button
                             type="button"
-                            onClick={() => handleDeleteConversation(conversation)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 text-slate-300 transition hover:border-rose-300 hover:text-rose-300"
-                            aria-label={`Delete ${conversation.subject || 'conversation'}`}
-                            title="Delete conversation"
+                            onClick={() => {
+                              setForceNoSelection(false);
+                              setSelectedId(conversation.id);
+                              setRefreshTick((tick) => tick + 1);
+                            }}
+                            className="min-w-0 flex-1 text-left"
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            <p className="truncate font-semibold text-white">{conversation.subject || 'HomeCrew Support Chat'}</p>
                           </button>
+                          <div className="flex items-center gap-2">
+                            {conversation.unread_count > 0 && (
+                              <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white">
+                                {conversation.unread_count}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteConversation(conversation)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 text-slate-300 transition hover:border-rose-300 hover:text-rose-300"
+                              aria-label={`Delete ${conversation.subject || 'conversation'}`}
+                              title="Delete conversation"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-300">{conversation.last_message_preview || 'Start your first message.'}</p>
+                        <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                          <span>{STATUS_LABELS[conversation.status] || conversation.status}</span>
+                          <span>{formatPanelTime(conversation.last_message_at)}</span>
                         </div>
                       </div>
-                      <p className="mt-2 line-clamp-2 text-sm text-slate-300">{conversation.last_message_preview || 'Start your first message.'}</p>
-                      <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
-                        <span>{STATUS_LABELS[conversation.status] || conversation.status}</span>
-                        <span>{formatPanelTime(conversation.last_message_at)}</span>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                    <div ref={loadMoreRef} className="h-6" />
+                    {loadingMoreConversations && (
+                      <div className="text-center text-xs text-slate-300">Loading more conversations...</div>
+                    )}
+                  </>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center">
                     <ChatBubbleLeftRightIcon className="mx-auto h-11 w-11 text-slate-500" />

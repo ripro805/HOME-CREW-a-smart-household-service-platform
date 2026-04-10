@@ -1,13 +1,29 @@
+import { useMemo, useState } from 'react';
 import {
   ClipboardDocumentListIcon,
   CheckBadgeIcon,
   ClockIcon,
   BanknotesIcon,
+  StarIcon,
+  LightBulbIcon,
 } from '@heroicons/react/24/outline';
+import { AreaChart, Area, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const money = (n) => `৳${Number(n || 0).toLocaleString()}`;
 
 export default function DashboardPage({ summary, recentJobs }) {
+  const [trendRange, setTrendRange] = useState('day');
+
+  const trendData = useMemo(() => {
+    const source = summary?.incomeTrends?.[trendRange] || [];
+    return source.map((row) => ({
+      ...row,
+      income: Number(row.amount || 0),
+    }));
+  }, [summary, trendRange]);
+
+  const avgRating = Number(summary?.averageRating || 0).toFixed(1);
+
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -17,11 +33,63 @@ export default function DashboardPage({ summary, recentJobs }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatCard title="Total Jobs" value={summary.totalJobs} tone="teal" icon={ClipboardDocumentListIcon} />
         <StatCard title="Completed Jobs" value={summary.completedJobs} tone="green" icon={CheckBadgeIcon} />
         <StatCard title="Pending Jobs" value={summary.pendingJobs} tone="amber" icon={ClockIcon} />
         <StatCard title="Total Earnings" value={money(summary.totalEarnings)} tone="indigo" icon={BanknotesIcon} />
+        <StatCard title="Average Rating" value={`${avgRating} ★`} tone="rose" icon={StarIcon} />
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Income Trend</h3>
+            <p className="text-xs text-slate-500">Track earnings by দিন / সপ্তাহ / মাস</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {[{ key: 'day', label: 'দিন' }, { key: 'week', label: 'সপ্তাহ' }, { key: 'month', label: 'মাস' }].map((item) => (
+              <button
+                key={item.key}
+                className={`px-3 py-1.5 text-xs rounded-lg font-semibold transition-colors ${trendRange === item.key ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                onClick={() => setTrendRange(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={trendData}>
+            <defs>
+              <linearGradient id="techIncome" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.28} />
+                <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="label" stroke="#64748b" style={{ fontSize: '12px' }} />
+            <YAxis stroke="#64748b" style={{ fontSize: '12px' }} tickFormatter={(value) => `৳${value}`} />
+            <Tooltip
+              formatter={(value) => [money(value), 'Income']}
+              contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0' }}
+            />
+            <Area type="monotone" dataKey="income" stroke="#0f766e" fill="url(#techIncome)" strokeWidth={2.5} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="rounded-2xl border border-teal-100 bg-teal-50/70 p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white grid place-items-center text-teal-700 border border-teal-100">
+            <LightBulbIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">AI Suggestion</p>
+            <p className="text-sm text-slate-700 mt-1">{summary.aiSuggestion || 'Keep accepting high-value jobs to increase your income trend.'}</p>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 overflow-x-auto">
@@ -68,6 +136,7 @@ function StatCard({ title, value, tone, icon: Icon }) {
     green: 'bg-green-50 text-green-700 border-green-100',
     amber: 'bg-amber-50 text-amber-700 border-amber-100',
     indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    rose: 'bg-rose-50 text-rose-700 border-rose-100',
   };
   return (
     <div className={`rounded-2xl border p-5 shadow-sm ${tones[tone] || tones.teal}`}>

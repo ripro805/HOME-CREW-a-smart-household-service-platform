@@ -1,4 +1,4 @@
-from rest_framework import viewsets, generics, status
+from rest_framework import viewsets, generics, status, filters
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework.decorators import action
@@ -69,6 +69,7 @@ from .serializers import (
     UpdateOrderSerializer,
     AssignTechnicianSerializer,
 )
+from .pagination import OrderResultsSetPagination
 
 
 # =========================
@@ -194,6 +195,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     http_method_names = ['get', 'post', 'delete', 'patch', 'head', 'options']
+    pagination_class = OrderResultsSetPagination
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['id', 'created_at', 'total_price']
+    ordering = ['-id']
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

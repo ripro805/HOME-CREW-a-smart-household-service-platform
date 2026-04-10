@@ -77,13 +77,24 @@ class SupportConversationBaseSerializer(serializers.ModelSerializer):
         ]
 
     def _messages(self, obj):
-        return list(obj.messages.all())
+        prefetched = getattr(obj, "_prefetched_objects_cache", {})
+        cached_messages = prefetched.get("messages")
+        if cached_messages is None:
+            return []
+        return list(cached_messages)
 
     def get_client_name(self, obj):
         full_name = obj.client.get_full_name().strip()
         return full_name or obj.client.email
 
     def get_unread_count(self, obj):
+        annotated = getattr(obj, "unread_count", None)
+        if annotated is not None:
+            try:
+                return int(annotated)
+            except (TypeError, ValueError):
+                return 0
+
         request = self.context.get("request")
         user = getattr(request, "user", None)
         if not user or not user.is_authenticated:
@@ -101,6 +112,13 @@ class SupportConversationBaseSerializer(serializers.ModelSerializer):
         return unread_count
 
     def get_last_message_preview(self, obj):
+        annotated_preview = getattr(obj, "last_message_preview", None)
+        if annotated_preview is not None:
+            text = (annotated_preview or "").strip()
+            if not text:
+                return ""
+            return text if len(text) <= 88 else f"{text[:85]}..."
+
         messages = self._messages(obj)
         if not messages:
             return ""
@@ -108,6 +126,13 @@ class SupportConversationBaseSerializer(serializers.ModelSerializer):
         return body if len(body) <= 88 else f"{body[:85]}..."
 
     def get_message_count(self, obj):
+        annotated = getattr(obj, "message_count", None)
+        if annotated is not None:
+            try:
+                return int(annotated)
+            except (TypeError, ValueError):
+                return 0
+
         return len(self._messages(obj))
 
 
@@ -154,6 +179,8 @@ class ChatbotContextSerializer(serializers.Serializer):
     booking_name = serializers.CharField(required=False, allow_blank=True, max_length=120)
     booking_phone = serializers.CharField(required=False, allow_blank=True, max_length=30)
     confirm_booking = serializers.BooleanField(required=False, default=False)
+    booking_in_progress = serializers.BooleanField(required=False, default=False)
+    awaiting_booking_field = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=20)
     order_id = serializers.IntegerField(required=False, allow_null=True)
     awaiting_order_id = serializers.BooleanField(required=False, default=False)
     awaiting_update_order_id = serializers.BooleanField(required=False, default=False)

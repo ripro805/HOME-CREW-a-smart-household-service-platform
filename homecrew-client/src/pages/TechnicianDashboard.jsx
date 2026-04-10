@@ -12,6 +12,110 @@ import NotificationsPage from './technician/NotificationsPage';
 import ProfileSettingsPage from './technician/ProfileSettingsPage';
 import { seedMyJobs, seedNotifications, seedReviews } from './technician/dummyData';
 
+const toMoney = (n) => Number(n || 0);
+
+const toDate = (value) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const startOfWeek = (date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const buildIncomeTrend = (completedJobs) => {
+  const now = new Date();
+
+  const dayRows = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (6 - i));
+    d.setHours(0, 0, 0, 0);
+    return {
+      key: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+      amount: 0,
+    };
+  });
+
+  const weekRows = Array.from({ length: 8 }, (_, i) => {
+    const d = startOfWeek(now);
+    d.setDate(d.getDate() - (7 * (7 - i)));
+    return {
+      key: d.toISOString().slice(0, 10),
+      label: `W${i + 1}`,
+      amount: 0,
+    };
+  });
+
+  const monthRows = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString('en-GB', { month: 'short' }),
+      amount: 0,
+    };
+  });
+
+  const dayIndex = Object.fromEntries(dayRows.map((row, index) => [row.key, index]));
+  const weekIndex = Object.fromEntries(weekRows.map((row, index) => [row.key, index]));
+  const monthIndex = Object.fromEntries(monthRows.map((row, index) => [row.key, index]));
+
+  completedJobs.forEach((job) => {
+    const date = toDate(job.requestedAt || job.acceptedAt);
+    if (!date) return;
+    const amount = toMoney(job.amount);
+
+    const dayKey = date.toISOString().slice(0, 10);
+    if (dayKey in dayIndex) dayRows[dayIndex[dayKey]].amount += amount;
+
+    const weekKey = startOfWeek(date).toISOString().slice(0, 10);
+    if (weekKey in weekIndex) weekRows[weekIndex[weekKey]].amount += amount;
+
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (monthKey in monthIndex) monthRows[monthIndex[monthKey]].amount += amount;
+  });
+
+  return {
+    day: dayRows,
+    week: weekRows,
+    month: monthRows,
+  };
+};
+
+const buildAiSuggestion = ({ completedJobs, availableJobs, trends }) => {
+  const hasElectricalAvailable = availableJobs.some((job) =>
+    String(job.category || '').toLowerCase().includes('electrical')
+  );
+
+  if (hasElectricalAvailable) {
+    return 'You should accept more electrical jobs for higher income.';
+  }
+
+  const categoryIncome = {};
+  completedJobs.forEach((job) => {
+    const key = String(job.category || 'General').toLowerCase();
+    categoryIncome[key] = (categoryIncome[key] || 0) + toMoney(job.amount);
+  });
+
+  const bestCategory = Object.entries(categoryIncome).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
+
+  const recentDayTrend = trends.day;
+  const firstHalf = recentDayTrend.slice(0, 3).reduce((sum, row) => sum + row.amount, 0);
+  const secondHalf = recentDayTrend.slice(-3).reduce((sum, row) => sum + row.amount, 0);
+
+  if (secondHalf < firstHalf) {
+    return `Your recent income is slowing down. Consider accepting more ${bestCategory} jobs this week.`;
+  }
+
+  return `Great momentum! Keep prioritizing high-value ${bestCategory} jobs to maximize earnings.`;
+};
+
 export default function TechnicianDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -135,6 +239,8 @@ export default function TechnicianDashboard() {
     () => (isTechnicianOne ? [...liveMyJobs, ...demoCompletedJobs] : liveMyJobs),
     [isTechnicianOne, liveMyJobs, demoCompletedJobs]
   );
+
+  const completedJobs = useMemo(() => myJobs.filter((j) => j.status === 'completed'), [myJobs]);
 
   const notifications = useMemo(() => {
     const rows = [];
@@ -270,6 +376,19 @@ export default function TechnicianDashboard() {
     return [...reviews, ...demoMapped];
   }, [isTechnicianOne, reviews]);
 
+  const incomeTrends = useMemo(() => buildIncomeTrend(completedJobs), [completedJobs]);
+
+  const averageRating = useMemo(() => {
+    if (!displayReviews.length) return 0;
+    const total = displayReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+    return total / displayReviews.length;
+  }, [displayReviews]);
+
+  const aiSuggestion = useMemo(
+    () => buildAiSuggestion({ completedJobs, availableJobs, trends: incomeTrends }),
+    [completedJobs, availableJobs, incomeTrends]
+  );
+
   const summary = useMemo(() => {
     const totalJobs = myJobs.length;
     const completedJobs = myJobs.filter((j) => j.status === 'completed').length;
@@ -277,11 +396,18 @@ export default function TechnicianDashboard() {
     const totalEarnings = myJobs
       .filter((j) => j.status === 'completed')
       .reduce((sum, j) => sum + Number(j.amount || 0), 0);
-    return { totalJobs, completedJobs, pendingJobs, totalEarnings };
-  }, [myJobs]);
+    return {
+      totalJobs,
+      completedJobs,
+      pendingJobs,
+      totalEarnings,
+      averageRating,
+      incomeTrends,
+      aiSuggestion,
+    };
+  }, [myJobs, averageRating, incomeTrends, aiSuggestion]);
 
   const recentJobs = useMemo(() => [...myJobs].slice(0, 6), [myJobs]);
-  const completedJobs = useMemo(() => myJobs.filter((j) => j.status === 'completed'), [myJobs]);
   return (
     <div className="min-h-screen bg-slate-100 flex">
       <TechnicianSidebar

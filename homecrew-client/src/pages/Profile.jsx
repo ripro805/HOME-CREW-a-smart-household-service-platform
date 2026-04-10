@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +27,10 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('view');
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
+  const [aiInsights, setAiInsights] = useState(null);
+  const [issueInput, setIssueInput] = useState('');
+  const [issueClassifierResult, setIssueClassifierResult] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [formData, setFormData] = useState({
@@ -65,10 +69,24 @@ const Profile = () => {
       return;
     }
     fetchProfile();
-    if (activeTab === 'orders' && !isTechnicianUser) {
+    if ((activeTab === 'orders' || activeTab === 'insights') && !isTechnicianUser) {
       fetchOrders();
+      fetchClientAiInsights();
     }
   }, [isAuthenticated, activeTab, isTechnicianUser]);
+
+  const fetchClientAiInsights = async () => {
+    setAiInsightsLoading(true);
+    try {
+      const response = await api.get('/accounts/client-ai-insights/');
+      setAiInsights(response.data || null);
+    } catch (error) {
+      console.error('Failed to fetch client AI insights:', error);
+      setAiInsights(null);
+    } finally {
+      setAiInsightsLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -94,7 +112,9 @@ const Profile = () => {
   const fetchOrders = async () => {
     setOrdersLoading(true);
     try {
-      const response = await api.get('/orders/');
+      const response = await api.get('/orders/', {
+        params: { page: 1, page_size: 20, ordering: '-id' },
+      });
       const data = response.data.results ?? response.data;
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -261,6 +281,127 @@ const Profile = () => {
     return `${baseClass} ${statusColors[status] || 'bg-gray-100 text-gray-700'}`;
   };
 
+  const classifyIssue = () => {
+    const text = issueInput.trim().toLowerCase();
+    if (!text) {
+      setIssueClassifierResult(null);
+      return;
+    }
+
+    const rules = aiInsights?.issue_classifier?.rules || [];
+    let matched = null;
+    let priority = false;
+
+    rules.forEach((rule) => {
+      if (matched) return;
+      const hasKeyword = (rule.keywords || []).some((keyword) => text.includes(String(keyword).toLowerCase()));
+      if (!hasKeyword) return;
+      matched = rule;
+      priority = (rule.priority_keywords || []).some((keyword) => text.includes(String(keyword).toLowerCase()));
+    });
+
+    if (!matched) {
+      setIssueClassifierResult({
+        category: 'General Service Support',
+        priority: false,
+        suggestion: 'We could not map it exactly. Use Assistant for best matching service.',
+      });
+      return;
+    }
+
+    setIssueClassifierResult({
+      category: matched.category,
+      priority,
+      suggestion: priority ? 'Priority booking suggested for safety and faster response.' : 'Standard booking is suitable for this issue.',
+    });
+  };
+
+  const handleBookAgain = async (serviceId) => {
+    if (!serviceId) {
+      await showAlert('Service ID not available for one-click booking.', { title: 'Book again unavailable' });
+      return;
+    }
+    try {
+      await api.post('/orders/cart/add/', {
+        service_id: serviceId,
+        quantity: 1,
+      });
+      await showAlert('Service added to cart. You can continue checkout now.', { title: 'Added to cart' });
+      navigate('/cart');
+    } catch (error) {
+      await showAlert(error.response?.data?.detail || 'Could not add service to cart.', {
+        title: 'Book again failed',
+      });
+    }
+  };
+
+  const clientInsights = useMemo(() => {
+    if (isTechnicianUser || !orders.length) {
+      return {
+        totalServiceUsage: 0,
+        topServices: [],
+        mostUsedCategory: null,
+        aiSuggestion: 'Place your first order to unlock personalized recommendations.',
+      };
+    }
+
+    const serviceUsageMap = {};
+    const categoryUsageMap = {};
+    const serviceLastUsedMap = {};
+
+    orders.forEach((order) => {
+      (order.items || []).forEach((item) => {
+        const serviceName = item.service?.name || 'Unknown Service';
+        const categoryName = item.service?.category?.name || 'Uncategorized';
+        const quantity = Number(item.quantity || 1);
+
+        serviceUsageMap[serviceName] = (serviceUsageMap[serviceName] || 0) + quantity;
+        categoryUsageMap[categoryName] = (categoryUsageMap[categoryName] || 0) + quantity;
+
+        const createdAt = order.created_at ? new Date(order.created_at) : null;
+        if (createdAt && !Number.isNaN(createdAt.getTime())) {
+          const currentLast = serviceLastUsedMap[serviceName];
+          if (!currentLast || createdAt > currentLast) {
+            serviceLastUsedMap[serviceName] = createdAt;
+          }
+        }
+      });
+    });
+
+    const topServices = Object.entries(serviceUsageMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, count]) => ({ name, count }));
+
+    const mostUsedCategoryEntry = Object.entries(categoryUsageMap).sort((a, b) => b[1] - a[1])[0] || null;
+    const mostUsedCategory = mostUsedCategoryEntry
+      ? { name: mostUsedCategoryEntry[0], count: mostUsedCategoryEntry[1] }
+      : null;
+
+    const now = new Date();
+    const acServiceEntry = Object.entries(serviceLastUsedMap).find(([serviceName]) =>
+      /\bac\b|air conditioner|ac service|ac servicing/i.test(serviceName)
+    );
+    const acLastUsed = acServiceEntry?.[1] || null;
+    const daysSinceAc = acLastUsed ? Math.floor((now - acLastUsed) / (1000 * 60 * 60 * 24)) : null;
+
+    let aiSuggestion = 'Keep tracking your order history—consistent maintenance helps avoid urgent repairs.';
+    if (daysSinceAc !== null && daysSinceAc >= 120) {
+      aiSuggestion = 'You may need AC servicing soon.';
+    } else if (mostUsedCategory?.name && /ac|air conditioner/i.test(mostUsedCategory.name)) {
+      aiSuggestion = 'You may need AC servicing soon.';
+    } else if (mostUsedCategory?.name) {
+      aiSuggestion = `You frequently use ${mostUsedCategory.name}. Book a preventive service reminder this month.`;
+    }
+
+    return {
+      totalServiceUsage: Object.values(serviceUsageMap).reduce((sum, value) => sum + value, 0),
+      topServices,
+      mostUsedCategory,
+      aiSuggestion,
+    };
+  }, [orders, isTechnicianUser]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
@@ -335,6 +476,18 @@ const Profile = () => {
           >
             {isTechnicianUser ? 'My Jobs' : 'My Orders'}
           </button>
+          {!isTechnicianUser && (
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === 'insights'
+                  ? 'bg-teal-600 text-white shadow-md btn-glow'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              AI Insights
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('security')}
             className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -619,6 +772,158 @@ const Profile = () => {
               <span className="text-sm text-gray-400">{orders.length} order{orders.length !== 1 ? 's' : ''} total</span>
             </div>
 
+            {false && !ordersLoading && orders.length > 0 && (
+              <div className="mb-8 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                    <p className="text-xs text-teal-700 font-semibold uppercase tracking-wide">Service Usage Frequency</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{clientInsights.totalServiceUsage}</p>
+                    <p className="text-xs text-gray-500 mt-1">Total services booked across all orders</p>
+                  </div>
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+                    <p className="text-xs text-cyan-700 font-semibold uppercase tracking-wide">Most Used Category</p>
+                    <p className="text-lg font-bold text-gray-800 mt-1">{clientInsights.mostUsedCategory?.name || '—'}</p>
+                    <p className="text-xs text-gray-500 mt-1">{clientInsights.mostUsedCategory ? `${clientInsights.mostUsedCategory.count} bookings` : 'No category data yet'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-navy-100 bg-navy-50 p-4">
+                    <p className="text-xs text-navy-700 font-semibold uppercase tracking-wide">Top Services</p>
+                    {clientInsights.topServices.length > 0 ? (
+                      <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                        {clientInsights.topServices.map((service) => (
+                          <li key={service.name} className="flex items-center justify-between">
+                            <span className="truncate pr-3">{service.name}</span>
+                            <span className="font-semibold">{service.count}x</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-gray-500 mt-2">No service data yet</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                  <p className="text-xs text-amber-700 font-semibold uppercase tracking-wide mb-1">AI Reminder</p>
+                  <p className="text-sm text-gray-700">{clientInsights.aiSuggestion}</p>
+                </div>
+
+                {aiInsightsLoading && (
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-sm text-gray-500">
+                    Loading advanced AI insights...
+                  </div>
+                )}
+
+                {!aiInsightsLoading && aiInsights && (
+                  <>
+                    {/* Smart Reminders */}
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4">
+                      <p className="text-xs text-teal-700 font-semibold uppercase tracking-wide mb-2">Smart Service Reminder Engine</p>
+                      <div className="space-y-2">
+                        {(aiInsights.smart_service_reminders || []).length > 0 ? (
+                          aiInsights.smart_service_reminders.map((reminder, index) => (
+                            <p key={`${reminder.service}-${index}`} className="text-sm text-gray-700">• {reminder.message}</p>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-600">No urgent reminders right now.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Next Best Recommendations */}
+                    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-4">
+                      <p className="text-xs text-cyan-700 font-semibold uppercase tracking-wide mb-2">Next Best Service Recommendation</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {(aiInsights.next_best_recommendations || []).map((rec, index) => (
+                          <div key={`${rec.service_name}-${index}`} className="rounded-xl border border-cyan-100 bg-white p-3">
+                            <p className="text-sm font-semibold text-gray-800">{rec.service_name}</p>
+                            <p className="text-xs text-gray-500 mt-1">{rec.reason}</p>
+                            {rec.book_again && (
+                              <button
+                                onClick={() => handleBookAgain(rec.service_id)}
+                                className="mt-3 btn btn-primary btn-sm"
+                              >
+                                Book Again
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Budget Forecast */}
+                    <div className="rounded-2xl border border-navy-200 bg-navy-50 px-5 py-4">
+                      <p className="text-xs text-navy-700 font-semibold uppercase tracking-wide mb-2">AI Budget Forecast</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Estimated this month</p>
+                          <p className="text-xl font-bold text-gray-800">৳{Math.round(aiInsights.ai_budget_forecast?.estimated_this_month || 0)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Average monthly spend</p>
+                          <p className="text-xl font-bold text-gray-800">৳{Math.round(aiInsights.ai_budget_forecast?.avg_monthly_spend || 0)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Trend points</p>
+                          <p className="text-xl font-bold text-gray-800">{(aiInsights.ai_budget_forecast?.monthly_trend || []).length}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Issue Classifier */}
+                    <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4">
+                      <p className="text-xs text-orange-700 font-semibold uppercase tracking-wide mb-2">Issue-to-Service Classifier</p>
+                      <div className="flex flex-col md:flex-row gap-3">
+                        <textarea
+                          rows={3}
+                          value={issueInput}
+                          onChange={(event) => setIssueInput(event.target.value)}
+                          placeholder="Describe your issue, e.g. AC not cooling, water leakage in kitchen"
+                          className="flex-1 w-full px-4 py-3 border border-orange-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                        />
+                        <div className="flex md:flex-col gap-2">
+                          <button onClick={classifyIssue} className="btn btn-primary btn-sm">Detect Service</button>
+                          <button onClick={() => navigate('/ai-assistant')} className="btn btn-outline btn-sm">Open Assistant</button>
+                        </div>
+                      </div>
+                      {issueClassifierResult && (
+                        <div className="mt-3 rounded-xl border border-orange-100 bg-white p-3">
+                          <p className="text-sm text-gray-700"><span className="font-semibold">Suggested:</span> {issueClassifierResult.category}</p>
+                          <p className={`text-sm mt-1 ${issueClassifierResult.priority ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                            {issueClassifierResult.suggestion}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Churn + Coupon Nudge */}
+                    <div className="rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
+                      <p className="text-xs text-purple-700 font-semibold uppercase tracking-wide mb-1">Churn-risk / Inactivity Nudge</p>
+                      <p className="text-sm text-gray-700">{aiInsights.churn_risk_nudge?.nudge}</p>
+                      <div className="mt-2 text-xs text-gray-600 flex flex-wrap gap-3">
+                        <span>Risk: <b className="uppercase">{aiInsights.churn_risk_nudge?.level || 'low'}</b></span>
+                        <span>Inactive: <b>{aiInsights.churn_risk_nudge?.inactivity_days ?? 0}</b> days</span>
+                        {aiInsights.churn_risk_nudge?.coupon_code && <span>Coupon: <b>{aiInsights.churn_risk_nudge.coupon_code}</b></span>}
+                      </div>
+                    </div>
+
+                    {/* Review Sentiment Intelligence */}
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+                      <p className="text-xs text-rose-700 font-semibold uppercase tracking-wide mb-1">Review Sentiment Intelligence</p>
+                      <p className="text-sm text-gray-700">{aiInsights.review_sentiment_intelligence?.message}</p>
+                      <div className="mt-2 text-xs text-gray-600 flex flex-wrap gap-3">
+                        <span>Reviews: <b>{aiInsights.review_sentiment_intelligence?.review_count ?? 0}</b></span>
+                        <span>Avg Rating: <b>{aiInsights.review_sentiment_intelligence?.avg_rating ?? 0}</b></span>
+                        <span>Unhappy: <b>{aiInsights.review_sentiment_intelligence?.unhappy_count ?? 0}</b></span>
+                        {aiInsights.review_sentiment_intelligence?.follow_up_needed && (
+                          <button onClick={() => navigate('/messages')} className="btn btn-outline-danger btn-sm">Support Follow-up</button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {ordersLoading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
@@ -814,6 +1119,157 @@ const Profile = () => {
                     </div>
                   </form>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* AI Insights Tab */}
+        {activeTab === 'insights' && !isTechnicianUser && (
+          <div className="bg-white rounded-3xl shadow-lg p-10 animate-fade-in-up">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 section-heading">Client AI Insights</h2>
+              <button onClick={fetchClientAiInsights} className="btn btn-outline btn-sm">Refresh Insights</button>
+            </div>
+
+            {aiInsightsLoading ? (
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-8 text-sm text-gray-500 text-center">
+                Loading advanced AI insights...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                    <p className="text-xs text-teal-700 font-semibold uppercase tracking-wide">Service Usage Frequency</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{clientInsights.totalServiceUsage}</p>
+                    <p className="text-xs text-gray-500 mt-1">Total services booked across all orders</p>
+                  </div>
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+                    <p className="text-xs text-cyan-700 font-semibold uppercase tracking-wide">Most Used Category</p>
+                    <p className="text-lg font-bold text-gray-800 mt-1">{clientInsights.mostUsedCategory?.name || '—'}</p>
+                    <p className="text-xs text-gray-500 mt-1">{clientInsights.mostUsedCategory ? `${clientInsights.mostUsedCategory.count} bookings` : 'No category data yet'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-navy-100 bg-navy-50 p-4">
+                    <p className="text-xs text-navy-700 font-semibold uppercase tracking-wide">Top Services</p>
+                    {clientInsights.topServices.length > 0 ? (
+                      <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                        {clientInsights.topServices.map((service) => (
+                          <li key={service.name} className="flex items-center justify-between">
+                            <span className="truncate pr-3">{service.name}</span>
+                            <span className="font-semibold">{service.count}x</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-gray-500 mt-2">No service data yet</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                  <p className="text-xs text-amber-700 font-semibold uppercase tracking-wide mb-1">AI Reminder</p>
+                  <p className="text-sm text-gray-700">{clientInsights.aiSuggestion}</p>
+                </div>
+
+                {aiInsights && (
+                  <>
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4">
+                      <p className="text-xs text-teal-700 font-semibold uppercase tracking-wide mb-2">Smart Service Reminder Engine</p>
+                      <div className="space-y-2">
+                        {(aiInsights.smart_service_reminders || []).length > 0 ? (
+                          aiInsights.smart_service_reminders.map((reminder, index) => (
+                            <p key={`${reminder.service}-${index}`} className="text-sm text-gray-700">• {reminder.message}</p>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-600">No urgent reminders right now.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-4">
+                      <p className="text-xs text-cyan-700 font-semibold uppercase tracking-wide mb-2">Next Best Service Recommendation</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {(aiInsights.next_best_recommendations || []).map((rec, index) => (
+                          <div key={`${rec.service_name}-${index}`} className="rounded-xl border border-cyan-100 bg-white p-3">
+                            <p className="text-sm font-semibold text-gray-800">{rec.service_name}</p>
+                            <p className="text-xs text-gray-500 mt-1">{rec.reason}</p>
+                            {rec.book_again && (
+                              <button onClick={() => handleBookAgain(rec.service_id)} className="mt-3 btn btn-primary btn-sm">
+                                Book Again
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-navy-200 bg-navy-50 px-5 py-4">
+                      <p className="text-xs text-navy-700 font-semibold uppercase tracking-wide mb-2">AI Budget Forecast</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Estimated this month</p>
+                          <p className="text-xl font-bold text-gray-800">৳{Math.round(aiInsights.ai_budget_forecast?.estimated_this_month || 0)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Average monthly spend</p>
+                          <p className="text-xl font-bold text-gray-800">৳{Math.round(aiInsights.ai_budget_forecast?.avg_monthly_spend || 0)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-navy-100">
+                          <p className="text-xs text-gray-500">Trend points</p>
+                          <p className="text-xl font-bold text-gray-800">{(aiInsights.ai_budget_forecast?.monthly_trend || []).length}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4">
+                      <p className="text-xs text-orange-700 font-semibold uppercase tracking-wide mb-2">Issue-to-Service Classifier</p>
+                      <div className="flex flex-col md:flex-row gap-3">
+                        <textarea
+                          rows={3}
+                          value={issueInput}
+                          onChange={(event) => setIssueInput(event.target.value)}
+                          placeholder="Describe your issue, e.g. AC not cooling, water leakage in kitchen"
+                          className="flex-1 w-full px-4 py-3 border border-orange-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                        />
+                        <div className="flex md:flex-col gap-2">
+                          <button onClick={classifyIssue} className="btn btn-primary btn-sm">Detect Service</button>
+                          <button onClick={() => navigate('/ai-assistant')} className="btn btn-outline btn-sm">Open Assistant</button>
+                        </div>
+                      </div>
+                      {issueClassifierResult && (
+                        <div className="mt-3 rounded-xl border border-orange-100 bg-white p-3">
+                          <p className="text-sm text-gray-700"><span className="font-semibold">Suggested:</span> {issueClassifierResult.category}</p>
+                          <p className={`text-sm mt-1 ${issueClassifierResult.priority ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                            {issueClassifierResult.suggestion}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border border-purple-200 bg-purple-50 px-5 py-4">
+                      <p className="text-xs text-purple-700 font-semibold uppercase tracking-wide mb-1">Churn-risk / Inactivity Nudge</p>
+                      <p className="text-sm text-gray-700">{aiInsights.churn_risk_nudge?.nudge}</p>
+                      <div className="mt-2 text-xs text-gray-600 flex flex-wrap gap-3">
+                        <span>Risk: <b className="uppercase">{aiInsights.churn_risk_nudge?.level || 'low'}</b></span>
+                        <span>Inactive: <b>{aiInsights.churn_risk_nudge?.inactivity_days ?? 0}</b> days</span>
+                        {aiInsights.churn_risk_nudge?.coupon_code && <span>Coupon: <b>{aiInsights.churn_risk_nudge.coupon_code}</b></span>}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+                      <p className="text-xs text-rose-700 font-semibold uppercase tracking-wide mb-1">Review Sentiment Intelligence</p>
+                      <p className="text-sm text-gray-700">{aiInsights.review_sentiment_intelligence?.message}</p>
+                      <div className="mt-2 text-xs text-gray-600 flex flex-wrap gap-3">
+                        <span>Reviews: <b>{aiInsights.review_sentiment_intelligence?.review_count ?? 0}</b></span>
+                        <span>Avg Rating: <b>{aiInsights.review_sentiment_intelligence?.avg_rating ?? 0}</b></span>
+                        <span>Unhappy: <b>{aiInsights.review_sentiment_intelligence?.unhappy_count ?? 0}</b></span>
+                        {aiInsights.review_sentiment_intelligence?.follow_up_needed && (
+                          <button onClick={() => navigate('/messages')} className="btn btn-outline-danger btn-sm">Support Follow-up</button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -1,9 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@heroicons/react/24/outline';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,7 +16,11 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState('latest');
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -29,20 +29,54 @@ const Orders = () => {
       navigate('/login');
       return;
     }
-    fetchOrders();
-  }, [isAuthenticated, navigate]);
 
-  const fetchOrders = async () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchOrders(1, false);
+  }, [isAuthenticated, navigate, sortBy]);
+
+  const orderingParam = (sortKey) => {
+    if (sortKey === 'oldest') return 'id';
+    if (sortKey === 'price_low') return 'total_price';
+    if (sortKey === 'price_high') return '-total_price';
+    return '-id';
+  };
+
+  const fetchOrders = async (pageToLoad = 1, append = false) => {
     try {
-      const response = await api.get('/orders/');
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      const response = await api.get('/orders/', {
+        params: {
+          page: pageToLoad,
+          page_size: ORDERS_PER_PAGE,
+          ordering: orderingParam(sortBy),
+        },
+      });
       const list = response.data.results || response.data || [];
-      const sortedOrders = [...list].sort((a, b) => b.id - a.id);
-      setOrders(sortedOrders);
+      const total = Number(response.data.count || 0);
+
+      setOrders((prev) => (append ? [...prev, ...list] : (Array.isArray(list) ? list : [])));
+      setTotalCount(total);
+      setCurrentPage(pageToLoad);
+      setHasMore(Boolean(response.data.next));
     } catch (error) {
       console.error('Failed to fetch orders:', error);
-      setOrders([]);
+      if (!append) {
+        setOrders([]);
+        setTotalCount(0);
+      }
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -77,43 +111,23 @@ const Orders = () => {
     return `${firstService} +${items.length - 1} more`;
   };
 
-  const totalPages = Math.max(1, Math.ceil(orders.length / ORDERS_PER_PAGE));
-
-  const sortedOrders = useMemo(() => {
-    const list = [...orders];
-
-    if (sortBy === 'oldest') {
-      return list.sort((a, b) => a.id - b.id);
-    }
-
-    if (sortBy === 'price_low') {
-      return list.sort((a, b) => parseFloat(a.total_price || 0) - parseFloat(b.total_price || 0));
-    }
-
-    if (sortBy === 'price_high') {
-      return list.sort((a, b) => parseFloat(b.total_price || 0) - parseFloat(a.total_price || 0));
-    }
-
-    return list.sort((a, b) => b.id - a.id);
-  }, [orders, sortBy]);
-
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+    const node = loadMoreRef.current;
+    if (!node) return;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting) return;
+        if (loading || loadingMore || !hasMore) return;
+        fetchOrders(currentPage + 1, true);
+      },
+      { rootMargin: '240px 0px 240px 0px', threshold: 0.01 }
+    );
 
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * ORDERS_PER_PAGE;
-    return sortedOrders.slice(startIndex, startIndex + ORDERS_PER_PAGE);
-  }, [sortedOrders, currentPage]);
-
-  const startNumber = sortedOrders.length === 0 ? 0 : (currentPage - 1) * ORDERS_PER_PAGE + 1;
-  const endNumber = Math.min(currentPage * ORDERS_PER_PAGE, sortedOrders.length);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [currentPage, hasMore, loading, loadingMore, sortBy]);
 
   if (loading) {
     return (
@@ -123,7 +137,7 @@ const Orders = () => {
     );
   }
 
-  if (orders.length === 0) {
+  if (totalCount === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
@@ -152,7 +166,7 @@ const Orders = () => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
-              Showing {startNumber}-{endNumber} of {sortedOrders.length} orders
+              Showing {orders.length} of {totalCount} orders
             </div>
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
               <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 mb-2">
@@ -188,7 +202,7 @@ const Orders = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {paginatedOrders.map((order, index) => (
+                {orders.map((order, index) => (
                   <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'}>
                     <td className="px-6 py-5 align-top">
                       <span className="font-bold text-gray-800">#{order.id}</span>
@@ -238,48 +252,12 @@ const Orders = () => {
           </div>
         </div>
 
-        {totalPages > 1 && (
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-500">
-              Page {currentPage} of {totalPages}
-            </p>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-                Previous
-              </button>
-
-              <div className="flex items-center gap-1 flex-wrap">
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`h-10 min-w-10 rounded-lg px-3 text-sm font-semibold transition-colors ${
-                      currentPage === page
-                        ? 'bg-teal-600 text-white'
-                        : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+        <div ref={loadMoreRef} className="h-10" />
+        {loadingMore && (
+          <div className="text-center text-sm text-gray-500 py-3">Loading more orders...</div>
+        )}
+        {!hasMore && orders.length > 0 && (
+          <div className="text-center text-xs text-gray-400 py-3">All orders loaded.</div>
         )}
       </div>
     </div>

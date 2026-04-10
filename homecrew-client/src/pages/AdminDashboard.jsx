@@ -2362,7 +2362,9 @@ const SupportTab = () => {
     }
 
     try {
-      const listResponse = await api.get('/support/conversations/');
+      const listResponse = await api.get('/support/conversations/', {
+        params: { page: 1, page_size: 30 },
+      });
       const safeTickets = (listResponse.data.results || listResponse.data || []).map(ticket => ({
         ...ticket,
         source: 'live',
@@ -2654,22 +2656,27 @@ const ReportsTab = ({ orders, services, users, categories }) => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(30);
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/analytics/');
+        setFetchError('');
+        const response = await api.get('/analytics/', {
+          params: { days: period },
+        });
         setAnalyticsData(response.data);
       } catch (error) {
         console.error('Error fetching analytics:', error);
+        setFetchError('Unable to load analytics right now. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchAnalytics();
-  }, []);
+  }, [period]);
 
   if (loading) {
     return (
@@ -2684,7 +2691,16 @@ const ReportsTab = ({ orders, services, users, categories }) => {
     return <div className="p-6 text-center text-gray-500">Failed to load analytics data</div>;
   }
 
-  const { revenue_over_time, orders_over_time, status_distribution, top_services, summary } = analyticsData;
+  const {
+    revenue_over_time,
+    orders_over_time,
+    status_distribution,
+    top_services,
+    top_categories = [],
+    top_technicians = [],
+    summary,
+    ai_summary,
+  } = analyticsData;
 
   // Format data for revenue chart
   const revenueChartData = revenue_over_time.map(item => ({
@@ -2727,6 +2743,16 @@ const ReportsTab = ({ orders, services, users, categories }) => {
     orders: item.order_count
   }));
 
+  const topCategoriesData = top_categories.map(item => ({
+    name: item.name.length > 20 ? item.name.substring(0, 17) + '...' : item.name,
+    orders: item.order_count,
+  }));
+
+  const topTechniciansData = top_technicians.map(item => ({
+    name: item.name.length > 20 ? item.name.substring(0, 17) + '...' : item.name,
+    completed: item.completed_jobs,
+  }));
+
   const exportCSV = () => {
     const rows = [['Order ID','Client','Total','Status','Date']];
     orders.forEach(o => rows.push([
@@ -2752,10 +2778,44 @@ const ReportsTab = ({ orders, services, users, categories }) => {
     <div className="tab-content">
       <div className="toolbar" style={{marginBottom:'1.5rem'}}>
         <h2 className="text-xl font-semibold text-gray-800">Reports & Analytics</h2>
-        <button className="btn btn-primary btn-sm flex items-center gap-1" onClick={exportCSV}>
-          <DocumentChartBarIcon className="w-4 h-4" /> Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            className="filter-sel"
+            value={period}
+            onChange={(event) => setPeriod(Number(event.target.value))}
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={180}>Last 180 days</option>
+            <option value={365}>Last 365 days</option>
+          </select>
+          <button className="btn btn-primary btn-sm flex items-center gap-1" onClick={exportCSV}>
+            <DocumentChartBarIcon className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
       </div>
+
+      {fetchError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {fetchError}
+        </div>
+      )}
+
+      {ai_summary?.highlights?.length > 0 && (
+        <div className="bg-teal-50 rounded-2xl p-5 border border-teal-100 mb-6">
+          <p className="text-sm font-semibold text-teal-700 mb-2">AI Summary</p>
+          <h3 className="text-lg font-bold text-gray-800 mb-3">{ai_summary.headline}</h3>
+          <ul className="space-y-2">
+            {ai_summary.highlights.map((line, index) => (
+              <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
+                <span className="mt-1 inline-block w-2 h-2 rounded-full bg-teal-500" />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="stats-grid sm" style={{marginBottom: '2rem'}}>
@@ -2763,12 +2823,15 @@ const ReportsTab = ({ orders, services, users, categories }) => {
           <div className="stat-num">৳{Math.round(summary.total_revenue)}</div>
           <div className="stat-label">Total Revenue</div>
           <div className={`text-sm mt-1 ${revenueChangeColor}`}>
-            {revenueChangeIcon} {Math.abs(summary.revenue_change_percentage)}% vs last week
+            {revenueChangeIcon} {Math.abs(summary.revenue_change_percentage)}% vs previous period
           </div>
         </div>
         <div className="stat-card c-purple">
           <div className="stat-num">{summary.total_orders}</div>
           <div className="stat-label">Total Orders</div>
+          <div className={`${summary.order_change_percentage >= 0 ? 'text-green-600' : 'text-red-600'} text-sm mt-1`}>
+            {summary.order_change_percentage >= 0 ? '↑' : '↓'} {Math.abs(summary.order_change_percentage)}% vs previous period
+          </div>
         </div>
         <div className="stat-card c-green">
           <div className="stat-num">{summary.total_clients}</div>
@@ -2777,6 +2840,18 @@ const ReportsTab = ({ orders, services, users, categories }) => {
         <div className="stat-card c-teal">
           <div className="stat-num">{summary.total_services}</div>
           <div className="stat-label">Active Services</div>
+        </div>
+        <div className="stat-card c-gold">
+          <div className="stat-num">৳{Math.round(summary.avg_order_value || 0)}</div>
+          <div className="stat-label">Avg Order Value</div>
+        </div>
+        <div className="stat-card c-red">
+          <div className="stat-num">{summary.cancellation_rate || 0}%</div>
+          <div className="stat-label">Cancellation Rate</div>
+        </div>
+        <div className="stat-card c-blue">
+          <div className="stat-num">{summary.completion_rate || 0}%</div>
+          <div className="stat-label">Completion Rate</div>
         </div>
       </div>
 
@@ -2890,6 +2965,44 @@ const ReportsTab = ({ orders, services, users, categories }) => {
             </PieChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{marginBottom: '1.5rem'}}>
+        {topCategoriesData.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <TagIcon className="w-5 h-5 text-indigo-600" />
+              <h4 className="text-lg font-semibold text-gray-800">Top Categories</h4>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <RechartsBarChart data={topCategoriesData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis type="number" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                <YAxis dataKey="name" type="category" stroke="#6b7280" style={{ fontSize: '12px' }} width={150} />
+                <Tooltip formatter={(value) => [value, 'Orders']} />
+                <Bar dataKey="orders" fill="#6366f1" radius={[0, 8, 8, 0]} />
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {topTechniciansData.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <UsersIcon className="w-5 h-5 text-emerald-600" />
+              <h4 className="text-lg font-semibold text-gray-800">Top Technicians</h4>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <RechartsBarChart data={topTechniciansData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis type="number" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                <YAxis dataKey="name" type="category" stroke="#6b7280" style={{ fontSize: '12px' }} width={150} />
+                <Tooltip formatter={(value) => [value, 'Completed Jobs']} />
+                <Bar dataKey="completed" fill="#10b981" radius={[0, 8, 8, 0]} />
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Top Services */}

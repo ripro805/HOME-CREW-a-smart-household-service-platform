@@ -8,6 +8,16 @@ function pickOnePerCategory(services) {
   });
   return Object.values(map);
 }
+
+function uniqueByServiceId(services) {
+  const seen = new Set();
+  return (Array.isArray(services) ? services : []).filter((service) => {
+    const id = service?.id;
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -44,9 +54,13 @@ const premiumHoverVariants = ['card-premium-lift', 'card-premium-tilt', 'card-pr
 const Home = () => {
   const { isAuthenticated } = useAuth();
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const [services, setServices] = useState([]);
+  const [heroServices, setHeroServices] = useState([]);
+  const [trendingPool, setTrendingPool] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingTrending, setLoadingTrending] = useState(false);
+  const [deferredLoaded, setDeferredLoaded] = useState(false);
   const [error, setError] = useState(null);
 
   const featureRef    = useScrollReveal();
@@ -64,27 +78,15 @@ const Home = () => {
   });
 
   useEffect(() => {
-    fetchData();
+    fetchHeroData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchHeroData = async () => {
     try {
-      // Step 1: Fetch all categories
-      const categoriesRes = await api.get('/categories/?page_size=20');
-      const cats = categoriesRes.data.results || categoriesRes.data || [];
-      setCategories(cats);
-
-      // Step 2: For each category, fetch one service (in parallel)
-      const servicePromises = cats.map(cat =>
-        api.get(`/services/?category=${cat.id}&page_size=1`).then(res => {
-          const arr = res.data.results || res.data || [];
-          return arr.length > 0 ? arr[0] : null;
-        }).catch(() => null)
-      );
-      const perCategoryServices = await Promise.all(servicePromises);
-      // Remove nulls (categories with no services)
-      const filteredServices = perCategoryServices.filter(Boolean);
-      setServices(filteredServices);
+      // Initial render: only fetch hero/banner data (small payload).
+      const servicesRes = await api.get('/services/?page=1&page_size=18&ordering=-id');
+      const serviceList = servicesRes.data.results || servicesRes.data || [];
+      setHeroServices(uniqueByServiceId(Array.isArray(serviceList) ? serviceList : []));
     } catch (err) {
       setError('Failed to load data');
       console.error('Failed to fetch data:', err);
@@ -93,12 +95,57 @@ const Home = () => {
     }
   };
 
-  // Trending: one per category, limit 5
-  const trendingServices = services.slice(0, 5);
+  const fetchDeferredSections = async () => {
+    if (deferredLoaded) return;
+
+    try {
+      setLoadingCategories(true);
+      setLoadingTrending(true);
+
+      const [categoriesRes, servicesRes] = await Promise.all([
+        api.get('/categories/?page=1&page_size=12'),
+        api.get('/services/?page=1&page_size=30&ordering=-id'),
+      ]);
+
+      const cats = categoriesRes.data.results || categoriesRes.data || [];
+      const serviceList = servicesRes.data.results || servicesRes.data || [];
+
+      setCategories(Array.isArray(cats) ? cats : []);
+
+      const onePerCategory = pickOnePerCategory(Array.isArray(serviceList) ? serviceList : []);
+      const categoryServiceIds = new Set(onePerCategory.map((service) => service.id));
+      const fallbackServices = (Array.isArray(serviceList) ? serviceList : []).filter(
+        (service) => service?.id && !categoryServiceIds.has(service.id)
+      );
+
+      setTrendingPool(uniqueByServiceId([...onePerCategory, ...fallbackServices]));
+      setDeferredLoaded(true);
+    } catch (err) {
+      console.error('Failed to fetch deferred homepage sections:', err);
+    } finally {
+      setLoadingCategories(false);
+      setLoadingTrending(false);
+    }
+  };
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (deferredLoaded) return;
+      if (window.scrollY > window.innerHeight * 0.2) {
+        fetchDeferredSections();
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [deferredLoaded]);
+
+  // Trending: limit 5 (category-first ordering with fallback fill)
+  const trendingServices = trendingPool.slice(0, 5);
 
   // Banner: one per category with images, limit 12
-  const bannerServices = services.filter(s => s.images && s.images.length > 0).slice(0, 12);
-  const bannerList = bannerServices.length > 0 ? bannerServices : services.slice(0, 12);
+  const bannerServices = heroServices.filter(s => s.images && s.images.length > 0).slice(0, 12);
+  const bannerList = bannerServices.length > 0 ? bannerServices : heroServices.slice(0, 12);
   const bannerCount = bannerList.length;
 
   // Carousel auto-rotate
@@ -340,7 +387,7 @@ const Home = () => {
               View All
             </Link>
           </div>
-          {loading ? (
+          {loadingCategories || (!deferredLoaded && categories.length === 0) ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {[1,2,3,4].map(n => <div key={n} className="skeleton h-40 rounded-2xl" />)}
             </div>
@@ -386,7 +433,7 @@ const Home = () => {
               View All
             </Link>
           </div>
-          {loading ? (
+          {loadingTrending || (!deferredLoaded && trendingServices.length === 0) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {[1,2,3,4,5].map(n => <div key={n} className="skeleton h-72 rounded-2xl" />)}
             </div>
@@ -396,8 +443,9 @@ const Home = () => {
                 const imageUrl = service.images && service.images.length > 0 ? service.images[0].image : null;
                 return (
                 <div
-                  key={service.id}
-                    className={`${revealVariants[i % revealVariants.length]} delay-${(i % 5) + 1} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${premiumHoverVariants[(i + 2) % premiumHoverVariants.length]} card-img-zoom group`}
+                  key={`${service.id}-${i}`}
+                    className={`animate-fade-in-up bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${premiumHoverVariants[(i + 2) % premiumHoverVariants.length]} card-img-zoom group`}
+                    style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'both' }}
                 >
                   <div className="h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center overflow-hidden relative">
                     {imageUrl ? (

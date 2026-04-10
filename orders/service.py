@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from .models import Cart, CartItem, Order, OrderItem
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -42,16 +42,25 @@ class OrderService:
     @staticmethod
     def is_electrical_order(order=None, service_ids=None):
         """Check whether an order contains any Electrical Work category service."""
+        electrical_filter = (
+            Q(category__name__icontains='electrical')
+            | Q(name__icontains='mcb')
+            | Q(name__icontains='db box')
+            | Q(name__icontains='distribution board')
+        )
+
         if service_ids:
-            return Service.objects.filter(
-                id__in=service_ids,
-                category__name__icontains='electrical',
-            ).exists()
+            return Service.objects.filter(id__in=service_ids).filter(electrical_filter).exists()
 
         if order is None:
             return False
 
-        return order.items.filter(service__category__name__icontains='electrical').exists()
+        return order.items.filter(
+            Q(service__category__name__icontains='electrical')
+            | Q(service__name__icontains='mcb')
+            | Q(service__name__icontains='db box')
+            | Q(service__name__icontains='distribution board')
+        ).exists()
 
     @staticmethod
     def _tokenize_address(value):

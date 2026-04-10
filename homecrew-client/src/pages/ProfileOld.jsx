@@ -76,7 +76,9 @@ const Profile = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get('/orders/');
+      const response = await api.get('/orders/', {
+        params: { page: 1, page_size: 20, ordering: '-id' },
+      });
       setOrders(response.data.results || response.data);
     } catch (error) {
       console.error('Failed to fetch orders:', error);

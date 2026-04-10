@@ -1,3 +1,7 @@
+from datetime import datetime
+
+from django.db.models import Count, OuterRef, Q, Subquery, Value, DateTimeField
+from django.db.models.functions import Coalesce
 from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -6,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import SupportConversation, SupportMessage
+from .pagination import SupportConversationPagination
 from .serializers import (
     SupportConversationCreateSerializer,
     SupportConversationDetailSerializer,
@@ -19,17 +24,42 @@ from .serializers import (
 class SupportConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    pagination_class = SupportConversationPagination
 
     def get_queryset(self):
         message_queryset = SupportMessage.objects.select_related("sender").order_by("created_at")
-        queryset = (
-            SupportConversation.objects.select_related("client")
-            .prefetch_related(Prefetch("messages", queryset=message_queryset))
-            .order_by("-last_message_at")
+        base_queryset = SupportConversation.objects.select_related("client").order_by("-last_message_at")
+
+        if not is_admin_user(self.request.user):
+            base_queryset = base_queryset.filter(client=self.request.user)
+
+        action = getattr(self, "action", None)
+        if action == "retrieve":
+            return base_queryset.prefetch_related(Prefetch("messages", queryset=message_queryset))
+
+        epoch = timezone.make_aware(datetime(1970, 1, 1))
+        last_message_preview_subquery = (
+            SupportMessage.objects.filter(conversation_id=OuterRef("pk"))
+            .order_by("-created_at")
+            .values("body")[:1]
         )
+
         if is_admin_user(self.request.user):
-            return queryset
-        return queryset.filter(client=self.request.user)
+            unread_filter = (
+                Q(messages__created_at__gt=Coalesce("admin_last_read_at", Value(epoch, output_field=DateTimeField())))
+                & ~(Q(messages__sender__role="admin") | Q(messages__sender__is_staff=True))
+            )
+        else:
+            unread_filter = (
+                Q(messages__created_at__gt=Coalesce("client_last_read_at", Value(epoch, output_field=DateTimeField())))
+                & (Q(messages__sender__role="admin") | Q(messages__sender__is_staff=True))
+            )
+
+        return base_queryset.annotate(
+            message_count=Count("messages", distinct=True),
+            unread_count=Count("messages", filter=unread_filter, distinct=True),
+            last_message_preview=Coalesce(Subquery(last_message_preview_subquery), Value("")),
+        )
 
     def get_serializer_class(self):
         if self.action == "create":

@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../api/axios';
 import { useDialog } from '../context/DialogContext';
+import { useAuth } from '../context/AuthContext';
 import VoiceButton from '../components/chat/VoiceButton';
 import SmartReplyList from '../components/chat/SmartReplyList';
 import RecommendationCard from '../components/chat/RecommendationCard';
@@ -144,6 +145,7 @@ const getRecommendationsFromDetection = (detection = {}) => {
 
 const Assistant = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { showConfirm, showAlert } = useDialog();
   const [searchParams] = useSearchParams();
   const [text, setText] = useState('');
@@ -166,6 +168,8 @@ const Assistant = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const [imageApiResponse, setImageApiResponse] = useState(null);
   const [imageAnalyzing, setImageAnalyzing] = useState(false);
+  const [clientInsightsLoading, setClientInsightsLoading] = useState(false);
+  const [clientInsights, setClientInsights] = useState(null);
   const recognitionRef = useRef(null);
   const sendMessageRef = useRef(null);
   const [messages, setMessages] = useState([
@@ -184,6 +188,20 @@ const Assistant = () => {
   const canSend = useMemo(
     () => (text.trim().length > 0 || Boolean(uploadedImage)) && !loading && !imageAnalyzing,
     [text, uploadedImage, loading, imageAnalyzing]
+  );
+
+  const insightsRecommendationCards = useMemo(
+    () =>
+      (clientInsights?.next_best_recommendations || []).slice(0, 3).map((item, index) => ({
+        id: `ins-${item.service_id || index}`,
+        serviceType: item.service_name,
+        technicianName: 'Recommended Pro',
+        rating: 4.7,
+        priceEstimate: 'Based on your past usage',
+        bookPrompt: `Ami ${item.service_name} book korte chai`,
+        service_id: item.service_id || null,
+      })),
+    [clientInsights]
   );
 
   const pushMessage = (role, messageText, data = null, extra = {}) => {
@@ -235,6 +253,20 @@ const Assistant = () => {
       data: message.data || null,
       type: message.data?.message_type || null,
     }));
+
+  const loadClientInsights = async () => {
+    if (String(user?.role || '').toLowerCase() !== 'client') return;
+
+    setClientInsightsLoading(true);
+    try {
+      const response = await api.get('/accounts/client-ai-insights/');
+      setClientInsights(response.data || null);
+    } catch {
+      setClientInsights(null);
+    } finally {
+      setClientInsightsLoading(false);
+    }
+  };
 
   const loadSessions = async () => {
     setSessionsLoading(true);
@@ -365,6 +397,7 @@ const Assistant = () => {
 
     loadServices();
     loadSessions();
+    loadClientInsights();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -725,6 +758,26 @@ const Assistant = () => {
     sendMessage(prompt);
   };
 
+  const onInsightBookAgain = async (recommendation) => {
+    if (!recommendation?.service_id) {
+      onRecommendationBook(recommendation);
+      return;
+    }
+
+    try {
+      await api.post('/orders/cart/add/', {
+        service_id: recommendation.service_id,
+        quantity: 1,
+      });
+      await showAlert('Service cart e add hoye geche. Checkout korte cart e jan.', {
+        title: 'Book Again ready',
+      });
+      navigate('/cart');
+    } catch {
+      onRecommendationBook(recommendation);
+    }
+  };
+
   const startAssistantPayment = async (orderId, messageData = null) => {
     if (!orderId || paymentStartingOrderId) return;
 
@@ -944,6 +997,72 @@ const Assistant = () => {
               Confirm booking in this request
             </label>
           </div>
+
+          {String(user?.role || '').toLowerCase() === 'client' && (
+            <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-200">Client AI Insights</p>
+
+              {clientInsightsLoading && <p className="text-xs text-slate-300">Loading insights...</p>}
+
+              {!clientInsightsLoading && clientInsights?.smart_service_reminders?.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">Reminders</p>
+                  <div className="mt-2 space-y-2">
+                    {clientInsights.smart_service_reminders.slice(0, 2).map((reminder, idx) => (
+                      <button
+                        key={`${reminder.service}-${idx}`}
+                        type="button"
+                        onClick={() => sendMessage(`Reminder পেয়েছি: ${reminder.message}. এটা book করতে চাই.`)}
+                        className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-left text-xs text-slate-200 transition hover:border-teal-300"
+                      >
+                        {reminder.message}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!clientInsightsLoading && insightsRecommendationCards.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">Next Best Services</p>
+                  <div className="mt-2 space-y-2">
+                    {insightsRecommendationCards.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2">
+                        <p className="text-xs font-semibold text-white">{item.serviceType}</p>
+                        <button
+                          type="button"
+                          onClick={() => onInsightBookAgain(item)}
+                          className="mt-2 rounded-full border border-teal-300/50 px-3 py-1 text-[11px] font-semibold text-teal-200 transition hover:border-teal-200"
+                        >
+                          Book Again
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!clientInsightsLoading && clientInsights?.churn_risk_nudge?.nudge && (
+                <button
+                  type="button"
+                  onClick={() => sendMessage(clientInsights.churn_risk_nudge.nudge)}
+                  className="w-full rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-left text-xs text-amber-100 transition hover:border-amber-200"
+                >
+                  {clientInsights.churn_risk_nudge.nudge}
+                </button>
+              )}
+
+              {!clientInsightsLoading && clientInsights?.review_sentiment_intelligence?.follow_up_needed && (
+                <button
+                  type="button"
+                  onClick={() => sendMessage('Ami support follow-up chai, amar recent review niye help korun.')}
+                  className="w-full rounded-xl border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-left text-xs text-rose-100 transition hover:border-rose-200"
+                >
+                  Support follow-up suggested from sentiment analysis
+                </button>
+              )}
+            </div>
+          )}
 
           <button
             type="button"

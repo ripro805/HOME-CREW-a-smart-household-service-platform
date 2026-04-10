@@ -18,6 +18,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from orders.models import Order, OrderItem
+from orders.service import OrderService
 from services.models import Review, Service
 
 from .models import SupportConversation, SupportMessage, AssistantChatSession, AssistantChatMessage
@@ -785,6 +786,11 @@ def _extract_order_id(message: str, fallback: int | None = None) -> int | None:
 def _extract_date_text(message: str, fallback: str = "") -> str:
     normalized = _normalize(message)
 
+    # Common Bangla relative date words.
+    for token in ["আগামীকাল", "agamikal", "agami kal", "পরশু", "আজ", "aj", "কাল", "next day"]:
+        if re.search(rf"\b{re.escape(token)}\b", normalized):
+            return token
+
     # ISO / numeric formats
     pattern = re.search(
         r"(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|today|tomorrow|next\s+[a-z]+)",
@@ -799,18 +805,18 @@ def _extract_date_text(message: str, fallback: str = "") -> str:
         "jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?"
     )
 
-    day_month_year = re.search(rf"\b(\d{{1,2}}\s+(?:{month_names})\s+\d{{2,4}})\b", normalized)
+    day_month_year = re.search(rf"\b(\d{{1,2}}\s+(?:{month_names})\s*,?\s*\d{{2,4}})\b", normalized)
     if day_month_year:
         return day_month_year.group(1)
 
-    month_day_year = re.search(rf"\b((?:{month_names})\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,)?\s+\d{{2,4}})\b", normalized)
+    month_day_year = re.search(rf"\b((?:{month_names})\s+\d{{1,2}}(?:st|nd|rd|th)?\s*,?\s*\d{{2,4}})\b", normalized)
     if month_day_year:
         return month_day_year.group(1)
 
     return fallback or ""
 
 
-def _extract_location_text(message: str, fallback: str = "") -> str:
+def _extract_location_text(message: str, fallback: str = "", infer_plain_text: bool = True) -> str:
     text = message or ""
     normalized = _normalize(text)
 
@@ -825,21 +831,39 @@ def _extract_location_text(message: str, fallback: str = "") -> str:
 
     markers = ["location", "address", "area", "from", "at", "in"]
     for marker in markers:
-        idx = normalized.find(f"{marker} ")
-        if idx != -1:
-            guessed = _clean_location_candidate(text[idx + len(marker) :])
+        marker_match = re.search(rf"\b{re.escape(marker)}\b\s+(.+)", text, flags=re.IGNORECASE)
+        if marker_match:
+            guessed = _clean_location_candidate(marker_match.group(1))
             if guessed:
                 return guessed
 
     # If user directly types area text (e.g. "mirpur dhaka"), keep the full input.
-    compact_text = text.strip(" :,-")
-    if compact_text and len(compact_text.split()) <= 6 and not re.search(r"\d{4}-\d{2}-\d{2}", compact_text):
-        # Do not treat phone-like inputs as location.
-        if re.fullmatch(r"\+?\d[\d\s\-]{8,18}\d", compact_text):
-            return fallback or ""
-        cleaned_compact = _clean_location_candidate(compact_text)
-        if cleaned_compact:
-            return cleaned_compact
+    # This heuristic should be disabled in stages where arbitrary text (e.g., full name)
+    # must not override already collected location.
+    if infer_plain_text:
+        compact_text = text.strip(" :,-")
+        if compact_text and len(compact_text.split()) <= 6 and not re.search(r"\d{4}-\d{2}-\d{2}", compact_text):
+            # Do not treat phone-like inputs as location.
+            if re.fullmatch(r"\+?\d[\d\s\-]{8,18}\d", compact_text):
+                return fallback or ""
+
+            compact_normalized = _normalize(compact_text)
+            has_digit = bool(re.search(r"\d", compact_text))
+            location_hint_tokens = [
+                "road", "rd", "street", "st", "sector", "block", "house", "flat", "lane", "area",
+                "district", "thana", "upazila", "union", "village", "para", "city", "town",
+                "r/a", "doHS", "বাসা", "বাড়ি", "বাড়ি", "রোড", "লেন", "এলাকা", "থানা", "জেলা",
+            ]
+            has_hint_token = any(token in compact_normalized for token in location_hint_tokens)
+            has_known_area = any(_normalize(area) in compact_normalized for area in BD_LOCATIONS)
+
+            # Avoid mapping plain personal names to location/address.
+            if not (has_digit or has_hint_token or has_known_area):
+                return fallback or ""
+
+            cleaned_compact = _clean_location_candidate(compact_text)
+            if cleaned_compact:
+                return cleaned_compact
 
     for area in sorted(BD_LOCATIONS, key=lambda x: len(x), reverse=True):
         if _normalize(area) in normalized:
@@ -1351,20 +1375,56 @@ def _handle_service_info(message: str) -> tuple[str, dict[str, Any]]:
 
 def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     service = _select_service_from_text_or_context(message, context)
+
+    normalized_message = _normalize(message)
+    has_explicit_location_marker = any(
+        re.search(rf"\b{marker}\b", normalized_message)
+        for marker in ["location", "address", "area", "from", "at", "in"]
+    )
+
+    # Parse fields in a stage-aware way so later-step replies (e.g. full name)
+    # never overwrite earlier fields like location/address.
     booking_date = _extract_date_text(message, fallback=context.get("booking_date", ""))
-    location = _extract_location_text(message, fallback=context.get("location", ""))
+
+    location_prompt_stage = bool(
+        context.get("service_id")
+        and context.get("booking_date")
+        and not context.get("location")
+    )
+
+    location = context.get("location", "")
+    if context.get("location") or location_prompt_stage or has_explicit_location_marker:
+        location = _extract_location_text(
+            message,
+            fallback=context.get("location", ""),
+            infer_plain_text=location_prompt_stage,
+        )
+
     collecting_name_stage = bool(
         context.get("service_id")
         and context.get("booking_date")
         and context.get("location")
         and not context.get("booking_name")
     )
-    booking_name = _extract_name_text(
-        message,
-        fallback=context.get("booking_name", ""),
-        allow_plain_name=collecting_name_stage,
+    booking_name = context.get("booking_name", "")
+    if context.get("booking_name") or collecting_name_stage:
+        booking_name = _extract_name_text(
+            message,
+            fallback=context.get("booking_name", ""),
+            allow_plain_name=collecting_name_stage,
+        )
+
+    collecting_phone_stage = bool(
+        context.get("service_id")
+        and context.get("booking_date")
+        and context.get("location")
+        and context.get("booking_name")
+        and not context.get("booking_phone")
     )
-    booking_phone = _extract_phone_text(message, fallback=context.get("booking_phone", ""))
+    booking_phone = context.get("booking_phone", "")
+    if context.get("booking_phone") or collecting_phone_stage:
+        booking_phone = _extract_phone_text(message, fallback=context.get("booking_phone", ""))
+
     confirm_booking = bool(context.get("confirm_booking")) or any(
         token in _normalize(message) for token in ["confirm", "book it", "done", "yes confirm"]
     )
@@ -1385,6 +1445,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": booking_phone,
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "service",
                 },
             },
         )
@@ -1404,6 +1466,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": "",
                     "booking_phone": "",
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "date",
                 },
             },
         )
@@ -1423,6 +1487,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": booking_phone,
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "location",
                 },
             },
         )
@@ -1442,6 +1508,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": "",
                     "booking_phone": booking_phone,
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "name",
                 },
             },
         )
@@ -1461,6 +1529,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": "",
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "phone",
                 },
             },
         )
@@ -1480,6 +1550,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": "",
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "phone",
                 },
             },
         )
@@ -1503,6 +1575,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": booking_phone,
                     "confirm_booking": False,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "confirm",
                 },
             },
         )
@@ -1522,6 +1596,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                     "booking_name": booking_name,
                     "booking_phone": booking_phone,
                     "confirm_booking": True,
+                    "booking_in_progress": True,
+                    "awaiting_booking_field": "confirm",
                 },
             },
         )
@@ -1536,6 +1612,7 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
         preferred_date=booking_date,
     )
     OrderItem.objects.create(order=order, service=service, quantity=1, price=service.price)
+    OrderService.auto_assign_technician(order, service_ids=[service.id])
 
     try:
         conversation, _ = SupportConversation.objects.get_or_create(client=user)
@@ -1568,6 +1645,8 @@ def _handle_booking_assistant(user, message: str, context: dict[str, Any]) -> tu
                 "booking_name": "",
                 "booking_phone": "",
                 "confirm_booking": False,
+                "booking_in_progress": False,
+                "awaiting_booking_field": None,
                 "awaiting_order_id": False,
                 "pending_rating": None,
             },
@@ -2216,9 +2295,14 @@ def assistant_chat(request):
         bool(context.get(key))
         for key in ["booking_date", "location", "booking_name", "booking_phone", "confirm_booking"]
     )
-    booking_context_active = bool(context.get("service_id")) and (
-        has_booking_state or any(token in normalized_message for token in booking_terms)
+    booking_field_waiting = str(context.get("awaiting_booking_field") or "").strip().lower()
+    booking_context_active = bool(context.get("booking_in_progress")) or (
+        bool(context.get("service_id")) and (
+            has_booking_state or any(token in normalized_message for token in booking_terms)
+        )
     )
+    if booking_field_waiting in {"service", "date", "location", "name", "phone", "confirm"}:
+        booking_context_active = True
 
     review_signal = bool(_extract_rating(message)) or any(
         token in normalized_message for token in ["review", "rating", "feedback", "star", "rate"]

@@ -1,45 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { CubeIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const loadMoreRef = useRef(null);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredCategories(categories);
-    } else {
-      const filtered = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      setFilteredCategories(filtered);
-    }
-  }, [searchTerm, categories]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async (pageToLoad = 1, append = false) => {
     try {
-      setLoading(true);
-      const response = await api.get('/categories/?page_size=100');
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      const params = {
+        page: pageToLoad,
+        page_size: 16,
+      };
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
+      }
+
+      const response = await api.get('/categories/', { params });
       const categoriesData = response.data.results || response.data || [];
-      setCategories(categoriesData);
-      setFilteredCategories(categoriesData);
+      const total = Number(response.data.count || 0);
+
+      setCategories((prev) => (append ? [...prev, ...categoriesData] : categoriesData));
+      setTotalCount(total);
+      setCurrentPage(pageToLoad);
+      setHasMore(Boolean(response.data.next));
     } catch (error) {
       console.error('Failed to fetch categories:', error);
-      setCategories([]);
-      setFilteredCategories([]);
+      if (!append) {
+        setCategories([]);
+        setTotalCount(0);
+      }
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  };
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchCategories(1, false);
+  }, [fetchCategories, debouncedSearch]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting) return;
+        if (loading || loadingMore || !hasMore) return;
+        fetchCategories(currentPage + 1, true);
+      },
+      { rootMargin: '220px 0px 220px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [currentPage, hasMore, loading, loadingMore, fetchCategories]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -75,13 +120,13 @@ const Categories = () => {
           <>
             {/* Results Count */}
             <div className="mb-6 text-gray-600">
-              Showing <span className="font-semibold text-gray-800">{filteredCategories.length}</span> {filteredCategories.length === 1 ? 'category' : 'categories'}
+              Showing <span className="font-semibold text-gray-800">{categories.length}</span> of <span className="font-semibold text-gray-800">{totalCount}</span> {totalCount === 1 ? 'category' : 'categories'}
             </div>
 
             {/* Categories Grid */}
-            {filteredCategories.length > 0 ? (
+            {categories.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredCategories.map((category) => (
+                {categories.map((category) => (
                   <Link
                     key={category.id}
                     to={`/services?category=${category.id}`}
@@ -121,6 +166,14 @@ const Categories = () => {
                 <p className="text-gray-500 text-lg">No categories found</p>
                 <p className="text-gray-400 text-sm mt-2">Try a different search term</p>
               </div>
+            )}
+
+            <div ref={loadMoreRef} className="h-8" />
+            {loadingMore && (
+              <div className="py-4 text-center text-sm text-gray-500">Loading more categories...</div>
+            )}
+            {!hasMore && categories.length > 0 && (
+              <div className="py-4 text-center text-xs text-gray-400">All categories loaded.</div>
             )}
           </>
         )}

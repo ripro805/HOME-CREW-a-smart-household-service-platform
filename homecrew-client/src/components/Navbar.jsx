@@ -52,7 +52,9 @@ const Navbar = () => {
     let mounted = true;
     const syncOrders = async () => {
       try {
-        const response = await api.get('/orders/');
+        const response = await api.get('/orders/', {
+          params: { page: 1, page_size: 8, ordering: '-id' },
+        });
         if (mounted) {
           setOrders(response.data.results || response.data || []);
         }
@@ -82,7 +84,9 @@ const Navbar = () => {
 
     const fetchSupportConversations = async () => {
       try {
-        const response = await api.get('/support/conversations/');
+        const response = await api.get('/support/conversations/', {
+          params: { page: 1, page_size: 10 },
+        });
         if (isMounted) {
           setSupportConversations(response.data.results || response.data || []);
         }
