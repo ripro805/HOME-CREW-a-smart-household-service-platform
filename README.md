@@ -290,14 +290,37 @@ VITE_API_URL=http://localhost:8000/api/v1
 
 ---
 
-## 📸 Screenshots
+## 📸 Screenshots (With Proper Titles)
 
-Screenshots are available in `scrennshots/` and include:
+All screenshots are loaded from `scrennshots/`.
 
-- home hero variations
-- about/services/contact pages
-- service detail and related services
-- admin dashboard overview + payments views
+### Public Website Pages
+
+| Home Hero (Electrical Theme) | Home Hero (Painting Theme) |
+| --- | --- |
+| ![Home Hero - Electrical](scrennshots/home-hero-electrical.png) | ![Home Hero - Painting](scrennshots/home-hero-painting.png) |
+
+| About Page | Services Listing Page |
+| --- | --- |
+| ![About Page](scrennshots/about-page.png) | ![Services Page](scrennshots/services-page.png) |
+
+| Contact Page | Service Detail - Overview |
+| --- | --- |
+| ![Contact Page](scrennshots/contact-page.png) | ![Service Detail Overview](scrennshots/service-detail-overview.png) |
+
+| Service Detail - Related Services |
+| --- |
+| ![Service Detail Related Services](scrennshots/service-detail-related-services.png) |
+
+### Admin Dashboard Views
+
+| Admin Dashboard - Overview | Admin Dashboard - Payments Overview |
+| --- | --- |
+| ![Admin Dashboard Overview](scrennshots/admin-dashboard-overview.png) | ![Admin Payments Overview](scrennshots/admin-payments-overview.png) |
+
+| Admin Dashboard - Payments Table |
+| --- |
+| ![Admin Payments Table](scrennshots/admin-payments-table.png) |
 
 ---
 
@@ -309,4 +332,8 @@ PRs are welcome. For major features/architecture changes, please open an issue f
 
 ## 📄 License
 
-MIT License
+This project is licensed under the **MIT License**.
+
+**Copyright (c) 2026 ripro805**
+
+See the full license text in [`LICENSE`](LICENSE).
